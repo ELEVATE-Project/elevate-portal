@@ -35,7 +35,7 @@ export default function Home() {
     const accToken = localStorage.getItem('accToken');
     if (!accToken) {
       // router.replace(''); // Redirect to login page
-      window.location.href = document.baseURI + "?unAuth=true" || '';
+      router.push(`${window.location.origin}?unAuth=true`);
       return;
     } else {
       const getProfileData = async () => {
