@@ -101,6 +101,59 @@ const DynamicForm = ({
   const isValidMobile = (mobile: string) => {
     return /^[6-9]\d{9}$/.test(mobile);
   };
+  const getRegistrationCode = (formData) => {
+    const config = schema.meta?.registrationCodeConfig || {
+      name: schema.meta?.registrationCodeConfig,
+    };
+    console.log('schema true', schema);
+    const isShikshalokam = schema.meta?.isShikshalokam;
+    // const isShikshalokam = true;
+    console.log('isShikshalokam', isShikshalokam);
+    console.log('Config:', config);
+    console.log('FormData:', formData);
+    console.log('FormData keys:', Object.keys(formData));
+    const field = formData[config.name];
+    console.log('Field value:', field);
+    formData['registration_code'] = formData[config.name];
+    if (isShikshalokam) {
+      formData.registration_code = formData['Registration Code'];
+      formData['Registration Code'] = formData.registration_code;
+      console.log('Registration11 Code:', formData.registration_code);
+      formData.registration_code = {
+        externalId: formData['Registration Code'],
+      };
+      console.log(formData.registration_code.externalId); // 'bbb'
+
+      if (!formData.registration_code) {
+        throw new Error('Registration code is required for shikshalokam');
+      }
+      return formData.registration_code;
+    } else {
+      const regConfig = schema.meta?.registrationCodeConfig;
+
+      if (!regConfig?.name) {
+        throw new Error('Registration code configuration is invalid');
+      }
+
+      const fieldValue = formData[regConfig.name];
+      const valueKey = regConfig.value_ref || 'externalId';
+
+      if (typeof fieldValue === 'object') {
+        return fieldValue[valueKey];
+      }
+      return fieldValue;
+    }
+    // if (!field) return '';
+
+    // // Get the value reference (default to 'externalId' if not specified)
+    // const valueKey = config.value_ref || 'externalId';
+
+    // // Handle both object and string values
+    // if (typeof field === 'object') {
+    //   return field[valueKey] || '';
+    // }
+    // return field;
+  };
   //custom validation on formData for learner fields hide on dob
   useEffect(() => {
     setErrorButton(false);
@@ -854,7 +907,7 @@ const DynamicForm = ({
         setIsUsernameValid(false);
         return;
       }
-
+      setIsUsernameValid(false);
       try {
         const response = await axios.get(
           `${API_ENDPOINTS.checkUser(username)}`,
@@ -876,11 +929,9 @@ const DynamicForm = ({
           }, 8000);
         } else {
           setErrorMessage('');
-          setErrorButton(true);
-          setShowError(true);
-          setTimeout(() => {
-            setShowError(false);
-          }, 8000);
+          setErrorButton(false);
+          setShowError(false);
+
           setIsUsernameValid(true);
         }
       } catch (error) {
@@ -951,9 +1002,9 @@ const DynamicForm = ({
           );
         }
       }
-
+      setIsUsernameValid(false);
       // Check username availability if username changed
-      if (usernameChanged) {
+      if (formData.Username) {
         checkUsernameAvailability(formData.Username);
       }
 
@@ -1303,7 +1354,9 @@ const DynamicForm = ({
     );
 
     // const userName = formData.firstName;
+    const registrationCode = getRegistrationCode(formData);
 
+    console.log('registrationCode', registrationCode);
     let otpPayload;
     const hasMobile = !!formData.mobile?.trim(); // Checks if user entered any mobile number
     const isValidMobile = /^[6-9]\d{9}$/.test(formData.mobile?.trim() ?? '');
@@ -1317,7 +1370,7 @@ const DynamicForm = ({
       ...(hasMobile && { phone_code: '+91' }),
       password: formData.password,
       // registration_code: 'blr',
-      registration_code: formData.District.externalId, // Using default value as per your curl example
+      registration_code: formData.registration_code.externalId, // Using default value as per your curl example
     };
 
     console.log('1331 payload', otpPayload);
@@ -1380,6 +1433,8 @@ const DynamicForm = ({
     // const userName = formData.firstName;
     const isMobile = /^[6-9]\d{9}$/.test(formData.mobile);
     console.log(formData.Roles, 'roles');
+    const registrationCode = getRegistrationCode(formData);
+    console.log('registrationCode create', registrationCode);
     const payload = {
       name:
         formData.firstName + (formData.lastName ? ` ${formData.lastName}` : ''),
@@ -1393,7 +1448,7 @@ const DynamicForm = ({
       block: formData.Block?._id ?? '',
       cluster: formData.Cluster?._id ?? '',
       school: formData.School?._id ?? '',
-      registration_code: formData.District?.externalId ?? '',
+      registration_code: formData.registration_code.externalId ?? '',
       professional_role: localStorage.getItem('role'),
       professional_subroles: getSubRoleExternalIds(),
       otp: Number(otp),
@@ -1616,7 +1671,6 @@ const DynamicForm = ({
           >
             <Button
               onClick={handleSendOtp}
-              // onClick={handleRegister}
               disabled={
                 errorButton ||
                 !formData?.firstName ||
@@ -1627,6 +1681,7 @@ const DynamicForm = ({
                 !formData.Role ||
                 !formData?.udise ||
                 !formData?.Udise ||
+                !formData.Username ||
                 !isUsernameValid ||
                 hasValidationErrors() ||
                 (formData.Role !== 'parents' &&

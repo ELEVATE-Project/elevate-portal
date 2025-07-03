@@ -71,6 +71,7 @@ const UdiaseWithButton = ({
       }
 
       const locationInfo = response.result[0];
+
       const sampleResponse = {
         udise: localValue,
         School: {

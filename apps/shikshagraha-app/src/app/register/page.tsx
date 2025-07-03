@@ -10,6 +10,7 @@ import {
   Typography,
   createTheme,
   ThemeProvider,
+  CircularProgress,
 } from '@mui/material';
 import {
   fetchRoleData,
@@ -85,13 +86,17 @@ export default function Register() {
     const fetchSchema = async () => {
       try {
         setLoading(true);
-
+        const origin = localStorage.getItem('origin') || '';
+        const isShikshalokam = origin.includes('shikshalokam');
+        console.log('isShikshalokam', isShikshalokam);
         const rolesResponse = await fetchRoleData();
         const rolesData = rolesResponse?.result ?? [];
         setRolesList(rolesData);
 
         const response = await schemaRead();
         const fields = response?.result?.data?.fields?.result ?? [];
+        const meta = response?.result?.data?.fields?.meta ?? {};
+        console.log('meta', meta);
         if (fields.length === 0) {
           throw new Error('No form fields received from API');
         }
@@ -107,7 +112,18 @@ export default function Register() {
         const { schema, uiSchema, fieldNameToFieldIdMapping } =
           generateRJSFSchema(fields, selectedRoleObj, rolesData, subrolesData);
 
-        setFormSchema(schema);
+        console.log('schema', schema);
+        const registrationCodeConfig = meta.registration_code;
+
+        setFormSchema({
+          ...schema,
+          meta: {
+            ...schema.meta,
+            isShikshalokam,
+            registrationCodeConfig,
+          },
+        });
+        // setFormSchema(schema);
         setUiSchema(uiSchema);
         setFieldNameToFieldIdMapping(fieldNameToFieldIdMapping);
       } catch (error) {
@@ -241,35 +257,48 @@ export default function Register() {
               },
             }}
           >
-            <Typography
-              variant="h5"
-              sx={{
-                color: '#572E91',
-                fontWeight: 'bold',
-                mb: 2,
-                textAlign: 'center',
-                fontSize: {
-                  xs: '1.2rem',
-                  sm: '1.5rem',
-                },
-              }}
-            >
-              Welcome to {displayName}
-            </Typography>
-
-            {formSchema && (
-              <DynamicForm
-                schema={formSchema}
-                uiSchema={uiSchema}
-                SubmitaFunction={handleSubmit}
-                hideSubmit={false}
-                onChange={({ formData }) => {
-                  if (formData.Role) {
-                    setFormData((prev) => ({ ...prev, 'Sub-Role': [] }));
-                  }
+            {loading && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  height: '200px',
                 }}
-                fieldIdMapping={fieldNameToFieldIdMapping}
-              />
+              >
+                <CircularProgress sx={{ color: '#572E91' }} />
+              </Box>
+            )}
+            {formSchema && (
+              <>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    color: '#572E91',
+                    fontWeight: 'bold',
+                    mb: 2,
+                    textAlign: 'center',
+                    fontSize: {
+                      xs: '1.2rem',
+                      sm: '1.5rem',
+                    },
+                  }}
+                >
+                  Welcome to {displayName}
+                </Typography>
+                <DynamicForm
+                  schema={formSchema}
+                  uiSchema={uiSchema}
+                  SubmitaFunction={handleSubmit}
+                  hideSubmit={false}
+                  onChange={({ formData }) => {
+                    if (formData.Role) {
+                      setFormData((prev) => ({ ...prev, 'Sub-Role': [] }));
+                    }
+                  }}
+                  fieldIdMapping={fieldNameToFieldIdMapping}
+                />
+              </>
             )}
           </Box>
         </Box>

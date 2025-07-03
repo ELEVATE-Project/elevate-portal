@@ -67,14 +67,10 @@ export const readHomeListForm = async (token: string) => {
     throw new Error('NEXT_PUBLIC_BASE_URL is not defined');
   }
 
-  const apiUrl = `${baseUrl}/user/v1/form/read`;
-  const payloadData = {
-    type: 'solutionList',
-    sub_type: 'home',
-  };
+  const apiUrl = `${baseUrl}/user/v1/organization-feature/read`;
 
   try {
-    const { data } = await axios.post(apiUrl, payloadData, {
+    const { data } = await axios.get(apiUrl, {
       headers: {
         'X-Auth-Token': token,
       },
@@ -84,8 +80,7 @@ export const readHomeListForm = async (token: string) => {
     if (err.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href =
-        process.env.NEXT_PUBLIC_LOGINPAGE + '?unAuth=true' || '';
+      window.location.href = document.baseURI + "?unAuth=true";
     }
     if (axios.isAxiosError(err)) {
       console.error(
@@ -115,8 +110,7 @@ export const authenticateUser = async ({
     if (response.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href =
-        process.env.NEXT_PUBLIC_LOGINPAGE + '?unAuth=true' || '';
+      window.location.href = document.baseURI + "?unAuth=true";
     }
 
     return response?.data;
@@ -124,8 +118,7 @@ export const authenticateUser = async ({
     if (error.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href =
-        process.env.NEXT_PUBLIC_LOGINPAGE + '?unAuth=true' || '';
+      window.location.href = document.baseURI + "?unAuth=true";
     }
     console.error('error in login', error);
     // throw error;
@@ -150,8 +143,7 @@ export const fetchTenantData = async ({
     if (response.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href =
-        process.env.NEXT_PUBLIC_LOGINPAGE + '?unAuth=true' || '';
+      window.location.href = document.baseURI + "?unAuth=true";
     }
 
     return response?.data;
@@ -159,8 +151,7 @@ export const fetchTenantData = async ({
     if (error.status == 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href =
-        process.env.NEXT_PUBLIC_LOGINPAGE + '?unAuth=true' || '';
+      window.location.href = document.baseURI + "?unAuth=true";
     }
     console.error('Error fetching tenant data:', error);
     return error;
@@ -236,8 +227,7 @@ export const schemaRead = async (): Promise<any> => {
     if (response.status === 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href =
-        process.env.NEXT_PUBLIC_LOGINPAGE + '?unAuth=true' || '';
+      window.location.href = document.baseURI + "?unAuth=true";
     }
 
     return response?.data;
@@ -245,8 +235,7 @@ export const schemaRead = async (): Promise<any> => {
     if (error?.response?.status === 401) {
       localStorage.removeItem('accToken');
       localStorage.clear();
-      window.location.href =
-        process.env.NEXT_PUBLIC_LOGINPAGE + '?unAuth=true' || '';
+      window.location.href = document.baseURI + "?unAuth=true";
     }
     console.error('error in schemaRead', error);
     return error;
