@@ -23,6 +23,7 @@ import {
   authenticateLoginUser,
   fetchTenantData,
   signin,
+  fetchBranding,
 } from '../services/LoginService';
 import AppConst from '../utils/AppConst/AppConst';
 export default function Login() {
@@ -58,8 +59,9 @@ export default function Login() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-
+      const origin = window.location.origin;
       const parts = hostname.split('.');
+      localStorage.setItem('origin', origin);
 
       const skipList = [
         'app',
@@ -83,24 +85,23 @@ export default function Login() {
         return name.endsWith(suffix) ? name.replace(suffix, '') : name;
       }, domainPart);
 
-      // Step 3: Map or format display name
-      const displayName = formatDisplayName(coreDomain);
+      fetchBranding(coreDomain).then((brandingData) => {
+        if (brandingData) {
+          console.log('Branding:', brandingData?.result);
+          const tenantCode = brandingData?.result?.code;
+          // const tenantCode = 'shikshalokam';
+          localStorage.setItem('tenantCode', tenantCode);
+        }
+      });
+      const displayName = localStorage.getItem('tenantCode');
 
-      setDisplayName(displayName);
       if (coreDomain === 'shikshagrah') {
         coreDomain = 'shikshagraha';
       }
-      localStorage.setItem('origin', coreDomain);
+      console.log('tenantCode', displayName);
+      // localStorage.setItem('origin', coreDomain);
     }
   }, []);
-  const formatDisplayName = (domain: string): string => {
-    // Custom rules per domain (if needed)
-    if (domain === 'shikshagraha') return 'Shikshagraha';
-    if (domain === 'shikshalokam') return 'Shikshalokam';
-    if (domain === 'shikshagrah') return 'Shikshagraha';
-    // Default: Capitalize first letter
-    return domain.charAt(0).toUpperCase() + domain.slice(1);
-  };
 
   const handleChange =
     (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -263,14 +264,19 @@ export default function Login() {
           style={{ width: '100%' }}
           onSubmit={(e) => {
             e.preventDefault();
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-              if (!loginClickedRef.current) return;
-              // // Only submit if the submit button was clearly clicked
-              // const isActualSubmit =
-              //   e.nativeEvent.submitter?.className?.includes('MuiButton-root');
-              // if (!isActualSubmit) return;
+
+            const isStandalone = window.matchMedia(
+              '(display-mode: standalone)'
+            ).matches;
+
+            // Allow submit only if user clicked login explicitly
+            if (isStandalone && !loginClickedRef.current) {
+              return;
             }
+
+            // Reset click flag after submission
             loginClickedRef.current = false;
+
             handleButtonClick();
           }}
           onInput={(e) => {
@@ -309,7 +315,7 @@ export default function Login() {
             <Box
               component="img"
               src={
-                displayName === 'Shikshalokam'
+                displayName == 'shikshalokam'
                   ? '/assets/images/SG_Logo.png'
                   : '/assets/images/SG_Logo.jpg'
               }
@@ -359,9 +365,9 @@ export default function Login() {
                 ? 'Password must be at least 8 characters long, include numerals, uppercase, lowercase, and special characters.'
                 : ''
             }
-            autoComplete="off"
+            autoComplete="new-password"
             inputProps={{
-              autoComplete: 'off',
+              autoComplete: 'new-password',
               name: 'login-password',
               readOnly: readOnly,
               onFocus: () => setReadOnly(false),
@@ -426,7 +432,10 @@ export default function Login() {
                 },
                 width: { xs: '50%', sm: '50%' },
               }}
-              onClick={() => (loginClickedRef.current = true)}
+              onClick={() => {
+                loginClickedRef.current = true;
+                // Allow submit to proceed
+              }}
             >
               Login
             </Button>

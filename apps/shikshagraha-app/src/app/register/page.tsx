@@ -16,6 +16,7 @@ import {
   fetchRoleData,
   getSubroles,
   schemaRead,
+  fetchBranding,
 } from '../../services/LoginService';
 import { useRouter } from 'next/navigation';
 
@@ -38,8 +39,9 @@ export default function Register() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
-
+      const origin = window.location.origin;
       const parts = hostname.split('.');
+      localStorage.setItem('origin', origin);
 
       const skipList = [
         'app',
@@ -64,23 +66,45 @@ export default function Register() {
       }, domainPart);
 
       // Step 3: Map or format display name
-      const displayName = formatDisplayName(coreDomain);
+
+      fetchBranding(coreDomain).then((brandingData) => {
+        if (brandingData) {
+          console.log('Branding:', brandingData?.result);
+          const tenantCode = brandingData?.result?.code;
+          //  const tenantCode = 'shikshalokam';
+          localStorage.setItem('tenantCode', tenantCode);
+        }
+      });
+
+      const displayName = toPascalCase(
+        localStorage.getItem('tenantCode') ?? ''
+      );
+console.log('displayName', displayName)
+      setDisplayName(displayName);
+
+      setDisplayName(displayName ? displayName : '');
       if (coreDomain === 'shikshagrah') {
         coreDomain = 'shikshagraha';
       }
-      setDisplayName(displayName);
-      localStorage.setItem('origin', coreDomain);
+      // localStorage.setItem('origin', coreDomain);
     }
   }, []);
-
-  const formatDisplayName = (domain: string): string => {
-    // Custom rules per domain (if needed)
-    if (domain === 'shikshagraha') return 'Shikshagraha';
-    if (domain === 'shikshalokam') return 'Shikshalokam';
-    if (domain === 'shikshagrah') return 'Shikshagraha';
-    // Default: Capitalize first letter
-    return domain.charAt(0).toUpperCase() + domain.slice(1);
+  const toPascalCase = (str: string): string => {
+    return str
+      .toLowerCase()
+      .replace(/(^\w|[^a-zA-Z0-9]+(\w))/g, (_, first, second) =>
+        (first || second).toUpperCase()
+      );
   };
+
+  // const formatDisplayName = (domain: string): string => {
+  //   // Custom rules per domain (if needed)
+  //   if (domain === 'shikshagraha') return 'Shikshagraha';
+  //   if (domain === 'shikshalokam') return 'Shikshalokam';
+  //   if (domain === 'shikshagrah') return 'Shikshagraha';
+  //   // Default: Capitalize first letter
+  //   return domain.charAt(0).toUpperCase() + domain.slice(1);
+  // };
 
   useEffect(() => {
     const fetchSchema = async () => {
@@ -106,11 +130,15 @@ export default function Register() {
         if (selectedRoleObj) {
           const subrolesResponse = await getSubroles(selectedRoleObj._id);
           subrolesData = subrolesResponse.result ?? [];
-          setSubRoles(subrolesData);
+          // setSubRoles(subrolesData);
         }
 
         const { schema, uiSchema, fieldNameToFieldIdMapping } =
           generateRJSFSchema(fields, selectedRoleObj, rolesData, subrolesData);
+        if (subrolesData?.length === 0) {
+          delete schema.properties?.['Sub-Role'];
+          delete uiSchema?.['Sub-Role'];
+        }
 
         console.log('schema', schema);
         const registrationCodeConfig = meta.registration_code;
@@ -292,9 +320,10 @@ export default function Register() {
                   SubmitaFunction={handleSubmit}
                   hideSubmit={false}
                   onChange={({ formData }) => {
-                    if (formData.Role) {
-                      setFormData((prev) => ({ ...prev, 'Sub-Role': [] }));
-                    }
+                    // if (formData.Role) {
+                    //   setFormData((prev) => ({ ...prev, 'Sub-Role': [] }));
+                    // }
+                    setFormData(formData);
                   }}
                   fieldIdMapping={fieldNameToFieldIdMapping}
                 />
