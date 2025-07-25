@@ -99,6 +99,7 @@ const DynamicForm = ({
   );
   const [otpDisabled, setOtpDisabled] = useState(false);
   const [otpDisabledMessage, setOtpDisabledMessage] = useState('');
+  const [tooManyRequests, setTooManyRequests] = useState(false);
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -162,7 +163,7 @@ const DynamicForm = ({
   const checkOtpAttempts = () => {
     const now = Date.now();
     const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
-  
+
     // Reset attempts if more than 10 minutes have passed since last attempt
     if (lastOtpAttemptTime && now - lastOtpAttemptTime > tenMinutes) {
       setOtpAttempts(0);
@@ -171,15 +172,21 @@ const DynamicForm = ({
       setOtpDisabledMessage('');
       return true;
     }
-  
+
     // Check if user has exceeded attempts
     if (otpAttempts >= 3) {
       setOtpDisabled(true);
-      const timeLeft = Math.ceil((tenMinutes - (now - (lastOtpAttemptTime || now))) / (60 * 1000));
-      setOtpDisabledMessage(`You have reached the maximum number of OTP requests. Please try again in ${Math.ceil(timeLeft)} minutes.`);
+      const timeLeft = Math.ceil(
+        (tenMinutes - (now - (lastOtpAttemptTime || now))) / (60 * 1000)
+      );
+      setOtpDisabledMessage(
+        `You have reached the maximum number of OTP requests. Please try again in ${Math.ceil(
+          timeLeft
+        )} minutes.`
+      );
       return false;
     }
-  
+
     return true;
   };
   //custom validation on formData for learner fields hide on dob
@@ -268,6 +275,31 @@ const DynamicForm = ({
 
       setFormSchema(updatedFormSchema);
       setFormUiSchema(updatedFormUiSchema);
+    }
+
+    if (formData?.udise === '' || formData?.Udise === '') {
+      setFieldErrors((prev) => ({
+        ...prev,
+        udise: true,
+        Udise: true,
+      }));
+      setFormErrors((prev) => ({
+        ...prev,
+        udise: ['UDISE code is required'],
+        Udise: ['UDISE code is required'],
+      }));
+    } else if (formData?.udise || formData?.Udise) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        udise: false,
+        Udise: false,
+      }));
+      setFormErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.udise;
+        delete newErrors.Udise;
+        return newErrors;
+      });
     }
     // if (formData?.email && formUiSchema?.mobile) {
     //   setFormUiSchema((prev) => ({
@@ -982,10 +1014,31 @@ const DynamicForm = ({
 
       const prevRole = prevFormData.current?.Role;
       const currentRole = formData?.Role;
-      console.log('currentRole', currentRole);
+      const prevUdise =
+        prevFormData.current?.udise || prevFormData.current?.Udise;
+      const currentUdise = formData?.Udise;
+      console.log('currentUdise', currentUdise);
       // Create a new form data object
       let newFormData = { ...formData };
-
+      if (currentUdise === undefined) {
+        formData.Udise = '';
+        formData.udise = '';
+        formData.State = { _id: '', name: '', externalId: '' };
+        formData.District = { _id: '', name: '', externalId: '' };
+        formData.Block = { _id: '', name: '', externalId: '' };
+        formData.Cluster = { _id: '', name: '', externalId: '' };
+        formData.School = { _id: '', name: '', externalId: '' };
+        newFormData = {
+          ...newFormData,
+          Udise: '',
+          udise: '',
+          State: '',
+          District: '',
+          Block: '',
+          Cluster: '',
+          School: '',
+        };
+      }
       // Check if role changed and clear sub-roles if it did
       if (currentRole && currentRole !== prevRole) {
         newFormData = {
@@ -1400,54 +1453,66 @@ const DynamicForm = ({
       ...(hasMobile && { phone: formData.mobile.trim() }),
       ...(hasMobile && { phone_code: '+91' }),
       password: formData.password,
-      // registration_code: 'blr',
-      registration_code: formData.registration_code.externalId, // Using default value as per your curl example
+      registration_code: 'blr',
+      // registration_code: formData.registration_code.externalId, // Using default value as per your curl example
     };
 
     console.log('1331 payload', otpPayload);
-    try{
+    try {
+      const registrationResponse = await sendOtp(otpPayload);
+      setOtpAttempts((prev) => prev + 1);
+      setLastOtpAttemptTime(Date.now());
+      console.log('registrationResponse', registrationResponse.message);
 
-  
-    const registrationResponse = await sendOtp(otpPayload);
-    setOtpAttempts(prev => prev + 1);
-    setLastOtpAttemptTime(Date.now());
-    if (registrationResponse?.responseCode === 'OK') {
-      setRequestData({
-        usercreate: {
-          request: {
-            userName: formData.username,
+      if (registrationResponse?.responseCode === 'OK') {
+        setRequestData({
+          usercreate: {
+            request: {
+              userName: formData.username,
+            },
           },
-        },
-      });
-      // setErrorMessage(registrationResponse.message);
-      // setAlertSeverity('success');
-      setIsOpenOTP(true);
-    } else {
-      if (registrationResponse?.message === 'INVALID_ORG_registration_code') {
-        setShowError(true);
-        setErrorButton(true);
-        setAlertSeverity('error');
-        setErrorMessage('Invalid Organisation');
-        setTimeout(() => {
-          setShowError(false);
-        }, 8000);
+        });
+        // setErrorMessage(registrationResponse.message);
+        // setAlertSeverity('success');
+        setIsOpenOTP(true);
       } else {
-        setShowError(true);
-        setErrorButton(true);
-        setAlertSeverity('error');
-        setErrorMessage(registrationResponse.message);
-        setTimeout(() => {
-          setShowError(false);
-        }, 8000);
+        if (registrationResponse?.message === 'INVALID_ORG_registration_code') {
+          setShowError(true);
+          setErrorButton(true);
+          setAlertSeverity('error');
+          setErrorMessage('Invalid Organisation');
+          setTimeout(() => {
+            setShowError(false);
+          }, 8000);
+        } else if (
+          registrationResponse?.message ===
+          'Too many requests. Please try again later.'
+        ) {
+          setTooManyRequests(true);
+          setShowError(true);
+          setErrorButton(true);
+          setAlertSeverity('error');
+          setErrorMessage(registrationResponse.message);
+          setTimeout(() => {
+            setShowError(false);
+          }, 8000);
+          return;
+        } else {
+          setShowError(true);
+          setErrorButton(true);
+          setAlertSeverity('error');
+          setErrorMessage(registrationResponse.message);
+          setTimeout(() => {
+            setShowError(false);
+          }, 8000);
+        }
       }
+    } catch (error) {
+      // Update OTP attempt tracking even on failure
+      setOtpAttempts((prev) => prev + 1);
+      setLastOtpAttemptTime(Date.now());
+      // ... existing error handling ...
     }
-  } catch (error) {
-    // Update OTP attempt tracking even on failure
-    setOtpAttempts(prev => prev + 1);
-    setLastOtpAttemptTime(Date.now());
-    // ... existing error handling ...
-  }
-   
   };
   const handleRegister = async (otp) => {
     console.log('formData', formData);
@@ -1717,6 +1782,7 @@ const DynamicForm = ({
               disabled={
                 otpDisabled ||
                 errorButton ||
+                tooManyRequests ||
                 !formData?.firstName ||
                 !formData?.password ||
                 (!formData?.email && !formData?.mobile) ||
