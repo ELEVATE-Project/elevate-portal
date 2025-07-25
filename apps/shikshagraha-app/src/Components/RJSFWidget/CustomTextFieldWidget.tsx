@@ -275,13 +275,27 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           sx: {
             '& .MuiInputBase-input': {
               padding: '10px 12px',
-              fontSize: '12px',
+              fontSize: '16px !important', // Ensure 16px font size to prevent iOS zoom
               color: readonly ? '#000000' : undefined,
               backgroundColor: readonly ? '#f5f5f5' : undefined,
               WebkitTextFillColor: readonly ? '#000000' : undefined,
+              // iOS Safari zoom prevention
+              transform: 'translateZ(0)',
+              WebkitTransform: 'translateZ(0)',
+              WebkitAppearance: 'none',
+              borderRadius: '0',
+              // Prevent zoom on focus
+              '@media screen and (-webkit-min-device-pixel-ratio: 0)': {
+                fontSize: '16px !important',
+              },
             },
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: readonly ? 'rgba(0, 0, 0, 0.23)' : undefined,
+            },
+            // Additional iOS fixes
+            '& .MuiInputBase-root': {
+              WebkitTapHighlightColor: 'transparent',
+              WebkitTouchCallout: 'none',
             },
           },
           endAdornment: (isPasswordField || isConfirmPasswordField) && (
