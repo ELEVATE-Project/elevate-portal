@@ -99,6 +99,16 @@ const DynamicForm = ({
   );
   const [otpDisabled, setOtpDisabled] = useState(false);
   const [otpDisabledMessage, setOtpDisabledMessage] = useState('');
+  const [tooManyRequests, setTooManyRequests] = useState(false);
+  const [shortCooldown, setShortCooldown] = useState(false);
+  const [shortCooldownTimer, setShortCooldownTimer] = useState(0);
+  const [cooldownExpiry, setCooldownExpiry] = useState<number | null>(null);
+  const [rateLimitExpiry, setRateLimitExpiry] = useState<number | null>(null);
+  const [isRateLimited, setIsRateLimited] = useState(false);
+  const [isErrorButtonFromRateLimit, setIsErrorButtonFromRateLimit] =
+    useState(false);
+  const [countdownUpdate, setCountdownUpdate] = useState(0);
+  const [currentTime, setCurrentTime] = useState(Date.now());
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -110,24 +120,16 @@ const DynamicForm = ({
     const config = schema.meta?.registrationCodeConfig || {
       name: schema.meta?.registrationCodeConfig,
     };
-    console.log('schema true', schema);
     const isShikshalokam = schema.meta?.isShikshalokam;
     // const isShikshalokam = true;
-    console.log('isShikshalokam', isShikshalokam);
-    console.log('Config:', config);
-    console.log('FormData:', formData);
-    console.log('FormData keys:', Object.keys(formData));
     const field = formData[config.name];
-    console.log('Field value:', field);
     formData['registration_code'] = formData[config.name];
     if (isShikshalokam) {
       formData.registration_code = formData['Registration Code'];
       formData['Registration Code'] = formData.registration_code;
-      console.log('Registration11 Code:', formData.registration_code);
       formData.registration_code = {
         externalId: formData['Registration Code'],
       };
-      console.log(formData.registration_code.externalId); // 'bbb'
 
       if (!formData.registration_code) {
         throw new Error('Registration code is required for shikshalokam');
@@ -161,30 +163,77 @@ const DynamicForm = ({
   };
   const checkOtpAttempts = () => {
     const now = Date.now();
-    const tenMinutes = 10 * 60 * 1000; // 10 minutes in milliseconds
-  
-    // Reset attempts if more than 10 minutes have passed since last attempt
-    if (lastOtpAttemptTime && now - lastOtpAttemptTime > tenMinutes) {
+    const cooldownPeriod = 2 * 60 * 1000; // 2 minutes in milliseconds
+
+    // Reset attempts if more than 2 minutes have passed since last attempt
+    if (rateLimitExpiry && now > rateLimitExpiry) {
       setOtpAttempts(0);
-      setLastOtpAttemptTime(null);
+      setRateLimitExpiry(null);
+      setTooManyRequests(false);
+      setIsRateLimited(false);
       setOtpDisabled(false);
       setOtpDisabledMessage('');
+      // Reset errorButton only if it was set due to rate limiting
+      if (isErrorButtonFromRateLimit) {
+        setErrorButton(false);
+        setIsErrorButtonFromRateLimit(false);
+      }
       return true;
     }
-  
+
     // Check if user has exceeded attempts
     if (otpAttempts >= 3) {
-      setOtpDisabled(true);
-      const timeLeft = Math.ceil((tenMinutes - (now - (lastOtpAttemptTime || now))) / (60 * 1000));
-      setOtpDisabledMessage(`You have reached the maximum number of OTP requests. Please try again in ${Math.ceil(timeLeft)} minutes.`);
+      setTooManyRequests(true);
+      setIsRateLimited(true);
+      setRateLimitExpiry(now + cooldownPeriod);
       return false;
     }
-  
+
     return true;
   };
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (rateLimitExpiry && Date.now() > rateLimitExpiry) {
+        setOtpAttempts(0);
+        setRateLimitExpiry(null);
+        setTooManyRequests(false);
+        setIsRateLimited(false);
+        setOtpDisabled(false);
+        setOtpDisabledMessage('');
+        // Reset errorButton only if it was set due to rate limiting
+        if (isErrorButtonFromRateLimit) {
+          setErrorButton(false);
+          setIsErrorButtonFromRateLimit(false);
+        }
+      }
+    }, 1000); // Check every second
+
+    return () => clearInterval(timer);
+  }, [rateLimitExpiry, isErrorButtonFromRateLimit]);
+
+  // Update countdown every second when rate limiting is active
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+
+    if (isRateLimited && rateLimitExpiry) {
+      timer = setInterval(() => {
+        setCountdownUpdate((prev) => prev + 1);
+        setCurrentTime(Date.now());
+      }, 1000);
+    }
+
+    return () => {
+      if (timer) {
+        clearInterval(timer);
+      }
+    };
+  }, [isRateLimited, rateLimitExpiry]);
   //custom validation on formData for learner fields hide on dob
   useEffect(() => {
-    setErrorButton(false);
+    // Remove this line that was clearing error state on every formData change
+    // setErrorButton(false);
+
     if (formData?.dob) {
       let age = calculateAgeFromDate(formData?.dob);
       let oldFormSchema = formSchema;
@@ -268,6 +317,31 @@ const DynamicForm = ({
 
       setFormSchema(updatedFormSchema);
       setFormUiSchema(updatedFormUiSchema);
+    }
+
+    if (formData?.udise === '' || formData?.Udise === '') {
+      setFieldErrors((prev) => ({
+        ...prev,
+        udise: true,
+        Udise: true,
+      }));
+      setFormErrors((prev) => ({
+        ...prev,
+        udise: ['UDISE code is required'],
+        Udise: ['UDISE code is required'],
+      }));
+    } else if (formData?.udise || formData?.Udise) {
+      setFieldErrors((prev) => ({
+        ...prev,
+        udise: false,
+        Udise: false,
+      }));
+      setFormErrors((prev) => {
+        const newErrors = { ...prev };
+        delete newErrors.udise;
+        delete newErrors.Udise;
+        return newErrors;
+      });
     }
     // if (formData?.email && formUiSchema?.mobile) {
     //   setFormUiSchema((prev) => ({
@@ -982,10 +1056,30 @@ const DynamicForm = ({
 
       const prevRole = prevFormData.current?.Role;
       const currentRole = formData?.Role;
-      console.log('currentRole', currentRole);
+      const prevUdise =
+        prevFormData.current?.udise || prevFormData.current?.Udise;
+      const currentUdise = formData?.Udise;
       // Create a new form data object
       let newFormData = { ...formData };
-
+      if (currentUdise === undefined) {
+        formData.Udise = '';
+        formData.udise = '';
+        formData.State = { _id: '', name: '', externalId: '' };
+        formData.District = { _id: '', name: '', externalId: '' };
+        formData.Block = { _id: '', name: '', externalId: '' };
+        formData.Cluster = { _id: '', name: '', externalId: '' };
+        formData.School = { _id: '', name: '', externalId: '' };
+        newFormData = {
+          ...newFormData,
+          Udise: '',
+          udise: '',
+          State: '',
+          District: '',
+          Block: '',
+          Cluster: '',
+          School: '',
+        };
+      }
       // Check if role changed and clear sub-roles if it did
       if (currentRole && currentRole !== prevRole) {
         newFormData = {
@@ -993,7 +1087,7 @@ const DynamicForm = ({
           'Sub-Role': undefined,
         };
         setSubroles([]);
-        setFormData(newFormData);
+        // Don't call setFormData here, let it be called once at the end
         setFormUiSchema((prev) => ({
           ...prev,
           'Sub-Role': {
@@ -1036,10 +1130,6 @@ const DynamicForm = ({
         checkUsernameAvailability(formData.Username);
       }
 
-      // Update form data
-      setFormData(newFormData);
-      prevFormData.current = newFormData;
-
       // Handle email/mobile validation
       if (newFormData.email && newFormData.mobile) {
         setShowEmailMobileError('');
@@ -1054,7 +1144,11 @@ const DynamicForm = ({
       } else {
         setShowEmailMobileError('');
       }
+
+      // Update form data only once at the end
       setFormData(newFormData);
+      prevFormData.current = newFormData;
+
       // Call the onChange prop if it exists
       if (onChange) {
         onChange({ formData: newFormData, errors });
@@ -1249,6 +1343,7 @@ const DynamicForm = ({
   }, []);
   const handleFetchData = React.useCallback((response: any) => {
     // Example: Update specific fields from API response
+
     setFormData((prev) => ({
       ...prev,
       State: response.state ?? { _id: '', name: '', externalId: '' },
@@ -1262,15 +1357,13 @@ const DynamicForm = ({
   const MemoizedUdiaseWithButton = React.memo(({ onFetchData, ...props }) => (
     <UdiaseWithButton {...props} onFetchData={onFetchData} />
   ));
-  const subroleOptions = React.useMemo(() => {
-    return subroles?.map((subrole) => ({
-      value: subrole.value,
-      label: subrole.label,
-      // Include any additional data needed
-      ...(subrole._originalData && { _originalData: subrole._originalData }),
-    }));
+  const subrolesRef = useRef<any[]>([]);
+
+  // Update ref whenever subroles change
+  useEffect(() => {
+    subrolesRef.current = subroles;
   }, [subroles]);
-  console.log('formSchema', formData);
+
   const widgets = React.useMemo(
     () => ({
       CustomMultiSelectWidget: (props) => (
@@ -1278,7 +1371,7 @@ const DynamicForm = ({
           {...props}
           options={{
             ...props.options,
-            enumOptions: subroles,
+            enumOptions: subrolesRef.current,
           }}
         />
       ),
@@ -1331,7 +1424,7 @@ const DynamicForm = ({
       ),
       CustomEmailWidget,
     }),
-    [handleFetchData, subroles]
+    [handleFetchData, isRateLimited, rateLimitExpiry, countdownUpdate] // Removed subroles from dependency
   );
   const validateForm = () => {
     const isValid = !!(formData.email || formData.mobile);
@@ -1387,7 +1480,6 @@ const DynamicForm = ({
     // const userName = formData.firstName;
     const registrationCode = getRegistrationCode(formData);
 
-    console.log('registrationCode', registrationCode);
     let otpPayload;
     const hasMobile = !!formData.mobile?.trim(); // Checks if user entered any mobile number
     const isValidMobile = /^[6-9]\d{9}$/.test(formData.mobile?.trim() ?? '');
@@ -1404,53 +1496,68 @@ const DynamicForm = ({
       registration_code: formData.registration_code.externalId, // Using default value as per your curl example
     };
 
-    console.log('1331 payload', otpPayload);
-    try{
+    try {
+      const registrationResponse = await sendOtp(otpPayload);
+      setOtpAttempts((prev) => prev + 1);
+      setLastOtpAttemptTime(Date.now());
+      console.log('registrationResponse', registrationResponse.message);
 
-  
-    const registrationResponse = await sendOtp(otpPayload);
-    setOtpAttempts(prev => prev + 1);
-    setLastOtpAttemptTime(Date.now());
-    if (registrationResponse?.responseCode === 'OK') {
-      setRequestData({
-        usercreate: {
-          request: {
-            userName: formData.username,
+      if (registrationResponse?.responseCode === 'OK') {
+        setRequestData({
+          usercreate: {
+            request: {
+              userName: formData.username,
+            },
           },
-        },
-      });
-      // setErrorMessage(registrationResponse.message);
-      // setAlertSeverity('success');
-      setIsOpenOTP(true);
-    } else {
-      if (registrationResponse?.message === 'INVALID_ORG_registration_code') {
-        setShowError(true);
-        setErrorButton(true);
-        setAlertSeverity('error');
-        setErrorMessage('Invalid Organisation');
-        setTimeout(() => {
-          setShowError(false);
-        }, 8000);
+        });
+        // setErrorMessage(registrationResponse.message);
+        // setAlertSeverity('success');
+        setIsOpenOTP(true);
       } else {
-        setShowError(true);
-        setErrorButton(true);
-        setAlertSeverity('error');
-        setErrorMessage(registrationResponse.message);
-        setTimeout(() => {
-          setShowError(false);
-        }, 8000);
+        if (registrationResponse?.message === 'INVALID_ORG_registration_code') {
+          setShowError(true);
+          setErrorButton(true);
+          setIsErrorButtonFromRateLimit(false);
+          setAlertSeverity('error');
+          setErrorMessage('Invalid Organisation');
+          setTimeout(() => {
+            setShowError(false);
+          }, 8000);
+        } else if (
+          registrationResponse?.message ===
+          'Too many requests. Please try again later.'
+        ) {
+          setTooManyRequests(true);
+          setIsRateLimited(true);
+          setRateLimitExpiry(Date.now() + 2 * 60 * 1000); // 2 minutes from now
+          setShowError(true);
+          setErrorButton(true);
+          setIsErrorButtonFromRateLimit(true);
+          setAlertSeverity('error');
+          setErrorMessage(registrationResponse.message);
+          setTimeout(() => {
+            setShowError(false);
+          }, 8000);
+          return;
+        } else {
+          setShowError(true);
+          setErrorButton(true);
+          setIsErrorButtonFromRateLimit(false);
+          setAlertSeverity('error');
+          setErrorMessage(registrationResponse.message);
+          setTimeout(() => {
+            setShowError(false);
+          }, 8000);
+        }
       }
+    } catch (error) {
+      // Update OTP attempt tracking even on failure
+      setOtpAttempts((prev) => prev + 1);
+      setLastOtpAttemptTime(Date.now());
+      // ... existing error handling ...
     }
-  } catch (error) {
-    // Update OTP attempt tracking even on failure
-    setOtpAttempts(prev => prev + 1);
-    setLastOtpAttemptTime(Date.now());
-    // ... existing error handling ...
-  }
-   
   };
   const handleRegister = async (otp) => {
-    console.log('formData', formData);
     if (!formData.email && !formData.mobile) {
       setShowEmailMobileError(
         'Please provide either an email or a mobile number.'
@@ -1475,7 +1582,6 @@ const DynamicForm = ({
     };
     // const userName = formData.firstName;
     const isMobile = /^[6-9]\d{9}$/.test(formData.mobile);
-    console.log(formData.Roles, 'roles');
     const registrationCode = getRegistrationCode(formData);
     console.log('registrationCode create', registrationCode);
     const payload = {
@@ -1562,8 +1668,6 @@ const DynamicForm = ({
           token: response?.result?.access_token,
         });
         localStorage.setItem('firstname', tenantResponse?.result?.firstName);
-        console.log('reasssss', tenantResponse);
-        console.log('User status:', tenantResponse?.result?.status);
 
         if (tenantResponse?.result?.status === 'archived') {
           setShowError(true);
@@ -1659,16 +1763,6 @@ const DynamicForm = ({
       (!isUsernameValid && formData.Username)
     );
   };
-  console.log('form', formData, validator);
-  console.log({
-    errorButton,
-    firstName: formData?.firstName,
-    password: formData?.password,
-    confirm: formData?.confirm_password,
-    emailOrMobile: formData?.email || formData?.mobile,
-    subRoleValid: formData?.['Sub-Role'] && formData['Sub-Role'].length > 0,
-    validationErrors: hasValidationErrors(),
-  });
 
   return (
     <>
@@ -1715,7 +1809,7 @@ const DynamicForm = ({
             <Button
               onClick={handleSendOtp}
               disabled={
-                otpDisabled ||
+                isRateLimited ||
                 errorButton ||
                 !formData?.firstName ||
                 !formData?.password ||
@@ -1756,7 +1850,26 @@ const DynamicForm = ({
               }}
             >
               Send OTP
+              {/* {isRateLimited && rateLimitExpiry
+                ? `Try Again in ${Math.ceil(
+                    (rateLimitExpiry - Date.now()) / 1000
+                  )}s`
+                : 'Send OTP'} */}
             </Button>
+            {isRateLimited && rateLimitExpiry && (
+              <Typography
+                variant="body2"
+                color="error"
+                sx={{ mt: 1, textAlign: 'center' }}
+              >
+                Too many requests. Please wait{' '}
+                {Math.floor((rateLimitExpiry - currentTime) / 60000)}:
+                {Math.floor(((rateLimitExpiry - currentTime) % 60000) / 1000)
+                  .toString()
+                  .padStart(2, '0')}{' '}
+                before trying again.
+              </Typography>
+            )}
           </Box>
         </Form>
       ) : (
