@@ -36,61 +36,61 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <style jsx global>{`
-          /* Prevent iOS Safari zoom on input focus */
-          input,
-          select,
-          textarea {
-            font-size: 16px !important;
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
-          }
-
-          /* Prevent viewport resizing on iOS */
-          body {
-            -webkit-text-size-adjust: 100%;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-          }
-
-          /* Allow text selection in form fields */
-          input,
-          textarea,
-          select {
-            -webkit-user-select: text;
-            user-select: text;
-          }
-
-          /* Prevent iOS Safari from zooming on focus */
-          @media screen and (-webkit-min-device-pixel-ratio: 0) {
-            select,
-            textarea,
-            input {
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+            /* Prevent iOS Safari zoom on input focus */
+            input, select, textarea {
               font-size: 16px !important;
+              transform: translateZ(0);
+              -webkit-transform: translateZ(0);
             }
-          }
-
-          /* Additional iOS Safari fixes */
-          * {
-            -webkit-tap-highlight-color: transparent;
-          }
-
-          /* Prevent zoom on input focus for iOS */
-          input[type='text'],
-          input[type='email'],
-          input[type='password'],
-          input[type='number'],
-          input[type='tel'],
-          input[type='url'],
-          textarea,
-          select {
-            font-size: 16px !important;
-            -webkit-appearance: none;
-            border-radius: 0;
-          }
-        `}</style>
+            
+            /* Prevent viewport resizing on iOS */
+            body {
+              -webkit-text-size-adjust: 100%;
+              -webkit-tap-highlight-color: transparent;
+              -webkit-touch-callout: none;
+              -webkit-user-select: none;
+              user-select: none;
+            }
+            
+            /* Allow text selection in form fields */
+            input, textarea, select {
+              -webkit-user-select: text;
+              user-select: text;
+            }
+            
+            /* Prevent iOS Safari from zooming on focus */
+            @media screen and (-webkit-min-device-pixel-ratio: 0) {
+              select,
+              textarea,
+              input {
+                font-size: 16px !important;
+              }
+            }
+            
+            /* Additional iOS Safari fixes */
+            * {
+              -webkit-tap-highlight-color: transparent;
+            }
+            
+            /* Prevent zoom on input focus for iOS */
+            input[type="text"],
+            input[type="email"],
+            input[type="password"],
+            input[type="number"],
+            input[type="tel"],
+            input[type="url"],
+            textarea,
+            select {
+              font-size: 16px !important;
+              -webkit-appearance: none;
+              border-radius: 0;
+            }
+          `,
+          }}
+        />
       </Head>
       <body>{children}</body>
     </html>
