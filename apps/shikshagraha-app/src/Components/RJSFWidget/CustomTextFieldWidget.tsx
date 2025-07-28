@@ -112,12 +112,20 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     }
   }, [formData.password]);
   const shouldShowHelperText = () => {
+    // Always show if there are validation errors
+    if (displayErrors.length > 0 || localError) {
+      return true;
+    }
+
     // Always show for non-email/mobile fields
     if (!isEmailField && !isMobileField) return true;
+
     // For email field - only show if mobile isn't entered
     if (isEmailField) return !formData.mobile || (value && localError);
+
     // For mobile field - only show if email isn't entered
     if (isMobileField) return !formData.email || (value && localError);
+
     return true;
   };
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -244,7 +252,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         onBlur={handleBlur}
         onFocus={handleFocus}
         placeholder={placeholder}
-        error={displayErrors.length > 0}
+        error={displayErrors.length > 0 || !!localError}
         helperText={
           shouldShowHelperText()
             ? localError || (displayErrors.length > 0 ? displayErrors[0] : '')
@@ -257,7 +265,10 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         }
         FormHelperTextProps={{
           sx: {
-            color: 'red',
+            color:
+              displayErrors.length > 0 || localError
+                ? 'error.main'
+                : 'text.secondary',
             fontSize: '11px',
             marginLeft: '0px',
           },

@@ -231,7 +231,9 @@ const DynamicForm = ({
   }, [isRateLimited, rateLimitExpiry]);
   //custom validation on formData for learner fields hide on dob
   useEffect(() => {
-    setErrorButton(false);
+    // Remove this line that was clearing error state on every formData change
+    // setErrorButton(false);
+
     if (formData?.dob) {
       let age = calculateAgeFromDate(formData?.dob);
       let oldFormSchema = formSchema;
@@ -1085,7 +1087,7 @@ const DynamicForm = ({
           'Sub-Role': undefined,
         };
         setSubroles([]);
-        setFormData(newFormData);
+        // Don't call setFormData here, let it be called once at the end
         setFormUiSchema((prev) => ({
           ...prev,
           'Sub-Role': {
@@ -1128,10 +1130,6 @@ const DynamicForm = ({
         checkUsernameAvailability(formData.Username);
       }
 
-      // Update form data
-      setFormData(newFormData);
-      prevFormData.current = newFormData;
-
       // Handle email/mobile validation
       if (newFormData.email && newFormData.mobile) {
         setShowEmailMobileError('');
@@ -1146,7 +1144,11 @@ const DynamicForm = ({
       } else {
         setShowEmailMobileError('');
       }
+
+      // Update form data only once at the end
       setFormData(newFormData);
+      prevFormData.current = newFormData;
+
       // Call the onChange prop if it exists
       if (onChange) {
         onChange({ formData: newFormData, errors });
@@ -1355,14 +1357,13 @@ const DynamicForm = ({
   const MemoizedUdiaseWithButton = React.memo(({ onFetchData, ...props }) => (
     <UdiaseWithButton {...props} onFetchData={onFetchData} />
   ));
-  const subroleOptions = React.useMemo(() => {
-    return subroles?.map((subrole) => ({
-      value: subrole.value,
-      label: subrole.label,
-      // Include any additional data needed
-      ...(subrole._originalData && { _originalData: subrole._originalData }),
-    }));
+  const subrolesRef = useRef<any[]>([]);
+
+  // Update ref whenever subroles change
+  useEffect(() => {
+    subrolesRef.current = subroles;
   }, [subroles]);
+
   const widgets = React.useMemo(
     () => ({
       CustomMultiSelectWidget: (props) => (
@@ -1370,7 +1371,7 @@ const DynamicForm = ({
           {...props}
           options={{
             ...props.options,
-            enumOptions: subroles,
+            enumOptions: subrolesRef.current,
           }}
         />
       ),
@@ -1423,7 +1424,7 @@ const DynamicForm = ({
       ),
       CustomEmailWidget,
     }),
-    [handleFetchData, subroles, isRateLimited, rateLimitExpiry, countdownUpdate]
+    [handleFetchData, isRateLimited, rateLimitExpiry, countdownUpdate] // Removed subroles from dependency
   );
   const validateForm = () => {
     const isValid = !!(formData.email || formData.mobile);
