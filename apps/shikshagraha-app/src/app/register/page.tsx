@@ -273,8 +273,11 @@ export default function Register() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            paddingLeft: { xs: '8px', sm: '16px' },
-            paddingRight: { xs: '8px', sm: '16px' },
+
+            paddingLeft: { xs: '4px', sm: '16px' },
+            paddingRight: { xs: '4px', sm: '16px' },
+            minWidth: 0, // Add this to ensure text truncation works
+
           }}
         >
           <Typography
@@ -288,7 +291,13 @@ export default function Register() {
                 md: '20px',
               },
               textAlign: 'center',
-              wordBreak: 'break-word',
+
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              width: '100%',
+              maxWidth: { xs: '200px', sm: '300px', md: '400px' },
+              margin: '0 auto',
               lineHeight: 1.2,
             }}
           >
