@@ -1,22 +1,34 @@
 import React, { useState, useEffect } from 'react';
-import { Box } from '@mui/material';
+import { Box,Fab } from '@mui/material';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import HomeIcon from '@mui/icons-material/Home';
 import DescriptionIcon from '@mui/icons-material/Description';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
+import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import { useRouter, usePathname } from 'next/navigation';
+
+const isMobile = () => {
+  return /iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent);
+};
+
 export const Footer: React.FC = () => {
   const [value, setValue] = useState(0);
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    setIsMobileDevice(isMobile());
+  }, []);
+
   // Map paths to their corresponding tab values
   const pathToValueMap = {
     '/home': 0,
     '/content': 1,
-    '/ml/project-downloads': 2,
-    '/profile': 3,
+    '/ml/project-downloads': 3,
+    '/profile': 4,
   };
   const updateTabValue = (currentPath: string) => {
     // Find the current value based on exact path matches first
@@ -95,10 +107,10 @@ export const Footer: React.FC = () => {
         case 1:
           handleNavigation('/content/content');
           break;
-        case 2:
+        case 3:
           handleNavigation('/ml/project-downloads');
           break;
-        case 3:
+        case 4:
           handleNavigation('/profile');
           break;
         default:
@@ -118,6 +130,33 @@ export const Footer: React.FC = () => {
         borderRadius: '25px 25px 0 0',
       }}
     >
+      {/* FAB Scanner Button */}
+      {isMobileDevice && (
+        <Fab
+          color="primary"
+          aria-label="scanner"
+          onClick={() => handleNavigation('/qr-scanner')}
+          sx={{
+            position: 'fixed',
+            bottom: 35,
+            left: '50%',
+            transform: 'translateX(-50%)',
+            backgroundColor: '#582E92',
+            color: '#fff',
+            zIndex: 20,
+            width: 64,
+            height: 64,
+            boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
+            '&:hover': {
+              backgroundColor: '#6b3ab6',
+            },
+          }}
+        >
+          <QrCodeScannerIcon sx={{ fontSize: '2rem' }} />
+        </Fab>
+      )}
+
+      {/* Bottom Navigation */}
       <BottomNavigation
         showLabels
         value={value}
@@ -132,6 +171,8 @@ export const Footer: React.FC = () => {
           },
           '& .MuiBottomNavigationAction-root': {
             color: 'black',
+            minWidth: 'auto',
+            paddingX: '12px',
           },
         }}
       >
@@ -161,6 +202,7 @@ export const Footer: React.FC = () => {
             />
           }
         />
+       { isMobileDevice  && (  <Box sx={{ width: 54 }} /> )}
         <BottomNavigationAction
           label="Downloads"
           icon={
