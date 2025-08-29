@@ -70,7 +70,7 @@ export default function Home() {
       }
       let rawHome = localStorage.getItem('HomeData')
       let home = rawHome ? JSON.parse(rawHome) : []
-      if(home){
+      if(home.length>0){
         setCardData(home)
         setLoading(false)
       }else{
