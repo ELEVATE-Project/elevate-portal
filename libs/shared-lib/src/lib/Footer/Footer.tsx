@@ -23,7 +23,8 @@ export const Footer: React.FC = () => {
     setIsMobileDevice(isMobile());
   }, []);
   const downloadsUrl =
-    process.env.NEXT_PUBLIC_DOWNLOADS_URL || '/ml/project-downloads';
+    process.env.NEXT_PUBLIC_DOWNLOADS_URL || '/observations/downloads';
+    console.log("downloadsURl",downloadsUrl)
   // Map paths to their corresponding tab values
   const prevPathRef = useRef<string>('');
   const pathToValueMap = {
@@ -33,23 +34,31 @@ export const Footer: React.FC = () => {
     '/profile': 4,
   };
   const updateTabValue = (currentPath: string) => {
+    console.log("currentPath",currentPath)
     // Find the current value based on exact path matches first
     const currentValue =
       pathToValueMap[currentPath as keyof typeof pathToValueMap];
+    console.log("path log",currentValue)
     if (currentValue !== undefined) {
+      console.log("if block")
       setValue(currentValue);
     } else {
+      console.log("else block 46")
       // Fallback to startsWith check for nested routes
       if (
         currentPath.startsWith('/content') ||
         currentPath?.startsWith('/player')
       ) {
+        console.log("52 line")
         setValue(1);
       } else if (currentPath.startsWith('/observations/downloads')) {
+        console.log("55 line")
         setValue(2);
       } else if (currentPath.startsWith('/profile')) {
+        console.log("58 line")
         setValue(3);
       } else if (currentPath === '/' || currentPath === '') {
+        console.log("61 line")
         // Default to home for root path
         setValue(0);
       }
@@ -109,6 +118,7 @@ export const Footer: React.FC = () => {
   };
 
   const handleChange = (_event: React.SyntheticEvent, newValue: number) => {
+    console.log("path",newValue)
     switch (newValue) {
       case 0:
         handleNavigation('/home');
@@ -116,10 +126,10 @@ export const Footer: React.FC = () => {
       case 1:
         handleNavigation('/content/content');
         break;
-      case 2:
+      case 3:
         handleNavigation(downloadsUrl);
         break;
-      case 3:
+      case 4:
         handleNavigation('/profile');
         break;
       default:
