@@ -71,9 +71,11 @@ export default function Home() {
       let rawHome = localStorage.getItem('HomeData')
       let home = rawHome ? JSON.parse(rawHome) : []
       if(home.length>0){
+        console.log("if block",home)
         setCardData(home)
         setLoading(false)
       }else{
+        console.log("else block")
         fetchConfig();
       }
     }
