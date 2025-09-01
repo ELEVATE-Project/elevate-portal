@@ -39,9 +39,7 @@ export const Footer: React.FC = () => {
       setValue(currentValue);
     } else {
       // Fallback to startsWith check for nested routes
-      if (
-        currentPath?.startsWith('/player')
-      ) {
+      if (currentPath?.startsWith('/player')) {
         setValue(1);
       } else if (currentPath.startsWith('/observations/downloads')) {
         setValue(2);
