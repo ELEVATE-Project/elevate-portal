@@ -123,7 +123,7 @@ const DynamicForm = ({
   };
   const getRegistrationCode = (formData) => {
     const regConfig = schema.meta?.registrationCodeConfig;
-
+    //registration code fix
     // Helper to resolve value across snake_case/camelCase variants
     const pickValue = (obj, key) => {
       if (!obj || typeof obj !== 'object') return undefined;
