@@ -92,6 +92,7 @@ export default function Login() {
             brandingData?.result?.logo ||
             brandingData?.result?.logoUrl ||
             brandingData?.result?.branding?.logo;
+          // const tenantCode = 'shikshalokam';
           localStorage.setItem('tenantCode', tenantCode);
           setDisplayName(tenantCode);
           // Determine logo dynamically; persist for next load
@@ -120,6 +121,9 @@ export default function Login() {
         if (TENANT_LOGOS[normalized]) {
           setLogoSrc((prev) => prev || TENANT_LOGOS[normalized]);
         }
+      }
+      if (coreDomain === 'shikshagrah') {
+        coreDomain = 'shikshagraha';
       }
       console.log('tenantCode', displayName);
       // localStorage.setItem('origin', coreDomain);

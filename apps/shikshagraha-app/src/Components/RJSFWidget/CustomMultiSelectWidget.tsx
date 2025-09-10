@@ -62,9 +62,7 @@ WidgetProps) => {
       }
     }
   };
-
   const shouldShrinkLabel = open || (Array.isArray(value) && value.length > 0);
-
   return (
     <FormControl
       fullWidth

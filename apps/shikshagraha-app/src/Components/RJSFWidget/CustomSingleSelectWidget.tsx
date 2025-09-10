@@ -72,9 +72,7 @@ const CustomSingleSelectWidget = ({
   const displayErrors = rawErrors.filter(
     (error) => !error.toLowerCase().includes('required')
   );
-
   const [open, setOpen] = useState(false);
-
   const handleChange = async (event: any) => {
     const selected = event.target.value;
     const selectedOption = enumOptions.find(
@@ -143,9 +141,7 @@ const CustomSingleSelectWidget = ({
   const shouldShowHelperText = () => {
     return getHelperText() !== '';
   };
-
   const shouldShrinkLabel = open || Boolean(value);
-
   return (
     <FormControl
       fullWidth

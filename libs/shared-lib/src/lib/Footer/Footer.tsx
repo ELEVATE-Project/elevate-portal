@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Box } from '@mui/material';
+import { Box, Fab } from '@mui/material';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import HomeIcon from '@mui/icons-material/Home';
@@ -11,14 +11,17 @@ export const Footer: React.FC = () => {
   const [value, setValue] = useState(0);
   const router = useRouter();
   const pathname = usePathname();
+
+  useEffect(() => {
+    setIsMobileDevice(isMobile());
+  }, []);
   const downloadsUrl =
-    process.env.NEXT_PUBLIC_DOWNLOADS_URL || '/ml/project-downloads';
-  const prevPathRef = useRef<string>('');
+    process.env.NEXT_PUBLIC_DOWNLOADS_URL || '/observations/downloads';
   // Map paths to their corresponding tab values
+  const prevPathRef = useRef<string>('');
   const pathToValueMap = {
     '/home': 0,
-    '/content': 1,
-    '/ml/project-downloads': 2,
+    '/observations/downloads': 2,
     '/profile': 3,
   };
   const updateTabValue = (currentPath: string) => {
@@ -29,10 +32,7 @@ export const Footer: React.FC = () => {
       setValue(currentValue);
     } else {
       // Fallback to startsWith check for nested routes
-      if (
-        currentPath.startsWith('/content') ||
-        currentPath?.startsWith('/player')
-      ) {
+      if (currentPath?.startsWith('/player')) {
         setValue(1);
       } else if (currentPath.startsWith('/ml/project-downloads')) {
         setValue(2);
@@ -102,9 +102,6 @@ export const Footer: React.FC = () => {
       case 0:
         handleNavigation('/home');
         break;
-      case 1:
-        handleNavigation('/content/content');
-        break;
       case 2:
         handleNavigation(downloadsUrl);
         break;
@@ -157,19 +154,7 @@ export const Footer: React.FC = () => {
             />
           }
         />
-        <BottomNavigationAction
-          label="Content"
-          icon={
-            <DescriptionIcon
-              sx={{
-                fontSize: value === 1 ? '2rem' : '1.5rem',
-                transition: 'transform 0.3s ease, color 0.3s ease',
-                transform: value === 1 ? 'scale(1.2)' : 'scale(1)',
-                color: value === 1 ? '#582E92' : 'inherit',
-              }}
-            />
-          }
-        />
+        {isMobileDevice && <Box sx={{ width: 54 }} />}
         <BottomNavigationAction
           label="Downloads"
           icon={

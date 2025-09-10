@@ -47,7 +47,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const registrationCodeRegex = /^[a-zA-Z0-9_]+$/;
   const lowerLabel = label?.toLowerCase();
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
   const isOptional = () => {
     if (isEmailField && formData.mobile) return true;
     if (isMobileField && formData.email) return true;
@@ -235,8 +234,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     setIsFocused(true);
     onFocus(id, event.target.value);
   };
-
-  // Filter out 'is a required property' messages
   const displayErrors = rawErrors.filter(
     (error) => !error.toLowerCase().includes('required')
   );
@@ -286,9 +283,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     return label;
   };
 
-  // Determine if the label should be shrunk (for proper positioning)
   const shouldShrinkLabel = isFocused || Boolean(value);
-
   return (
     <>
       {/* Hidden fields to prevent autofill */}
@@ -355,7 +350,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           sx: {
             '& .MuiInputBase-input': {
               padding: '10px 12px',
-              fontSize: isIOS ? '16px !important' : '12px !important',
+              fontSize: isIOS ? '16px !important' : '12px !important', // Ensure 16px font size to prevent iOS zoom
               color: readonly ? '#000000' : undefined,
               backgroundColor: readonly ? '#f5f5f5' : undefined,
               WebkitTextFillColor: readonly ? '#000000' : undefined,
@@ -384,7 +379,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           ),
         }}
         InputLabelProps={{
-          shrink: shouldShrinkLabel, // This is the key fix
+          shrink: shouldShrinkLabel,
           sx: {
             fontSize: isIOS ? '16px' : '12px',
             backgroundColor: shouldShrinkLabel ? '#fefefe' : 'transparent',
@@ -395,6 +390,10 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
             '&.MuiInputLabel-shrink': {
               transform: 'translate(12px, -9px) scale(0.75) !important',
             },
+            '& .MuiInputLabel-shrink + .MuiOutlinedInput-notchedOutline > legend':
+              {
+                maxWidth: '1000px',
+              },
           },
         }}
         sx={{

@@ -1,5 +1,4 @@
 import Head from 'next/head';
-
 import { headers } from 'next/headers';
 
 export async function generateMetadata() {
@@ -23,7 +22,7 @@ export async function generateMetadata() {
     (name, suf) => (name.endsWith(suf) ? name.slice(0, -suf.length) : name),
     domainPart
   );
-  if (core === 'shikshagrah') core = 'shikshagraha';
+if (core === 'shikshagrah') core = 'shikshagraha';
 
   try {
     const base = process.env.NEXT_PUBLIC_BASE_URL;
@@ -54,6 +53,7 @@ export async function generateMetadata() {
   };
 }
 
+
 export default function RootLayout({
   children,
 }: {
@@ -72,7 +72,7 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
-        <style
+         <style
           dangerouslySetInnerHTML={{
             __html: `
 						/* Base resets */
