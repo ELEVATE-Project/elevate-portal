@@ -20,6 +20,7 @@ import {
   Button,
 } from '@mui/material';
 import AppConst from '../../utils/AppConst/AppConst';
+import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 export default function Home() {
   const basePath = AppConst?.BASEPATH;
@@ -127,6 +128,21 @@ export default function Home() {
         showLogo={true}
         showBack={true}
       >
+        <Box
+          sx={{
+            position: 'fixed',
+            top: 10,
+            right: 20,
+            zIndex: 2000,
+            backgroundColor: 'transparent',
+            borderRadius: '50%',
+          }}
+        >
+          <AccountCircleIcon
+            sx={{ fontSize: 36, color: '#582E92', cursor: 'pointer' }}
+            onClick={() => router.push('/profile')}
+          />
+        </Box>
         <Box
           sx={{
             minHeight: '100vh',
