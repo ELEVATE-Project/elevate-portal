@@ -2,6 +2,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { composePlugins, withNx } = require('@nx/next');
+const pwa = require("@ducanh2912/next-pwa");
 // @ts-ignore
 const PORTAL_BASE_URL = 'https://sunbird-editor.tekdinext.com';
 
@@ -17,12 +18,25 @@ const routes = {
 const BASE_PATH = process.env.NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH || '';
 
 const isDev = process.env.NODE_ENV === 'development';
-const withPWA = require('next-pwa')({
-  dest: 'public',
-  register: true,
-  skipWaiting: true,
-  disable: false,
+const withPWA = pwa.default({
+  cacheOnFrontEndNav: true,
+  aggressiveFrontEndNavCaching: true,
+  reloadOnOnline: true,
+  swcMinify: true,
+  dest: "public",
+  fallbacks: {
+    //image: "/static/images/fallback.png",
+    document: "/offline",
+    // font: '/static/font/fallback.woff2',
+    // audio: ...,
+    // video: ...,
+  },
+  workboxOptions: {
+    disableDevLogs: true,
+  },
+  // ... other options you like
 });
+
 
 const nextConfig = {
   experimental: {
