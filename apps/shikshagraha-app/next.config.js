@@ -32,9 +32,57 @@ const withPWA = pwa.default({
     // video: ...,
   },
   workboxOptions: {
-    disableDevLogs: true,
-  },
-  // ... other options you like
+    disableDevLogs: true, // keep logs for now
+    runtimeCaching: [
+      {
+        // Pages & HTML requests
+        urlPattern: /^https?.*\//,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "html-pages",
+          networkTimeoutSeconds: 5,
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 1 week
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      {
+        // API calls
+        urlPattern: /^https?.*\/api\/.*$/,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "api-cache",
+          networkTimeoutSeconds: 5,
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 24 * 60 * 60, // 1 day
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+      {
+        // Static assets (images, css, js, fonts, etc.)
+        urlPattern: /^https?.*\.(?:js|css|woff2?|png|jpg|jpeg|svg|gif|ico)$/,
+        handler: "CacheFirst",
+        options: {
+          cacheName: "static-assets",
+          expiration: {
+            maxEntries: 100,
+            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+          },
+          cacheableResponse: {
+            statuses: [0, 200],
+          },
+        },
+      },
+    ],
+  }
 });
 
 
