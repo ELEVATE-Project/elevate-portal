@@ -24,9 +24,12 @@ const withPWA = withPWAInit({
   reloadOnOnline: true,
   swcMinify: true,
   dest: "public",
-
   fallbacks: {
-    document: "/offline.html", // ensure you have public/offline.html
+    //image: "/static/images/fallback.png",
+    document: "/offline",
+    // font: '/static/font/fallback.woff2',
+    // audio: ...,
+    // video: ...,
   },
 
   workboxOptions: {
