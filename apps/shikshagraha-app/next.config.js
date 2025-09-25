@@ -2,7 +2,7 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { composePlugins, withNx } = require('@nx/next');
-const pwa = require("@ducanh2912/next-pwa");
+const withPWAInit = require("@ducanh2912/next-pwa").default;
 // @ts-ignore
 const PORTAL_BASE_URL = 'https://sunbird-editor.tekdinext.com';
 
@@ -18,7 +18,7 @@ const routes = {
 const BASE_PATH = process.env.NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH || '';
 
 const isDev = process.env.NODE_ENV === 'development';
-const withPWA = pwa.default({
+const withPWA = withPWAInit({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
@@ -31,58 +31,51 @@ const withPWA = pwa.default({
     // audio: ...,
     // video: ...,
   },
+
   workboxOptions: {
-    disableDevLogs: true, // keep logs for now
+    disableDevLogs: false,
+
     runtimeCaching: [
       {
-        // Pages & HTML requests
-        urlPattern: /^https?.*\//,
+        // Pages / navigations
+        urlPattern: ({ request }) => request.mode === "navigate",
         handler: "NetworkFirst",
         options: {
-          cacheName: "html-pages",
+          cacheName: "pages-cache",
           networkTimeoutSeconds: 5,
           expiration: {
             maxEntries: 50,
-            maxAgeSeconds: 7 * 24 * 60 * 60, // 1 week
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
+            maxAgeSeconds: 60 * 60 * 24, // 1 day
           },
         },
       },
       {
-        // API calls
-        urlPattern: /^https?.*\/api\/.*$/,
-        handler: "NetworkFirst",
-        options: {
-          cacheName: "api-cache",
-          networkTimeoutSeconds: 5,
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 24 * 60 * 60, // 1 day
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-        },
-      },
-      {
-        // Static assets (images, css, js, fonts, etc.)
-        urlPattern: /^https?.*\.(?:js|css|woff2?|png|jpg|jpeg|svg|gif|ico)$/,
+        // Static assets (JS, CSS, images)
+        urlPattern: /^https?.*\.(?:js|css|woff2?|png|jpg|jpeg|gif|svg|ico)$/,
         handler: "CacheFirst",
         options: {
           cacheName: "static-assets",
           expiration: {
             maxEntries: 100,
-            maxAgeSeconds: 30 * 24 * 60 * 60, // 30 days
+            maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
           },
-          cacheableResponse: {
-            statuses: [0, 200],
+        },
+      },
+      {
+        // API calls (optional)
+        urlPattern: /^https?.*\/api\/.*$/i,
+        handler: "NetworkFirst",
+        options: {
+          cacheName: "api-cache",
+          networkTimeoutSeconds: 10,
+          expiration: {
+            maxEntries: 50,
+            maxAgeSeconds: 60 * 60, // 1 hour
           },
         },
       },
     ],
-  }
+  },
 });
 
 
