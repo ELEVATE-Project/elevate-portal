@@ -37,81 +37,42 @@ const withPWA = withPWAInit({
     cleanupOutdatedCaches: true,
     runtimeCaching: [
       {
-        urlPattern: '/',
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'start-url'
-        }
-      },
-      {
-        urlPattern: /\/assets\/.*/i,
-        handler: 'CacheFirst'
-      },
-      {
-        urlPattern: /^https:\/\/fonts\.(?:googleapis|gstatic)\.com\/.*/i,
-        handler: 'CacheFirst',
-        options: {
-          cacheName: 'google-fonts'
-        }
-      },
-      {
-        urlPattern: /\/api\/.*$/i,
-        handler: 'NetworkOnly'
-      }
-    ]
-  },
-  async redirects () {
-    return [
-      {
-        source: '/support',
-        destination: '--url--',
-        permanent: true
-      }
-    ];
-  },
-  workboxOptions: {
-    disableDevLogs: false,
-
-    runtimeCaching: [
-      {
-        // Pages / navigations
-        urlPattern: ({ request }) => request.mode === "navigate",
+        // Cache HTML pages (like /home)
+        urlPattern: ({ request }) => request.destination === "document",
         handler: "NetworkFirst",
         options: {
           cacheName: "pages-cache",
-          networkTimeoutSeconds: 5,
           expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 60 * 60 * 24, // 1 day
+            maxEntries: 20,
+            maxAgeSeconds: 24 * 60 * 60,
           },
         },
       },
       {
-        // Static assets (JS, CSS, images)
-        urlPattern: /^https?.*\.(?:js|css|woff2?|png|jpg|jpeg|gif|svg|ico)$/,
+        // Cache CSS/JS
+        urlPattern: ({ request }) =>
+          ["style", "script", "worker"].includes(request.destination),
+        handler: "StaleWhileRevalidate",
+        options: {
+          cacheName: "static-resources",
+        },
+      },
+      {
+        // Cache images
+        urlPattern: ({ request }) => request.destination === "image",
         handler: "CacheFirst",
         options: {
-          cacheName: "static-assets",
-          expiration: {
-            maxEntries: 100,
-            maxAgeSeconds: 60 * 60 * 24 * 30, // 30 days
-          },
-        },
-      },
-      {
-        // API calls (optional)
-        urlPattern: /^https?.*\/api\/.*$/i,
-        handler: "NetworkFirst",
-        options: {
-          cacheName: "api-cache",
-          networkTimeoutSeconds: 10,
+          cacheName: "images-cache",
           expiration: {
             maxEntries: 50,
-            maxAgeSeconds: 60 * 60, // 1 hour
+            maxAgeSeconds: 7 * 24 * 60 * 60, // 7 days
           },
         },
       },
-    ],
+    ]
+  },
+  workboxOptions: {
+    disableDevLogs: true,
   },
 });
 
