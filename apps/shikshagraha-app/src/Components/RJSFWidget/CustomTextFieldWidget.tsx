@@ -102,6 +102,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     }
 
     // PRIMARY VALIDATION: Use pattern from schema if available (applies to ALL fields)
+    let schemaPatternApplied = false;
     if (val && fieldPatternString) {
       try {
         const schemaPattern = new RegExp(fieldPatternString);
@@ -114,7 +115,8 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           return patternError;
         }
         // If pattern validation passes, no need for further validation
-        return null;
+        // return null;
+        schemaPatternApplied = true;
       } catch (e) {
         console.warn('Invalid regex pattern in schema:', fieldPatternString);
         // Fall through to default validation if pattern is invalid
@@ -129,6 +131,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     // Field-specific validation (only when no pattern is provided)
     switch (field.toLowerCase()) {
       case 'first name':
+        if (schemaPatternApplied) {
+          return null;
+        }
         return validateWithPattern(
           val,
           defaultPatterns.name,
@@ -142,6 +147,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         return null;
 
       case 'username':
+        if (schemaPatternApplied) {
+          return null;
+        }
         return validateWithPattern(
           val,
           defaultPatterns.username,
@@ -167,6 +175,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         return null;
 
       case 'registration code':
+        if (schemaPatternApplied) {
+          return null;
+        }
         return validateWithPattern(
           val,
           defaultPatterns.registrationCode,
@@ -179,6 +190,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
           return 'Password cannot contain spaces.';
         }
         // Use default password pattern (since no schema pattern was provided)
+        if (schemaPatternApplied) {
+          return null;
+        }
         return validateWithPattern(
           val,
           defaultPatterns.password,
@@ -191,6 +205,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         }
         if (val !== formData.password) {
           return defaultErrorMessages.confirmPassword;
+        }
+        if (schemaPatternApplied) {
+          return null;
         }
         return null;
 
