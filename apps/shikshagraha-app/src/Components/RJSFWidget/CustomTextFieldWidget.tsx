@@ -141,10 +141,13 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         );
 
       case 'last name':
-        if (val && !defaultPatterns.name.test(val)) {
-          return defaultErrorMessages.name;
-        }
-        return null;
+        if (schemaPatternApplied) { 
+           return null;  
+          }  
+          if (val && !defaultPatterns.name.test(val)) {
+             return defaultErrorMessages.name; 
+            }
+             return null;
 
       case 'username':
         if (schemaPatternApplied) {
@@ -157,7 +160,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         );
 
       case 'contact number':
-        if (val && !defaultPatterns.contact.test(val)) {
+        if (!schemaPatternApplied && val && !defaultPatterns.contact.test(val)) {
           return defaultErrorMessages.contact;
         }
         if (!val && !formData.email) {
@@ -166,7 +169,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         return null;
 
       case 'email':
-        if (val && !defaultPatterns.email.test(val)) {
+        if (!schemaPatternApplied && val && !defaultPatterns.email.test(val)) {
           return defaultErrorMessages.email;
         }
         if (!val && !formData.mobile) {
