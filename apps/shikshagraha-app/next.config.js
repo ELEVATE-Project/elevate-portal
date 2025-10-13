@@ -2,7 +2,6 @@
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
 const { composePlugins, withNx } = require('@nx/next');
-// const withPWAInit = require("@ducanh2912/next-pwa").default;
 // @ts-ignore
 const PORTAL_BASE_URL = 'https://sunbird-editor.tekdinext.com';
 
@@ -36,12 +35,6 @@ const withPWA = require("@ducanh2912/next-pwa").default({
   },
 });
 
-// const withPWA = require('next-pwa')({
-//   dest: 'public',
-//   register: true,
-//   skipWaiting: true,
-//   disable: false,
-// });
 
 
 const nextConfig = {
