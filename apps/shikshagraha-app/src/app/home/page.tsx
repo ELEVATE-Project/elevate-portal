@@ -31,7 +31,12 @@ export default function Home() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
   const navigate = useRouter();
-
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  };
   useEffect(() => {
     if (typeof window !== 'undefined') {
       console.log("This code is running on the client-side.");
@@ -42,10 +47,15 @@ export default function Home() {
     if(typeof window !== 'undefined'){
 
     const accToken = localStorage.getItem('accToken');
+    const unAuth = new URLSearchParams(window.location.search).get('unAuth');
     console.log("block before",accToken)
-    if (!accToken) {
+    if (!accToken|| unAuth === 'true') {
       console.log("offline page")
       // router.replace(''); // Redirect to login page
+      if (unAuth === 'true') {
+        localStorage.removeItem('accToken');
+        localStorage.clear();
+      }
       router.push(`${window.location.origin}?unAuth=true`);
       return;
     } else {
@@ -65,6 +75,11 @@ export default function Home() {
           const token = localStorage.getItem('accToken') || '';
           const userId = localStorage.getItem('userId') || '';
         } catch (err) {
+          if (err.response?.status === 401) {
+            localStorage.removeItem('accToken');
+            localStorage.clear();
+            router.push(`${window.location.origin}?unAuth=true`);
+          }
           console.log("getProfile error block",err)
           setError('Failed to load profile data');
         } finally {
