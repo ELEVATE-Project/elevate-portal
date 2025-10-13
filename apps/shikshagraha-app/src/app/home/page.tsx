@@ -33,42 +33,20 @@ export default function Home() {
   const navigate = useRouter();
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      console.log("This code is running on the client-side.");
-    } else {
-      console.log("This code is running on the server-side.");
-    }
-
-    if(typeof window !== 'undefined'){
 
     const accToken = localStorage.getItem('accToken');
-    console.log("block before",accToken)
     if (!accToken) {
-      console.log("offline page")
-      // router.replace(''); // Redirect to login page
+
       router.push(`${window.location.origin}?unAuth=true`);
       return;
     } else {
-      let rawHome = localStorage.getItem('HomeData')
-      let home = rawHome ? JSON.parse(rawHome) : []
-      if(home.length>0){
-        console.log("if block",home)
-        setCardData(home)
-        // setLoading(false)
-      }else{
-        console.log("else block")
-        fetchConfig();
-      }
       const getProfileData = async () => {
-        console.log("getProflie function call")
         try {
           const token = localStorage.getItem('accToken') || '';
           const userId = localStorage.getItem('userId') || '';
         } catch (err) {
-          console.log("getProfile error block",err)
           setError('Failed to load profile data');
         } finally {
-          console.log("finally call")
           setLoading(false);
         }
       };
@@ -76,7 +54,6 @@ export default function Home() {
       getProfileData();
 
       async function fetchConfig() {
-        console.log("fetch home Config")
         const header = JSON.parse(localStorage.getItem('headers'));
         const token = localStorage.getItem('accToken');
 
@@ -93,8 +70,8 @@ export default function Home() {
           setError((err as Error).message);
         }
       }
+      fetchConfig();
     }
-  }
   }, [router]);
 
   const handleAccountClick = () => {
@@ -102,7 +79,6 @@ export default function Home() {
   };
 
   const handleLogoutConfirm = () => {
-    console.log("handleLogoutConfirm")
     localStorage.removeItem('accToken');
     localStorage.clear();
     router.push(``);
