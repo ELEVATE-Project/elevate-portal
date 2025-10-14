@@ -47,15 +47,20 @@ export default function Login() {
     'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
   const passwordRegex =
     /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+\-={}:";'<>?,./\\]).{8,}$/;
+  const getCookie = (name) => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+  };
   useEffect(() => {
-    console.log("page.tsx")
-    const token = localStorage.getItem('accToken');
-    console.log("token",token)
-    const status = localStorage.getItem('userStatus');
-    console.log("status",status)
+    debugger;
+    const token = localStorage.getItem('accToken') || getCookie('token');
+    const status =
+      localStorage.getItem('userStatus') || getCookie('userStatus');
+    debugger;
     if (token && status !== 'archived') {
-      console.log("replace url true")
-      router.replace('/home')
+      router.replace('/home');
       // router.push('/home');
     }
     // Remove readonly after a short delay to prevent autofill
@@ -66,7 +71,6 @@ export default function Login() {
   }, []);
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      console.log("if block client side rendering")
       const hostname = window.location.hostname;
       const origin = window.location.origin;
       const parts = hostname.split('.');
@@ -167,7 +171,6 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      console.log('formData', formData);
       const { userName, password } = formData;
       const isMobile = /^[6-9]\d{9}$/.test(userName);
       const payload = {
@@ -182,6 +185,7 @@ export default function Login() {
       if (accessToken) {
         const userStatus = response?.result?.user?.status;
         localStorage.setItem('userStatus', userStatus);
+        document.cookie = `userStatus=${userStatus}; path=/; secure; SameSite=Lax`;
         if (userStatus !== 'ACTIVE') {
           setShowError(true);
           setErrorMessage('The user is deactivated, please contact admin.');
@@ -205,7 +209,6 @@ export default function Login() {
         }
       } else {
         setShowError(true);
-        console.log('response', response);
         setErrorMessage(response?.response?.data?.message);
       }
     } catch (error) {

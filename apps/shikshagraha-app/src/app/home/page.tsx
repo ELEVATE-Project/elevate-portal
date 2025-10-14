@@ -31,23 +31,17 @@ export default function Home() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
   const navigate = useRouter();
-  const getCookie = (name) => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) return parts.pop().split(';').shift();
-    return null;
+  const clearAuthData = () => {
+    localStorage.removeItem('accToken');
+    localStorage.clear();
   };
   useEffect(() => {
-
     const accToken = localStorage.getItem('accToken');
     const unAuth = new URLSearchParams(window.location.search).get('unAuth');
-    console.log("block before",accToken)
-    if (!accToken|| unAuth === 'true') {
-      console.log("offline page")
+    if (!accToken || unAuth === 'true') {
       // router.replace(''); // Redirect to login page
       if (unAuth === 'true') {
-        localStorage.removeItem('accToken');
-        localStorage.clear();
+        clearAuthData();
       }
       router.push(`${window.location.origin}?unAuth=true`);
       return;
@@ -62,7 +56,7 @@ export default function Home() {
             localStorage.clear();
             router.push(`${window.location.origin}?unAuth=true`);
           }
-          console.log("getProfile error block",err)
+          console.log('getProfile error block', err);
           setError('Failed to load profile data');
         } finally {
           setLoading(false);
@@ -78,7 +72,7 @@ export default function Home() {
         if (!header['org-id']) return;
         try {
           const data = await readHomeListForm(token);
-          localStorage.setItem('HomeData',JSON.stringify(data.result))
+          localStorage.setItem('HomeData', JSON.stringify(data.result));
           setCardData(data.result);
           localStorage.setItem(
             'theme',
@@ -111,11 +105,15 @@ export default function Home() {
     buildProgramUrl(card.url, card.sameOrigin, card.title);
   };
 
-  const buildProgramUrl = (path: string, sameOrigin: boolean, title?: string): string => {
+  const buildProgramUrl = (
+    path: string,
+    sameOrigin: boolean,
+    title?: string
+  ): string => {
     if (sameOrigin) {
       router.push(`${path}`);
     } else {
-      if(title == 'MITRA'){
+      if (title == 'MITRA') {
         const currentUrl = window.location.href;
         const url = new URL(currentUrl);
         const encodedUrl = encodeURIComponent(url.toString());
