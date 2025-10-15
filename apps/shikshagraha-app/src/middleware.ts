@@ -5,14 +5,14 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Get tokens from cookies using NextRequest
-  const accToken = request.cookies.get('accToken')
-    : undefined;
-  const userId = request instanceof NextRequest
-    ? request.cookies.get('userId')
-    : undefined;
-  const unAuth = request instanceof NextRequest
-    ? request.nextUrl.searchParams.get('unAuth')
-    : undefined;
+  const accToken = request.cookies.get('accToken');
+
+  const userId =
+    request instanceof NextRequest ? request.cookies.get('userId') : undefined;
+  const unAuth =
+    request instanceof NextRequest
+      ? request.nextUrl.searchParams.get('unAuth')
+      : undefined;
 
   // Authentication checks
   // If user has valid token and tries to access root/login, redirect to home
