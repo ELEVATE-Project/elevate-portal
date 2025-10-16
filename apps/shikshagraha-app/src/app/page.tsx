@@ -54,7 +54,7 @@ export default function Login() {
     return null;
   };
   useEffect(() => {
-    const token = localStorage.getItem('accToken') || getCookie('token'); //remove debugger
+    const token = localStorage.getItem('accToken') || getCookie('token');
     const status =
       localStorage.getItem('userStatus') || getCookie('userStatus');
     if (token && status !== 'archived') {
