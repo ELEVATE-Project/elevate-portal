@@ -54,10 +54,8 @@ export default function Login() {
     return null;
   };
   useEffect(() => {
-    debugger;
     const token = localStorage.getItem('accToken') || getCookie('token');
-    const status =
-    localStorage.getItem('userStatus') || getCookie('userStatus');
+    const status =localStorage.getItem('userStatus') || getCookie('userStatus');
     if (token && status !== 'archived') {
       router.replace('/home');
       // router.push('/home');
