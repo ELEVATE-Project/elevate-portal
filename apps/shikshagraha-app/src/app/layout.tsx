@@ -1,5 +1,5 @@
 import Head from 'next/head';
-import { headers } from 'next/headers';
+import { getBranding } from '../utils/branding';
 
 export async function generateMetadata() {
   const hdrs = headers();
@@ -47,14 +47,12 @@ if (core === 'shikshagrah') core = 'shikshagraha';
     }
   } catch (e) {}
 
-  const fallbackIcon = '/icons/icon-192x192.png';
   return {
     //  manifest:'/manifest.json',
     title: `Welcome to ${core}`,
     icons: { icon: fallbackIcon, apple: fallbackIcon },
   };
 }
-
 
 export default function RootLayout({
   children,
