@@ -121,15 +121,16 @@ const Scanner = () => {
       >
         <Box
           sx={{
-            height: 'calc(100vh - 48px)',
-            width: '100%',
-            overflow: 'hidden',
             position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            overflow: 'hidden',
             backgroundColor: '#000',
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'center',
-            px: 2,
+            alignItems: 'center',
           }}
         >
           <video
@@ -147,13 +148,9 @@ const Scanner = () => {
 
           <Box
             sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              width: '70%',
+              width: '70vw',
               maxWidth: '320px',
-              height: '250px',
-              transform: 'translate(-50%, -50%)',
+              aspectRatio: '1 / 1',
               border: '3px solid rgba(0, 255, 0, 0.6)',
               borderRadius: '12px',
               boxShadow: '0 0 20px rgba(0, 255, 0, 0.4)',
