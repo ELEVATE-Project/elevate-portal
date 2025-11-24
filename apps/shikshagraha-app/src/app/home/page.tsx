@@ -3,9 +3,7 @@
 //@ts-nocheck
 'use client';
 import { Layout, DynamicCard } from '@shared-lib';
-import LogoutIcon from '@mui/icons-material/Logout';
 import { useRouter } from 'next/navigation';
-import { fetchProfileData } from '../../services/ProfileService';
 import { readHomeListForm } from '../../services/LoginService';
 import { useEffect, useState } from 'react';
 import {
@@ -23,200 +21,389 @@ import AppConst from '../../utils/AppConst/AppConst';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 
 export default function Home() {
+  // Constants
   const basePath = AppConst?.BASEPATH;
   const router = useRouter();
-  const [profileData, setProfileData] = useState(null);
+
+  // State Management
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
-  const [pageLoading, setPageLoading] = useState(true);
-  const navigate = useRouter();
+
+  // Effects
   useEffect(() => {
-    const initializeHomePage = async () => {
-      const accToken = localStorage.getItem('accToken');
-      if (!accToken) {
-        // Clear all cookies
-        document.cookie.split(';').forEach((cookie) => {
-          const name = cookie.split('=')[0].trim();
-          document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
-        });
-        router.replace('/');
-        return;
-      }
-
-      try {
-        setPageLoading(true); // Show page loader
-        setLoading(true); // Show content loader
-
-        // Fetch profile data and home data in parallel for better performance
-        const [profileResponse, homeDataResponse] = await Promise.allSettled([
-          fetchProfileDataWrapper(),
-          fetchHomeData(),
-        ]);
-
-        // Handle profile data
-        if (profileResponse.status === 'fulfilled') {
-          // Profile data fetched successfully
-        } else {
-          console.error('Profile data fetch failed:', profileResponse.reason);
-        }
-
-        // Handle home data
-        if (homeDataResponse.status === 'fulfilled') {
-          setCardData(homeDataResponse.value || []);
-        } else {
-          setError('Failed to load home data');
-          console.error('Home data fetch failed:', homeDataResponse.reason);
-        }
-      } catch (err) {
-        setError('Failed to initialize home page');
-        console.error('Home page initialization error:', err);
-      } finally {
-        // Stagger the loading states for better UX
-        setTimeout(() => {
-          setLoading(false); // Hide content loader first
-        }, 500);
-
-        setTimeout(() => {
-          setPageLoading(false); // Hide page loader after content is ready
-        }, 800);
-      }
-    };
-
     initializeHomePage();
   }, [router]);
-  // Separate function for profile data fetching
-  const fetchProfileDataWrapper = async () => {
-    try {
-      const token = localStorage.getItem('accToken') || '';
-      const userId = localStorage.getItem('userId') || '';
-      // Add your profile data fetching logic here
-      // const profileData = await fetchProfileData(token, userId);
-      // setProfileData(profileData);
-    } catch (error) {
-      console.error('Error fetching profile data:', error);
-      throw error;
+
+  const initializeHomePage = async () => {
+    if (!isUserAuthenticated()) {
+      handleUnauthenticatedUser();
+      return;
     }
+
+    try {
+      setLoadingStates(true);
+      await fetchAndSetHomeData();
+    } catch (err) {
+      handleHomePageError(err);
+    } finally {
+      handleLoadingCompletion();
+    }
+  };
+  const isUserAuthenticated = () => {
+    return !!localStorage.getItem('accToken');
+  };
+
+  const handleUnauthenticatedUser = () => {
+    clearAllCookies();
+    router.replace('/');
+  };
+
+  const setLoadingStates = (isLoading: boolean) => {
+    setPageLoading(isLoading);
+    setLoading(isLoading);
+  };
+
+  const fetchAndSetHomeData = async () => {
+    const cachedHomeData = getCachedHomeData();
+    if (cachedHomeData) {
+      setCardData(cachedHomeData);
+      console.log('Using cached home data from localStorage');
+    } else {
+      const homeData = await fetchHomeData();
+      if (homeData) {
+        setCardData(homeData);
+        cacheHomeData(homeData);
+      } else {
+        throw new Error('Failed to load home data');
+      }
+    }
+  };
+  const getCachedHomeData = () => {
+    try {
+      const cachedData = localStorage.getItem('HomeData');
+      if (!cachedData) {
+        return null;
+      }
+      const parsedData = JSON.parse(cachedData);
+      if (Array.isArray(parsedData) && parsedData.length > 0) {
+        return parsedData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error reading cached home data:', error);
+      return null;
+    }
+  };
+  const handleHomePageError = (error: any) => {
+    setError('Failed to initialize home page');
+    console.error('Home page initialization error:', error);
+  };
+
+  const handleLoadingCompletion = () => {
+    const hasCachedData = getCachedHomeData();
+    const contentDelay = hasCachedData ? 100 : 500; // Faster if cached
+    const pageDelay = hasCachedData ? 300 : 800; // Faster if cache
+
+    setTimeout(() => setLoading(false), contentDelay);
+    setTimeout(() => setPageLoading(false), pageDelay);
   };
 
   const fetchHomeData = async () => {
     try {
-      const header = JSON.parse(localStorage.getItem('headers') || '{}');
-      const token = localStorage.getItem('accToken');
-
-      if (!header['org-id']) {
-        throw new Error('Organization ID not found');
-      }
-
+      validateOrganizationHeader();
+      const token = getAuthToken();
       const data = await readHomeListForm(token);
 
-      // Cache the data in localStorage
-      if (data?.result) {
-        localStorage.setItem('HomeData', JSON.stringify(data.result));
-        localStorage.setItem(
-          'theme',
-          JSON.stringify(data.result[1]?.meta?.theme || {})
-        );
-        return data.result;
-      }
-
-      return [];
+      return data?.result || [];
     } catch (err) {
       console.error('Error fetching home data:', err);
       throw err;
     }
   };
+  const validateOrganizationHeader = () => {
+    const header = JSON.parse(localStorage.getItem('headers') || '{}');
+    if (!header['org-id']) {
+      throw new Error('Organization ID not found');
+    }
+  };
+
+  const getAuthToken = () => {
+    const token = localStorage.getItem('accToken');
+    if (!token) {
+      throw new Error('Authentication token not found');
+    }
+    return token;
+  };
+
+  const cacheHomeData = (homeData: any[]) => {
+    if (homeData?.length > 0) {
+      localStorage.setItem('HomeData', JSON.stringify(homeData));
+      localStorage.setItem(
+        'theme',
+        JSON.stringify(homeData[1]?.meta?.theme || {})
+      );
+    }
+  };
+
+  const handleCardClick = (card: any) => {
+    if (card.sameOrigin) {
+      navigateToSameOrigin(card.url);
+    } else {
+      navigateToExternal(card.url, card.title);
+    }
+  };
+
+  const navigateToSameOrigin = (url: string) => {
+    router.push(url);
+  };
+  const navigateToExternal = (url: string, title?: string) => {
+    if (title === 'MITRA') {
+      navigateToMitra(url);
+    } else {
+      navigateToGenericExternal(url);
+    }
+  };
+
+  const navigateToMitra = (url: string) => {
+    const currentUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const accessToken = localStorage.getItem('accToken');
+    window.location.href = `${url}${accessToken}&rerouteUrl=${encodedUrl}`;
+  };
+
+  /**
+   * Navigates to generic external URL
+   */
+  const navigateToGenericExternal = (url: string) => {
+    const accessToken = localStorage.getItem('accToken');
+    window.location.href = url + accessToken;
+  };
 
   const handleAccountClick = () => {
-    setShowLogoutModal(true);
+    router.push('/profile');
   };
 
   const handleLogoutConfirm = () => {
-    localStorage.removeItem('accToken');
-    localStorage.clear();
-    router.push(`/login`);
+    clearUserData();
+    router.push('/login');
   };
 
   const handleLogoutCancel = () => {
     setShowLogoutModal(false);
   };
 
-  const handleCardClick = (card) => {
-    // router.push(`${card.url}`);
-    buildProgramUrl(card.url, card.sameOrigin, card.title);
+  const clearUserData = () => {
+    localStorage.removeItem('accToken');
+    localStorage.clear();
   };
 
-  const buildProgramUrl = (
-    path: string,
-    sameOrigin: boolean,
-    title?: string
-  ): string => {
-    if (sameOrigin) {
-      router.push(`${path}`);
-    } else {
-      if (title == 'MITRA') {
-        const currentUrl = window.location.href;
-        const url = new URL(currentUrl);
-        const encodedUrl = encodeURIComponent(url.toString());
-        const accessToken = localStorage.getItem('accToken');
-        window.location.href = `${path}${accessToken}&rerouteUrl=${encodedUrl}`;
-      }
-      window.location.href = path + localStorage.getItem('accToken');
-    }
+  const clearAllCookies = () => {
+    document.cookie.split(';').forEach((cookie) => {
+      const name = cookie.split('=')[0].trim();
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    });
   };
-  // Show full page loader during initial load
-  if (pageLoading) {
-    return (
-      <Layout
-        showTopAppBar={{
-          title: 'Home',
-          showMenuIcon: true,
-          showBackIcon: false,
+
+  const getUserFirstName = () => {
+    return localStorage.getItem('firstname') || 'User';
+  };
+
+  const getEnabledCards = () => {
+    return cardData.filter((card) => card.enabled === true);
+  };
+
+  const renderFullPageLoader = () => (
+    <Layout
+      showTopAppBar={{
+        title: 'Home',
+        showMenuIcon: true,
+        showBackIcon: false,
+      }}
+      isFooter={true}
+      showLogo={true}
+      showBack={true}
+    >
+      <Box
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '70vh',
+          gap: 3,
         }}
-        isFooter={true}
-        showLogo={true}
-        showBack={true}
       >
-        <Box
+        <CircularProgress
+          size={60}
+          thickness={4}
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            minHeight: '70vh',
-            gap: 3,
+            color: '#582E92',
+            animationDuration: '0.8s',
+          }}
+        />
+        <Typography
+          variant="h6"
+          color="#582E92"
+          sx={{
+            fontWeight: 'bold',
+            textAlign: 'center',
           }}
         >
-          <CircularProgress
-            size={60}
-            thickness={4}
-            sx={{
-              color: '#582E92',
-              animationDuration: '0.8s',
-            }}
-          />
-          <Typography
-            variant="h6"
-            color="#582E92"
-            sx={{
-              fontWeight: 'bold',
-              textAlign: 'center',
-            }}
-          >
-            Loading...
-          </Typography>
-          <Typography
-            variant="body2"
-            color="text.secondary"
-            sx={{ textAlign: 'center' }}
-          >
-            Please wait while we prepare your dashboard
-          </Typography>
-        </Box>
-      </Layout>
+          Loading...
+        </Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ textAlign: 'center' }}
+        >
+          Please wait while we prepare your dashboard
+        </Typography>
+      </Box>
+    </Layout>
+  );
+
+  /**
+   * Renders the content loading spinner
+   */
+  const renderContentLoader = () => (
+    <Box
+      sx={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        minHeight: '50vh',
+      }}
+    >
+      <CircularProgress size={40} sx={{ color: '#582E92' }} />
+    </Box>
+  );
+
+  /**
+   * Renders the welcome section
+   */
+  const renderWelcomeSection = () => (
+    <Box sx={{ textAlign: 'center', mb: 4 }}>
+      <Typography
+        variant="h5"
+        color="#582E92"
+        fontWeight="bold"
+        fontSize={{ xs: '22px', sm: '24px', md: '26px' }}
+      >
+        Welcome, {getUserFirstName()}
+      </Typography>
+    </Box>
+  );
+
+  /**
+   * Renders individual card component
+   */
+  const renderCard = (card: any, index: number) => (
+    <DynamicCard
+      key={index}
+      title={card.meta.title}
+      icon={card.meta.icon}
+      sx={{
+        borderRadius: 2,
+        boxShadow: 3,
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'scale(1.05)',
+          boxShadow: 6,
+        },
+        maxWidth: { xs: 280, sm: 350 },
+      }}
+      onClick={() => handleCardClick(card.meta)}
+    />
+  );
+
+  /**
+   * Renders the cards grid
+   */
+  const renderCardsGrid = () => {
+    const enabledCards = getEnabledCards();
+
+    if (enabledCards.length === 0) {
+      return (
+        <Typography textAlign="center" color="text.secondary">
+          No enabled cards available
+        </Typography>
+      );
+    }
+
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 3,
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
+        {enabledCards.map((card, index) => renderCard(card, index))}
+      </Box>
     );
+  };
+
+  /**
+   * Renders the main content
+   */
+  const renderMainContent = () => (
+    <>
+      {renderWelcomeSection()}
+      {renderCardsGrid()}
+    </>
+  );
+
+  /**
+   * Renders the profile icon
+   */
+  const renderProfileIcon = () => (
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 10,
+        right: 20,
+        zIndex: 2000,
+        backgroundColor: 'transparent',
+        borderRadius: '50%',
+      }}
+    >
+      <AccountCircleIcon
+        sx={{ fontSize: 36, color: '#582E92', cursor: 'pointer' }}
+        onClick={handleAccountClick}
+      />
+    </Box>
+  );
+
+  /**
+   * Renders logout confirmation dialog
+   */
+  const renderLogoutDialog = () => (
+    <Dialog open={showLogoutModal} onClose={handleLogoutCancel}>
+      <DialogTitle>Confirm Logout</DialogTitle>
+      <DialogContent>
+        <DialogContentText>Are you sure you want to log out?</DialogContentText>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={handleLogoutCancel} color="primary">
+          No
+        </Button>
+        <Button onClick={handleLogoutConfirm} color="secondary">
+          Yes, Logout
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+
+  // ==================== MAIN RENDER ====================
+
+  if (pageLoading) {
+    return renderFullPageLoader();
   }
+
   return (
     <>
       <Layout
@@ -229,21 +416,7 @@ export default function Home() {
         showLogo={true}
         showBack={true}
       >
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 10,
-            right: 20,
-            zIndex: 2000,
-            backgroundColor: 'transparent',
-            borderRadius: '50%',
-          }}
-        >
-          <AccountCircleIcon
-            sx={{ fontSize: 36, color: '#582E92', cursor: 'pointer' }}
-            onClick={() => router.push('/profile')}
-          />
-        </Box>
+        {renderProfileIcon()}
         <Box
           sx={{
             minHeight: '100vh',
@@ -252,102 +425,10 @@ export default function Home() {
             paddingX: { xs: 2, sm: 3 },
           }}
         >
-          {loading ? (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '50vh',
-              }}
-            >
-              {cardData.length > 0 &&
-                cardData.map((card, index) =>
-                  card.enabled == true ? (
-                    <DynamicCard
-                      key={index}
-                      title={card.meta.title}
-                      icon={card.meta.icon}
-                      sx={{
-                        borderRadius: 2,
-                        boxShadow: 3,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'scale(1.05)',
-                          boxShadow: 6,
-                        },
-                        maxWidth: { xs: 280, sm: 350 },
-                      }}
-                      onClick={() => handleCardClick(card.meta)}
-                    />
-                  ) : null
-                )}
-            </Box>
-          ) : (
-            <>
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Typography
-                  variant="h5"
-                  color="#582E92"
-                  fontWeight="bold"
-                  fontSize={{ xs: '22px', sm: '24px', md: '26px' }}
-                >
-                  Welcome, {localStorage.getItem('firstname')}
-                </Typography>
-              </Box>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 3,
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                }}
-              >
-                {cardData.length > 0 &&
-                  cardData.map((card, index) =>
-                    card.enabled == true ? (
-                      <DynamicCard
-                        key={index}
-                        title={card.meta.title}
-                        icon={card.meta.icon}
-                        sx={{
-                          borderRadius: 2,
-                          boxShadow: 3,
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'scale(1.05)',
-                            boxShadow: 6,
-                          },
-                          maxWidth: { xs: 280, sm: 350 },
-                        }}
-                        onClick={() => handleCardClick(card.meta)}
-                      />
-                    ) : null
-                  )}
-              </Box>
-            </>
-          )}
+          {loading ? renderContentLoader() : renderMainContent()}
         </Box>
       </Layout>
-
-      {/* Logout Confirmation Popup */}
-      <Dialog open={showLogoutModal} onClose={handleLogoutCancel}>
-        <DialogTitle>Confirm Logout</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to log out?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleLogoutCancel} color="primary">
-            No
-          </Button>
-          <Button onClick={handleLogoutConfirm} color="secondary">
-            Yes, Logout
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {renderLogoutDialog()}
     </>
   );
 }
