@@ -61,15 +61,36 @@ const Scanner = () => {
 
   const handleScanResult = async (result: Result) => {
     const path: any = result.getText();
+    let url = path.split('/')
+    let userId = url.pop()
+    let baseUrl=localStorage.getItem('origin')
     await stopScan();
-    if(path.includes('verifyCertificate')){
-      let userId=path.split('/').pop();
-      let baseUrl=localStorage.getItem('origin')
-      window.location.href = `${baseUrl}/certificate-verify/${userId}`
+    const mapping = [
+      {
+        match: 'verifyCertificate',
+        redirect: `${baseUrl}/ml/certificate-verify/${userId}`
+      },
+      {
+        match: 'view/project',
+        redirect: `${baseUrl}/ml/view/project/${userId}`
+      },
+      {
+        match: 'samiksha/create-survey',
+        redirect: `${baseUrl}/observations/samiksha/create-survey/${userId}`
+      },
+      {
+        match: 'samiksha/create-observation',
+        redirect: `${baseUrl}/observations/samiksha/create-observation/${userId}`
+      }
+    ];
+    const found = mapping.find(item => path.includes(item.match));
+
+    if (found) {
+      window.location.replace(found.redirect);
       return;
     }
-    window.location.href=path
-    return;
+    showSnackbar('Invalid QR', 'error');
+    setTimeout(() => handleBack(), 4000);
   };
 
   const showSnackbar = (text: string, type: AlertColor) => {

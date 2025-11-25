@@ -118,7 +118,7 @@ const DynamicForm = ({
       'Numbers and special characters are not allowed',
     '^[a-zA-Z0-9.@]+$': 'Space and special characters are not allowed',
     '^[0-9]{10}$': 'Enter a valid Mobile Number',
-    '^d{10}$': 'Characters and special characters are not allowed',
+    '^\\d{10}$': 'Characters and special characters are not allowed',
     '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\\-={}:";\'<>?,./\\\\])(?!.*\\s).{8,}$':
       'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, a special character, and no spaces.',
   };
@@ -164,7 +164,7 @@ const DynamicForm = ({
         'Numbers and special characters are not allowed',
       '^[a-zA-Z0-9.@]+$': 'Space and special characters are not allowed',
       '^[0-9]{10}$': 'Enter a valid Mobile Number',
-      '^d{10}$': 'Characters and special characters are not allowed',
+      '^\\d{10}$': 'Characters and special characters are not allowed',
       '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\\-={}:";\'<>?,./\\\\])(?!.*\\s).{8,}$':
         'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, a special character, and no spaces.',
     };
@@ -1079,8 +1079,7 @@ const DynamicForm = ({
           (val, index) => val !== newValue[index]
         );
         if (isDifferent) return true;
-      }
-      else if (oldValue !== newValue) {
+      } else if (oldValue !== newValue) {
         return true;
       }
     }
@@ -1394,7 +1393,7 @@ const DynamicForm = ({
           if (errors[key]?.__errors) {
             errors[key].__errors = [];
           }
-          delete errors[key]; 
+          delete errors[key];
         }
       }
     });
@@ -1454,7 +1453,6 @@ const DynamicForm = ({
   }, []);
 
   const handleFetchData = React.useCallback((response: any) => {
-
     setFormData((prev) => ({
       ...prev,
       State: response.state ?? { _id: '', name: '', externalId: '' },
@@ -1582,7 +1580,7 @@ const DynamicForm = ({
     const registrationCode = getRegistrationCode(formData);
 
     let otpPayload;
-    const hasMobile = !!formData.mobile?.trim(); 
+    const hasMobile = !!formData.mobile?.trim();
     const isValidMobile = /^[6-9]\d{9}$/.test(formData.mobile?.trim() ?? '');
 
     otpPayload = {
@@ -1627,8 +1625,8 @@ const DynamicForm = ({
           const now = Date.now();
           setTooManyRequests(true);
           setIsRateLimited(true);
-          setRateLimitExpiry(now + 2 * 60 * 1000); 
-          setCurrentTime(now); 
+          setRateLimitExpiry(now + 2 * 60 * 1000);
+          setCurrentTime(now);
           setShowError(true);
           setErrorButton(true);
           setIsErrorButtonFromRateLimit(true);

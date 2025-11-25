@@ -29,7 +29,6 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
 
   // Effects
@@ -40,6 +39,10 @@ export default function Home() {
   const initializeHomePage = async () => {
     if (!isUserAuthenticated()) {
       handleUnauthenticatedUser();
+      const accToken = localStorage.getItem('accToken');
+    if (!accToken) {
+      router.replace('/redirecting');
+    } 
       return;
     }
 
@@ -177,11 +180,43 @@ export default function Home() {
   /**
    * Navigates to generic external URL
    */
-  const navigateToGenericExternal = (url: string) => {
-    const accessToken = localStorage.getItem('accToken');
-    window.location.href = url + accessToken;
-  };
+  const navigateToGenericExternal = async (url: string) => {
+    if (!isValidUrl(url)) {
+      console.error('Invalid URL provided for external navigation');
+      return;
+    }
+    try {
+      // Call backend to get short-lived redirect token
+      const response = await fetch('/api/auth/redirect-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ targetUrl: url }),
+      });
 
+      if (response.ok) {
+        const { redirectToken } = await response.json();
+        const urlObj = new URL(url);
+        urlObj.searchParams.set('token', redirectToken);
+        window.location.href = urlObj.toString();
+      } else {
+        // Fallback: redirect without token
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Error getting redirect token:', error);
+      window.location.href = url;
+    }
+  };
+  const isValidUrl = (urlString: string): boolean => {
+    try {
+      const url = new URL(urlString);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (e) {
+      return false;
+    }
+  };
   const handleAccountClick = () => {
     router.push('/profile');
   };
@@ -189,10 +224,6 @@ export default function Home() {
   const handleLogoutConfirm = () => {
     clearUserData();
     router.push('/login');
-  };
-
-  const handleLogoutCancel = () => {
-    setShowLogoutModal(false);
   };
 
   const clearUserData = () => {
@@ -378,26 +409,6 @@ export default function Home() {
     </Box>
   );
 
-  /**
-   * Renders logout confirmation dialog
-   */
-  const renderLogoutDialog = () => (
-    <Dialog open={showLogoutModal} onClose={handleLogoutCancel}>
-      <DialogTitle>Confirm Logout</DialogTitle>
-      <DialogContent>
-        <DialogContentText>Are you sure you want to log out?</DialogContentText>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={handleLogoutCancel} color="primary">
-          No
-        </Button>
-        <Button onClick={handleLogoutConfirm} color="secondary">
-          Yes, Logout
-        </Button>
-      </DialogActions>
-    </Dialog>
-  );
-
   // ==================== MAIN RENDER ====================
 
   if (pageLoading) {
@@ -428,7 +439,6 @@ export default function Home() {
           {loading ? renderContentLoader() : renderMainContent()}
         </Box>
       </Layout>
-      {renderLogoutDialog()}
     </>
   );
 }
