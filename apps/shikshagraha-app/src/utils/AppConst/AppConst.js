@@ -17,6 +17,9 @@ const AppConst = {
     HEADERS: 'headers',
     THEME: 'theme',
     FIRST_NAME: 'firstname',
+    LAST_NAME: 'lastname',
+    EMAIL: 'email',
+    USER_DATA: 'userData',
   },
   ERROR_MESSAGES: {
     AUTH_TOKEN_MISSING: 'Authentication token not found',

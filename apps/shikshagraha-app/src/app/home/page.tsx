@@ -19,7 +19,11 @@ import {
 } from '@mui/material';
 import AppConst from '../../utils/AppConst/AppConst';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-
+import { getUserDataFromLocal, navigateToMitraURL } from '../../utils/Helper';
+import {
+  ContentLoader,
+  FullPageLoaderWithLayout,
+} from '../../Components/FullPageLoader';
 export default function Home() {
   // Constants
   const basePath = AppConst?.BASEPATH;
@@ -178,19 +182,10 @@ export default function Home() {
 
   const navigateToExternal = (url: string, title?: string) => {
     if (title === 'MITRA') {
-      navigateToMitra(url);
+      navigateToMitraURL(url);
     } else {
       navigateToGenericExternal(url);
     }
-  };
-
-  const navigateToMitra = (url: string) => {
-    const currentUrl = window.location.href;
-    const encodedUrl = encodeURIComponent(currentUrl);
-    const accessToken = localStorage.getItem(
-      AppConst.STORAGE_KEYS.ACCESS_TOKEN
-    );
-    window.location.href = `${url}${accessToken}&rerouteUrl=${encodedUrl}`;
   };
 
   const navigateToGenericExternal = async (url: string) => {
@@ -254,75 +249,12 @@ export default function Home() {
   };
 
   const getUserFirstName = () => {
-    return localStorage.getItem(AppConst.STORAGE_KEYS.FIRST_NAME) || 'User';
+    return getUserDataFromLocal('firstName');
   };
 
   const getEnabledCards = () => {
     return cardData.filter((card) => card.enabled === true);
   };
-
-  const renderFullPageLoader = () => (
-    <Layout
-      showTopAppBar={{
-        title: 'Home',
-        showMenuIcon: true,
-        showBackIcon: false,
-      }}
-      isFooter={true}
-      showLogo={true}
-      showBack={true}
-    >
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '70vh',
-          gap: 3,
-        }}
-      >
-        <CircularProgress
-          size={60}
-          thickness={4}
-          sx={{
-            color: AppConst.UI.COLORS.PRIMARY,
-            animationDuration: '0.8s',
-          }}
-        />
-        <Typography
-          variant="h6"
-          color={AppConst.UI.COLORS.PRIMARY}
-          sx={{
-            fontWeight: 'bold',
-            textAlign: 'center',
-          }}
-        >
-          Loading...
-        </Typography>
-        <Typography
-          variant="body2"
-          color={AppConst.UI.COLORS.TEXT_SECONDARY}
-          sx={{ textAlign: 'center' }}
-        >
-          Please wait while we prepare your dashboard
-        </Typography>
-      </Box>
-    </Layout>
-  );
-
-  const renderContentLoader = () => (
-    <Box
-      sx={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        minHeight: '50vh',
-      }}
-    >
-      <CircularProgress size={40} sx={{ color: AppConst.UI.COLORS.PRIMARY }} />
-    </Box>
-  );
 
   const renderWelcomeSection = () => (
     <Box sx={{ textAlign: 'center', mb: 4 }}>
@@ -416,7 +348,7 @@ export default function Home() {
   // ==================== MAIN RENDER ====================
 
   if (pageLoading) {
-    return renderFullPageLoader();
+    return <FullPageLoaderWithLayout />;
   }
 
   return (
@@ -440,7 +372,7 @@ export default function Home() {
             paddingX: { xs: 2, sm: 3 },
           }}
         >
-          {loading ? renderContentLoader() : renderMainContent()}
+          {loading ? <ContentLoader /> : renderMainContent()}
         </Box>
       </Layout>
     </>
