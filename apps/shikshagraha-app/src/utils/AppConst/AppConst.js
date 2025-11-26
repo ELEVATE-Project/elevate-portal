@@ -10,9 +10,7 @@ const AppConst = {
     PROFILE: '/profile',
     REDIRECTING: '/redirecting',
   },
-  EXTERNAL_URLS: {
-    MITRA: 'https://your-mitra-base-url.com', // Replace with actual Mitra URL
-  },
+
   STORAGE_KEYS: {
     ACCESS_TOKEN: 'accToken',
     HOME_DATA: 'HomeData',
