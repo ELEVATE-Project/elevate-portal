@@ -39,10 +39,10 @@ export default function Home() {
   const initializeHomePage = async () => {
     if (!isUserAuthenticated()) {
       handleUnauthenticatedUser();
-      const accToken = localStorage.getItem('accToken');
-    if (!accToken) {
-      router.replace('/redirecting');
-    } 
+      const accToken = localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
+      if (!accToken) {
+        router.replace(AppConst.NAVIGATION.REDIRECTING);
+      }
       return;
     }
 
@@ -55,13 +55,14 @@ export default function Home() {
       handleLoadingCompletion();
     }
   };
+
   const isUserAuthenticated = () => {
-    return !!localStorage.getItem('accToken');
+    return !!localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
   };
 
   const handleUnauthenticatedUser = () => {
     clearAllCookies();
-    router.replace('/');
+    router.replace(AppConst.NAVIGATION.HOME);
   };
 
   const setLoadingStates = (isLoading: boolean) => {
@@ -80,13 +81,14 @@ export default function Home() {
         setCardData(homeData);
         cacheHomeData(homeData);
       } else {
-        throw new Error('Failed to load home data');
+        throw new Error(AppConst.ERROR_MESSAGES.HOME_DATA_LOAD_FAILED);
       }
     }
   };
+
   const getCachedHomeData = () => {
     try {
-      const cachedData = localStorage.getItem('HomeData');
+      const cachedData = localStorage.getItem(AppConst.STORAGE_KEYS.HOME_DATA);
       if (!cachedData) {
         return null;
       }
@@ -100,15 +102,20 @@ export default function Home() {
       return null;
     }
   };
+
   const handleHomePageError = (error: any) => {
-    setError('Failed to initialize home page');
+    setError(AppConst.ERROR_MESSAGES.HOME_DATA_LOAD_FAILED);
     console.error('Home page initialization error:', error);
   };
 
   const handleLoadingCompletion = () => {
     const hasCachedData = getCachedHomeData();
-    const contentDelay = hasCachedData ? 100 : 500; // Faster if cached
-    const pageDelay = hasCachedData ? 300 : 800; // Faster if cache
+    const contentDelay = hasCachedData
+      ? AppConst.UI.LOADING_DELAY.CACHED_CONTENT
+      : AppConst.UI.LOADING_DELAY.FRESH_CONTENT;
+    const pageDelay = hasCachedData
+      ? AppConst.UI.LOADING_DELAY.CACHED_PAGE
+      : AppConst.UI.LOADING_DELAY.FRESH_PAGE;
 
     setTimeout(() => setLoading(false), contentDelay);
     setTimeout(() => setPageLoading(false), pageDelay);
@@ -126,26 +133,32 @@ export default function Home() {
       throw err;
     }
   };
+
   const validateOrganizationHeader = () => {
-    const header = JSON.parse(localStorage.getItem('headers') || '{}');
+    const header = JSON.parse(
+      localStorage.getItem(AppConst.STORAGE_KEYS.HEADERS) || '{}'
+    );
     if (!header['org-id']) {
-      throw new Error('Organization ID not found');
+      throw new Error(AppConst.ERROR_MESSAGES.ORG_ID_MISSING);
     }
   };
 
   const getAuthToken = () => {
-    const token = localStorage.getItem('accToken');
+    const token = localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
     if (!token) {
-      throw new Error('Authentication token not found');
+      throw new Error(AppConst.ERROR_MESSAGES.AUTH_TOKEN_MISSING);
     }
     return token;
   };
 
   const cacheHomeData = (homeData: any[]) => {
     if (homeData?.length > 0) {
-      localStorage.setItem('HomeData', JSON.stringify(homeData));
       localStorage.setItem(
-        'theme',
+        AppConst.STORAGE_KEYS.HOME_DATA,
+        JSON.stringify(homeData)
+      );
+      localStorage.setItem(
+        AppConst.STORAGE_KEYS.THEME,
         JSON.stringify(homeData[1]?.meta?.theme || {})
       );
     }
@@ -162,6 +175,7 @@ export default function Home() {
   const navigateToSameOrigin = (url: string) => {
     router.push(url);
   };
+
   const navigateToExternal = (url: string, title?: string) => {
     if (title === 'MITRA') {
       navigateToMitra(url);
@@ -173,21 +187,20 @@ export default function Home() {
   const navigateToMitra = (url: string) => {
     const currentUrl = window.location.href;
     const encodedUrl = encodeURIComponent(currentUrl);
-    const accessToken = localStorage.getItem('accToken');
+    const accessToken = localStorage.getItem(
+      AppConst.STORAGE_KEYS.ACCESS_TOKEN
+    );
     window.location.href = `${url}${accessToken}&rerouteUrl=${encodedUrl}`;
   };
 
-  /**
-   * Navigates to generic external URL
-   */
   const navigateToGenericExternal = async (url: string) => {
     if (!isValidUrl(url)) {
-      console.error('Invalid URL provided for external navigation');
+      console.error(AppConst.ERROR_MESSAGES.INVALID_URL);
       return;
     }
     try {
       // Call backend to get short-lived redirect token
-      const response = await fetch('/api/auth/redirect-token', {
+      const response = await fetch(AppConst.API_ENDPOINTS.REDIRECT_TOKEN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -209,6 +222,7 @@ export default function Home() {
       window.location.href = url;
     }
   };
+
   const isValidUrl = (urlString: string): boolean => {
     try {
       const url = new URL(urlString);
@@ -217,17 +231,18 @@ export default function Home() {
       return false;
     }
   };
+
   const handleAccountClick = () => {
-    router.push('/profile');
+    router.push(AppConst.NAVIGATION.PROFILE);
   };
 
   const handleLogoutConfirm = () => {
     clearUserData();
-    router.push('/login');
+    router.push(AppConst.NAVIGATION.LOGIN);
   };
 
   const clearUserData = () => {
-    localStorage.removeItem('accToken');
+    localStorage.removeItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.clear();
   };
 
@@ -239,7 +254,7 @@ export default function Home() {
   };
 
   const getUserFirstName = () => {
-    return localStorage.getItem('firstname') || 'User';
+    return localStorage.getItem(AppConst.STORAGE_KEYS.FIRST_NAME) || 'User';
   };
 
   const getEnabledCards = () => {
@@ -271,13 +286,13 @@ export default function Home() {
           size={60}
           thickness={4}
           sx={{
-            color: '#582E92',
+            color: AppConst.UI.COLORS.PRIMARY,
             animationDuration: '0.8s',
           }}
         />
         <Typography
           variant="h6"
-          color="#582E92"
+          color={AppConst.UI.COLORS.PRIMARY}
           sx={{
             fontWeight: 'bold',
             textAlign: 'center',
@@ -287,7 +302,7 @@ export default function Home() {
         </Typography>
         <Typography
           variant="body2"
-          color="text.secondary"
+          color={AppConst.UI.COLORS.TEXT_SECONDARY}
           sx={{ textAlign: 'center' }}
         >
           Please wait while we prepare your dashboard
@@ -296,9 +311,6 @@ export default function Home() {
     </Layout>
   );
 
-  /**
-   * Renders the content loading spinner
-   */
   const renderContentLoader = () => (
     <Box
       sx={{
@@ -308,18 +320,15 @@ export default function Home() {
         minHeight: '50vh',
       }}
     >
-      <CircularProgress size={40} sx={{ color: '#582E92' }} />
+      <CircularProgress size={40} sx={{ color: AppConst.UI.COLORS.PRIMARY }} />
     </Box>
   );
 
-  /**
-   * Renders the welcome section
-   */
   const renderWelcomeSection = () => (
     <Box sx={{ textAlign: 'center', mb: 4 }}>
       <Typography
         variant="h5"
-        color="#582E92"
+        color={AppConst.UI.COLORS.PRIMARY}
         fontWeight="bold"
         fontSize={{ xs: '22px', sm: '24px', md: '26px' }}
       >
@@ -328,9 +337,6 @@ export default function Home() {
     </Box>
   );
 
-  /**
-   * Renders individual card component
-   */
   const renderCard = (card: any, index: number) => (
     <DynamicCard
       key={index}
@@ -350,15 +356,15 @@ export default function Home() {
     />
   );
 
-  /**
-   * Renders the cards grid
-   */
   const renderCardsGrid = () => {
     const enabledCards = getEnabledCards();
 
     if (enabledCards.length === 0) {
       return (
-        <Typography textAlign="center" color="text.secondary">
+        <Typography
+          textAlign="center"
+          color={AppConst.UI.COLORS.TEXT_SECONDARY}
+        >
           No enabled cards available
         </Typography>
       );
@@ -378,9 +384,6 @@ export default function Home() {
     );
   };
 
-  /**
-   * Renders the main content
-   */
   const renderMainContent = () => (
     <>
       {renderWelcomeSection()}
@@ -388,9 +391,6 @@ export default function Home() {
     </>
   );
 
-  /**
-   * Renders the profile icon
-   */
   const renderProfileIcon = () => (
     <Box
       sx={{
@@ -403,7 +403,11 @@ export default function Home() {
       }}
     >
       <AccountCircleIcon
-        sx={{ fontSize: 36, color: '#582E92', cursor: 'pointer' }}
+        sx={{
+          fontSize: 36,
+          color: AppConst.UI.COLORS.PRIMARY,
+          cursor: 'pointer',
+        }}
         onClick={handleAccountClick}
       />
     </Box>
