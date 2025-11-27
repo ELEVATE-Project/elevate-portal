@@ -7,7 +7,7 @@ import {
 } from './app.constant';
 import { State } from './Interfaces';
 import axios from 'axios';
-
+import AppConst from './AppConst/AppConst';
 interface Value {
   value: string;
   label: string;
@@ -622,3 +622,51 @@ export function getReassignPayload(
     return { cohortId: newCohortId, removedIds };
   }
 }
+export const getUserDataFromLocal = (key: any) => {
+  try {
+    const userData = localStorage.getItem(AppConst.STORAGE_KEYS.USER_DATA);
+    if (userData) {
+      const parsedData = JSON.parse(userData);
+      return parsedData[key] || '';
+    }
+
+    // Fallback to individual keys for backward compatibility
+    switch (key) {
+      case 'firstName':
+        return localStorage.getItem(AppConst.STORAGE_KEYS.FIRST_NAME) || 'User';
+      case 'lastName':
+        return localStorage.getItem(AppConst.STORAGE_KEYS.LAST_NAME) || '';
+      case 'email':
+        return localStorage.getItem(AppConst.STORAGE_KEYS.EMAIL) || '';
+      default:
+        return localStorage.getItem(key) || '';
+    }
+  } catch (error) {
+    console.error('Error reading user data from localStorage:', error);
+    return '';
+  }
+};
+export const navigateToMitraURL = (url: string) => {
+  try {
+    const currentUrl = window.location.href;
+    const encodedUrl = encodeURIComponent(currentUrl);
+    const accessToken = localStorage.getItem(
+      AppConst.STORAGE_KEYS.ACCESS_TOKEN
+    );
+    if (!accessToken) {
+      console.error('No access token found for MITRA navigation');
+      alert('Authentication token missing. Please login again.');
+      return;
+    }
+
+    let mitraUrl = url.trim();
+
+    const separator = mitraUrl.includes('?') ? '&' : '?';
+    mitraUrl += `${separator}accToken=${accessToken}&rerouteUrl=${encodedUrl}`;
+
+    window.location.href = mitraUrl;
+  } catch (error) {
+    console.error('Error navigating to MITRA:', error);
+    alert('Error navigating to MITRA application. Please try again.');
+  }
+};

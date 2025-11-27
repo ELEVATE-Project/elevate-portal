@@ -3,9 +3,7 @@
 //@ts-nocheck
 'use client';
 import { Layout, DynamicCard } from '@shared-lib';
-import LogoutIcon from '@mui/icons-material/Logout';
 import { useRouter } from 'next/navigation';
-import { fetchProfileData } from '../../services/ProfileService';
 import { readHomeListForm } from '../../services/LoginService';
 import { useEffect, useState } from 'react';
 import {
@@ -21,93 +19,337 @@ import {
 } from '@mui/material';
 import AppConst from '../../utils/AppConst/AppConst';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-
+import { getUserDataFromLocal, navigateToMitraURL } from '../../utils/Helper';
+import {
+  ContentLoader,
+  FullPageLoaderWithLayout,
+} from '../../Components/FullPageLoader';
 export default function Home() {
+  // Constants
   const basePath = AppConst?.BASEPATH;
   const router = useRouter();
-  const [profileData, setProfileData] = useState(null);
+
+  // State Management
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [cardData, setCardData] = useState([]);
-  const navigate = useRouter();
+
+  // Effects
   useEffect(() => {
-    const accToken = localStorage.getItem('accToken');
-    if (!accToken) {
-      router.replace('/redirecting'); // Redirect to login page
-      return;
-    } else {
-      const getProfileData = async () => {
-        try {
-          const token = localStorage.getItem('accToken') || '';
-          const userId = localStorage.getItem('userId') || '';
-        } catch (err) {
-          setError('Failed to load profile data');
-        } finally {
-          setLoading(false);
-        }
-      };
-
-      getProfileData();
-
-      async function fetchConfig() {
-        const header = JSON.parse(localStorage.getItem('headers'));
-        const token = localStorage.getItem('accToken');
-
-        if (!header['org-id']) return;
-        try {
-          const data = await readHomeListForm(token);
-          localStorage.setItem('HomeData', JSON.stringify(data.result));
-          setCardData(data.result);
-          localStorage.setItem(
-            'theme',
-            JSON.stringify(data.result[1].meta.theme)
-          );
-        } catch (err) {
-          setError((err as Error).message);
-        }
-      }
-      fetchConfig();
-    }
+    initializeHomePage();
   }, [router]);
 
+  const initializeHomePage = async () => {
+    if (!isUserAuthenticated()) {
+      handleUnauthenticatedUser();
+      const accToken = localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
+      if (!accToken) {
+        router.replace(AppConst.NAVIGATION.REDIRECTING);
+      }
+      return;
+    }
+
+    try {
+      setLoadingStates(true);
+      await fetchAndSetHomeData();
+    } catch (err) {
+      handleHomePageError(err);
+    } finally {
+      handleLoadingCompletion();
+    }
+  };
+
+  const isUserAuthenticated = () => {
+    return !!localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
+  };
+
+  const handleUnauthenticatedUser = () => {
+    clearAllCookies();
+    router.replace(AppConst.NAVIGATION.HOME);
+  };
+
+  const setLoadingStates = (isLoading: boolean) => {
+    setPageLoading(isLoading);
+    setLoading(isLoading);
+  };
+
+  const fetchAndSetHomeData = async () => {
+    const cachedHomeData = getCachedHomeData();
+    if (cachedHomeData) {
+      setCardData(cachedHomeData);
+      console.log('Using cached home data from localStorage');
+    } else {
+      const homeData = await fetchHomeData();
+      if (homeData) {
+        setCardData(homeData);
+        cacheHomeData(homeData);
+      } else {
+        throw new Error(AppConst.ERROR_MESSAGES.HOME_DATA_LOAD_FAILED);
+      }
+    }
+  };
+
+  const getCachedHomeData = () => {
+    try {
+      const cachedData = localStorage.getItem(AppConst.STORAGE_KEYS.HOME_DATA);
+      if (!cachedData) {
+        return null;
+      }
+      const parsedData = JSON.parse(cachedData);
+      if (Array.isArray(parsedData) && parsedData.length > 0) {
+        return parsedData;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error reading cached home data:', error);
+      return null;
+    }
+  };
+
+  const handleHomePageError = (error: any) => {
+    setError(AppConst.ERROR_MESSAGES.HOME_DATA_LOAD_FAILED);
+    console.error('Home page initialization error:', error);
+  };
+
+  const handleLoadingCompletion = () => {
+    const hasCachedData = getCachedHomeData();
+    const contentDelay = hasCachedData
+      ? AppConst.UI.LOADING_DELAY.CACHED_CONTENT
+      : AppConst.UI.LOADING_DELAY.FRESH_CONTENT;
+    const pageDelay = hasCachedData
+      ? AppConst.UI.LOADING_DELAY.CACHED_PAGE
+      : AppConst.UI.LOADING_DELAY.FRESH_PAGE;
+
+    setTimeout(() => setLoading(false), contentDelay);
+    setTimeout(() => setPageLoading(false), pageDelay);
+  };
+
+  const fetchHomeData = async () => {
+    try {
+      validateOrganizationHeader();
+      const token = getAuthToken();
+      const data = await readHomeListForm(token);
+
+      return data?.result || [];
+    } catch (err) {
+      console.error('Error fetching home data:', err);
+      throw err;
+    }
+  };
+
+  const validateOrganizationHeader = () => {
+    const header = JSON.parse(
+      localStorage.getItem(AppConst.STORAGE_KEYS.HEADERS) || '{}'
+    );
+    if (!header['org-id']) {
+      throw new Error(AppConst.ERROR_MESSAGES.ORG_ID_MISSING);
+    }
+  };
+
+  const getAuthToken = () => {
+    const token = localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
+    if (!token) {
+      throw new Error(AppConst.ERROR_MESSAGES.AUTH_TOKEN_MISSING);
+    }
+    return token;
+  };
+
+  const cacheHomeData = (homeData: any[]) => {
+    if (homeData?.length > 0) {
+      localStorage.setItem(
+        AppConst.STORAGE_KEYS.HOME_DATA,
+        JSON.stringify(homeData)
+      );
+      localStorage.setItem(
+        AppConst.STORAGE_KEYS.THEME,
+        JSON.stringify(homeData[1]?.meta?.theme || {})
+      );
+    }
+  };
+
+  const handleCardClick = (card: any) => {
+    if (card.sameOrigin) {
+      navigateToSameOrigin(card.url);
+    } else {
+      navigateToExternal(card.url, card.title);
+    }
+  };
+
+  const navigateToSameOrigin = (url: string) => {
+    router.push(url);
+  };
+
+  const navigateToExternal = (url: string, title?: string) => {
+    if (title === 'MITRA') {
+      navigateToMitraURL(url);
+    } else {
+      navigateToGenericExternal(url);
+    }
+  };
+
+  const navigateToGenericExternal = async (url: string) => {
+    if (!isValidUrl(url)) {
+      console.error(AppConst.ERROR_MESSAGES.INVALID_URL);
+      return;
+    }
+    try {
+      // Call backend to get short-lived redirect token
+      const response = await fetch(AppConst.API_ENDPOINTS.REDIRECT_TOKEN, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ targetUrl: url }),
+      });
+
+      if (response.ok) {
+        const { redirectToken } = await response.json();
+        const urlObj = new URL(url);
+        urlObj.searchParams.set('token', redirectToken);
+        window.location.href = urlObj.toString();
+      } else {
+        // Fallback: redirect without token
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Error getting redirect token:', error);
+      window.location.href = url;
+    }
+  };
+
+  const isValidUrl = (urlString: string): boolean => {
+    try {
+      const url = new URL(urlString);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (e) {
+      return false;
+    }
+  };
+
   const handleAccountClick = () => {
-    setShowLogoutModal(true);
+    router.push(AppConst.NAVIGATION.PROFILE);
   };
 
   const handleLogoutConfirm = () => {
-    localStorage.removeItem('accToken');
+    clearUserData();
+    router.push(AppConst.NAVIGATION.LOGIN);
+  };
+
+  const clearUserData = () => {
+    localStorage.removeItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
     localStorage.clear();
-    router.push(`/login`);
   };
 
-  const handleLogoutCancel = () => {
-    setShowLogoutModal(false);
+  const clearAllCookies = () => {
+    document.cookie.split(';').forEach((cookie) => {
+      const name = cookie.split('=')[0].trim();
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+    });
   };
 
-  const handleCardClick = (card) => {
-    // router.push(`${card.url}`);
-    buildProgramUrl(card.url, card.sameOrigin, card.title);
+  const getUserFirstName = () => {
+    return getUserDataFromLocal('firstName');
   };
 
-  const buildProgramUrl = (
-    path: string,
-    sameOrigin: boolean,
-    title?: string
-  ): string => {
-    if (sameOrigin) {
-      router.push(`${path}`);
-    } else {
-      if (title == 'MITRA') {
-        const currentUrl = window.location.href;
-        const url = new URL(currentUrl);
-        const encodedUrl = encodeURIComponent(url.toString());
-        const accessToken = localStorage.getItem('accToken');
-        window.location.href = `${path}${accessToken}&rerouteUrl=${encodedUrl}`;
-      }
-      window.location.href = path + localStorage.getItem('accToken');
+  const getEnabledCards = () => {
+    return cardData.filter((card) => card.enabled === true);
+  };
+
+  const renderWelcomeSection = () => (
+    <Box sx={{ textAlign: 'center', mb: 4 }}>
+      <Typography
+        variant="h5"
+        color={AppConst.UI.COLORS.PRIMARY}
+        fontWeight="bold"
+        fontSize={{ xs: '22px', sm: '24px', md: '26px' }}
+      >
+        Welcome, {getUserFirstName()}
+      </Typography>
+    </Box>
+  );
+
+  const renderCard = (card: any, index: number) => (
+    <DynamicCard
+      key={index}
+      title={card.meta.title}
+      icon={card.meta.icon}
+      sx={{
+        borderRadius: 2,
+        boxShadow: 3,
+        transition: 'all 0.3s ease',
+        '&:hover': {
+          transform: 'scale(1.05)',
+          boxShadow: 6,
+        },
+        maxWidth: { xs: 280, sm: 350 },
+      }}
+      onClick={() => handleCardClick(card.meta)}
+    />
+  );
+
+  const renderCardsGrid = () => {
+    const enabledCards = getEnabledCards();
+
+    if (enabledCards.length === 0) {
+      return (
+        <Typography
+          textAlign="center"
+          color={AppConst.UI.COLORS.TEXT_SECONDARY}
+        >
+          No enabled cards available
+        </Typography>
+      );
     }
+
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          gap: 3,
+          flexWrap: 'wrap',
+          justifyContent: 'center',
+        }}
+      >
+        {enabledCards.map((card, index) => renderCard(card, index))}
+      </Box>
+    );
   };
+
+  const renderMainContent = () => (
+    <>
+      {renderWelcomeSection()}
+      {renderCardsGrid()}
+    </>
+  );
+
+  const renderProfileIcon = () => (
+    <Box
+      sx={{
+        position: 'fixed',
+        top: 10,
+        right: 20,
+        zIndex: 2000,
+        backgroundColor: 'transparent',
+        borderRadius: '50%',
+      }}
+    >
+      <AccountCircleIcon
+        sx={{
+          fontSize: 36,
+          color: AppConst.UI.COLORS.PRIMARY,
+          cursor: 'pointer',
+        }}
+        onClick={handleAccountClick}
+      />
+    </Box>
+  );
+
+  // ==================== MAIN RENDER ====================
+
+  if (pageLoading) {
+    return <FullPageLoaderWithLayout />;
+  }
 
   return (
     <>
@@ -121,21 +363,7 @@ export default function Home() {
         showLogo={true}
         showBack={true}
       >
-        <Box
-          sx={{
-            position: 'fixed',
-            top: 10,
-            right: 20,
-            zIndex: 2000,
-            backgroundColor: 'transparent',
-            borderRadius: '50%',
-          }}
-        >
-          <AccountCircleIcon
-            sx={{ fontSize: 36, color: '#582E92', cursor: 'pointer' }}
-            onClick={() => router.push('/profile')}
-          />
-        </Box>
+        {renderProfileIcon()}
         <Box
           sx={{
             minHeight: '100vh',
@@ -144,102 +372,9 @@ export default function Home() {
             paddingX: { xs: 2, sm: 3 },
           }}
         >
-          {loading ? (
-            <Box
-              sx={{
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                minHeight: '50vh',
-              }}
-            >
-              {cardData.length > 0 &&
-                cardData.map((card, index) =>
-                  card.enabled == true ? (
-                    <DynamicCard
-                      key={index}
-                      title={card.meta.title}
-                      icon={card.meta.icon}
-                      sx={{
-                        borderRadius: 2,
-                        boxShadow: 3,
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                          transform: 'scale(1.05)',
-                          boxShadow: 6,
-                        },
-                        maxWidth: { xs: 280, sm: 350 },
-                      }}
-                      onClick={() => handleCardClick(card.meta)}
-                    />
-                  ) : null
-                )}
-            </Box>
-          ) : (
-            <>
-              <Box sx={{ textAlign: 'center', mb: 4 }}>
-                <Typography
-                  variant="h5"
-                  color="#582E92"
-                  fontWeight="bold"
-                  fontSize={{ xs: '22px', sm: '24px', md: '26px' }}
-                >
-                  Welcome, {localStorage.getItem('firstname')}
-                </Typography>
-              </Box>
-
-              <Box
-                sx={{
-                  display: 'flex',
-                  gap: 3,
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                }}
-              >
-                {cardData.length > 0 &&
-                  cardData.map((card, index) =>
-                    card.enabled == true ? (
-                      <DynamicCard
-                        key={index}
-                        title={card.meta.title}
-                        icon={card.meta.icon}
-                        sx={{
-                          borderRadius: 2,
-                          boxShadow: 3,
-                          transition: 'all 0.3s ease',
-                          '&:hover': {
-                            transform: 'scale(1.05)',
-                            boxShadow: 6,
-                          },
-                          maxWidth: { xs: 280, sm: 350 },
-                        }}
-                        onClick={() => handleCardClick(card.meta)}
-                      />
-                    ) : null
-                  )}
-              </Box>
-            </>
-          )}
+          {loading ? <ContentLoader /> : renderMainContent()}
         </Box>
       </Layout>
-
-      {/* Logout Confirmation Popup */}
-      <Dialog open={showLogoutModal} onClose={handleLogoutCancel}>
-        <DialogTitle>Confirm Logout</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Are you sure you want to log out?
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleLogoutCancel} color="primary">
-            No
-          </Button>
-          <Button onClick={handleLogoutConfirm} color="secondary">
-            Yes, Logout
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 }
