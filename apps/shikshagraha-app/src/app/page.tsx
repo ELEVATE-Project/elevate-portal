@@ -160,8 +160,8 @@ export default function Login() {
       setErrorMessage(
         'Password must be at least 8 characters long, include numerals, uppercase, lowercase, and special characters.'
       );
-      setFormSubmitted(false); // Reset to allow retry
-      loginClickedRef.current = false; // Reset ref
+      setFormSubmitted(false);
+      loginClickedRef.current = false;
       return;
     }
     setLoading(true);
@@ -192,7 +192,6 @@ export default function Login() {
         localStorage.setItem('accToken', accessToken);
         localStorage.setItem('refToken', refreshToken);
         localStorage.setItem('firstname', response?.result?.user?.name);
-        //logout id
         let userId = Number(localStorage.getItem('userId'));
         if (userId !== response?.result?.user?.id) {
           clearIndexedDB();
@@ -330,13 +329,10 @@ export default function Login() {
             if (isStandalone && !loginClickedRef.current) {
               return;
             }
-            // If button was clicked, it already called handleButtonClick, so skip here
-            // This prevents double submission when button is clicked
             if (loginClickedRef.current) {
               loginClickedRef.current = false;
               return;
             }
-            // For keyboard submissions (Enter key), call handleButtonClick
             handleButtonClick();
           }}
           onInput={(e) => {

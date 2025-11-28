@@ -654,3 +654,22 @@ export const navigateToMitraURL = (url: string) => {
     alert('Error navigating to MITRA application. Please try again.');
   }
 };
+export const handleUnauthorizedError = (
+  error?: any,
+  response?: any
+): boolean => {
+  const is401 =
+    error?.status === 401 ||
+    error?.response?.status === 401 ||
+    error?.response?.data?.responseCode === 401 ||
+    response?.status === 401 ||
+    response?.statusCode === 401;
+  if (is401) {
+    localStorage.removeItem('accToken');
+    localStorage.clear();
+    window.location.replace(window.location.origin + '?unAuth=true');
+    return true;
+  }
+
+  return false;
+};

@@ -389,7 +389,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     onFocus(id, event.target.value);
   };
 
-  // Filter out 'is a required property' messages
   const displayErrors = rawErrors.filter(
     (error) => !error.toLowerCase().includes('required')
   );
@@ -399,27 +398,12 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   };
 
   const renderLabel = () => {
-    if (
-      [
-        'first name',
-        'username',
-        'password',
-        'confirm password',
-        'registration code',
-      ].includes(lowerLabel ?? '')
-    ) {
-      return (
-        <>
-          {label} <span style={{ color: 'red' }}>*</span>
-        </>
-      );
-    }
-
+    const isFieldRequired = fieldSchema?.isRequired === true;
     if (isEmailField || isMobileField) {
       return (
         <>
           {label}
-          {isActuallyRequired() && <span style={{ color: 'red' }}>*</span>}
+          {isFieldRequired && <span style={{ color: 'red' }}>*</span>}
           {isOptional() && (
             <span style={{ color: 'gray', fontSize: '0.8em' }}>
               {' '}
@@ -434,7 +418,14 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       return (
         <>
           {label}
-          {formData.password && <span style={{ color: 'red' }}>*</span>}
+          {isFieldRequired && <span style={{ color: 'red' }}>*</span>}
+        </>
+      );
+    }
+    if (isFieldRequired) {
+      return (
+        <>
+          {label} <span style={{ color: 'red' }}>*</span>
         </>
       );
     }
