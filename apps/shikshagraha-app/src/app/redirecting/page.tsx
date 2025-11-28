@@ -2,7 +2,6 @@
 import React, { useEffect } from 'react';
 import { Layout } from '@shared-lib';
 import { useRouter } from 'next/navigation';
-
 const Redirecting = () => {
   const router = useRouter();
   useEffect(() => {
@@ -18,7 +17,6 @@ const Redirecting = () => {
     localStorage.setItem('userId', userId);
     router.replace('/');
   }, [router]);
-
   return (
     <>
       <Layout
@@ -36,5 +34,4 @@ const Redirecting = () => {
     </>
   );
 };
-
 export default Redirecting;
