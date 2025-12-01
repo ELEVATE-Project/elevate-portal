@@ -37,15 +37,10 @@ export default function Home() {
 
   // Effects
   useEffect(() => {
-    const accToken = localStorage.getItem('accToken');
-    console.log("token",accToken)
-    if (!accToken) {
-      router.replace('/redirecting'); // Redirect to login page
     initializeHomePage();
-  }}, [router]);
+  }, [router]);
 
   const initializeHomePage = async () => {
-    console.log("token")
     if (!isUserAuthenticated()) {
       handleUnauthenticatedUser();
       const accToken = localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
@@ -66,12 +61,10 @@ export default function Home() {
   };
 
   const isUserAuthenticated = () => {
-    console.log("token",!!localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN))
     return !!localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
   };
 
   const handleUnauthenticatedUser = () => {
-    console.log("navigation")
     clearAllCookies();
     router.replace(AppConst.NAVIGATION.HOME);
   };

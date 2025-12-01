@@ -66,7 +66,7 @@ export const readHomeListForm = async (token: string) => {
   if (!baseUrl) {
     throw new Error('NEXT_PUBLIC_BASE_URL is not defined');
   }
-  
+
   const apiUrl = `${baseUrl}/user/v1/organization-feature/read`;
 
   try {
