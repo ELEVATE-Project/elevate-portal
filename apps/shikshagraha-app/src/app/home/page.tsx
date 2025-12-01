@@ -80,35 +80,6 @@ export default function Home() {
       setCardData(cachedHomeData);
       console.log('Using cached home data from localStorage');
     } else {
-      const getProfileData = async () => {
-        try {
-          const token = localStorage.getItem('accToken') || '';
-          const userId = localStorage.getItem('userId') || '';
-        } catch (err) {
-          setError('Failed to load profile data');
-        } finally {
-          setLoading(false);
-        }
-      };
-      getProfileData();
-      async function fetchConfig() {
-        const header = JSON.parse(localStorage.getItem('headers'));
-        const token = localStorage.getItem('accToken');
-
-        if (!header['org-id']) return;
-        try {
-          const data = await readHomeListForm(token);
-          localStorage.setItem('HomeData', JSON.stringify(data.result));
-          setCardData(data.result);
-          localStorage.setItem(
-            'theme',
-            JSON.stringify(data.result[1].meta.theme)
-          );
-        } catch (err) {
-          setError((err as Error).message);
-        }
-      }
-      fetchConfig();
       const homeData = await fetchHomeData();
       if (homeData) {
         setCardData(homeData);
