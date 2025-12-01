@@ -66,8 +66,9 @@ export const readHomeListForm = async (token: string) => {
   if (!baseUrl) {
     throw new Error('NEXT_PUBLIC_BASE_URL is not defined');
   }
-
+  console.log("baseUrl",baseUrl)
   const apiUrl = `${baseUrl}/user/v1/organization-feature/read`;
+  console.log('apiUrl',apiUrl)
 
   try {
     const { data } = await axios.get(apiUrl, {
@@ -75,9 +76,11 @@ export const readHomeListForm = async (token: string) => {
         'X-Auth-Token': token,
       },
     });
+    console.log('readHomeList Form',data)
     return data;
   } catch (err: unknown | any) {
     if (err.status == 401) {
+      console.log("token 401 eror block")
       localStorage.removeItem('accToken');
       localStorage.clear();
       window.location.href = window.location.origin + '?unAuth=true';

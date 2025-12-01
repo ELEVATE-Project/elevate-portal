@@ -33,32 +33,43 @@ export default function Home() {
   const navigate = useRouter();
   useEffect(() => {
     const accToken = localStorage.getItem('accToken');
+    console.log("token",accToken)
     if (!accToken) {
       router.replace('/redirecting'); // Redirect to login page
       return;
     } else {
+      console.log("else block")
       const getProfileData = async () => {
+        console.log("getProfileData")
         try {
           const token = localStorage.getItem('accToken') || '';
+          console.log("token",token)
           const userId = localStorage.getItem('userId') || '';
+          console.log("userId",userId)
         } catch (err) {
           setError('Failed to load profile data');
         } finally {
           setLoading(false);
         }
       };
-
+      console.log("51")
       getProfileData();
-
+      console.log("53")
       async function fetchConfig() {
+        console.log("fetchConfig")
         const header = JSON.parse(localStorage.getItem('headers'));
+        console.log("headers",header)
         const token = localStorage.getItem('accToken');
+        console.log('token',token)
 
         if (!header['org-id']) return;
         try {
+          console.log('try block')
           const data = await readHomeListForm(token);
+          console.log('data',data)
           localStorage.setItem('HomeData', JSON.stringify(data.result));
           setCardData(data.result);
+          console.log("cardData",cardData)
           localStorage.setItem(
             'theme',
             JSON.stringify(data.result[1].meta.theme)
@@ -68,6 +79,7 @@ export default function Home() {
         }
       }
       fetchConfig();
+      console.log("81")
     }
   }, [router]);
 
