@@ -109,6 +109,21 @@ const DynamicForm = ({
     useState(false);
   const [countdownUpdate, setCountdownUpdate] = useState(0);
   const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Regex to Error Mapping
+  const patternErrorMessages = {
+    '^(?=.*[a-zA-Z])[a-zA-Z ]+$':
+      'Numbers and special characters are not allowed',
+    '^[a-zA-Z][a-zA-Z ]*[a-zA-Z]$':
+      'Numbers and special characters are not allowed',
+    '^[a-zA-Z0-9.@]+$': 'Space and special characters are not allowed',
+    '^[0-9]{10}$': 'Enter a valid Mobile Number',
+    '^\\d{10}$': 'Characters and special characters are not allowed',
+    '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\\-={}:";\'<>?,./\\\\])(?!.*\\s).{8,}$':
+      'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, a special character, and no spaces.',
+  };
+
+  // Validation functions
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   };
@@ -118,31 +133,219 @@ const DynamicForm = ({
   };
 
   const isValidUsername = (username: string) => {
-    // Username can contain letters, numbers, hyphens, underscores, dots, and @ symbols
-    return /^[a-zA-Z0-9@._-]{3,30}$/.test(username);
+    if (!username) return false;
+    const usernameField = formSchema?.properties?.Username;
+    if (usernameField) {
+      const minLength = usernameField.minLength || 3;
+      const maxLength = usernameField.maxLength || 40;
+      if (username.length < minLength || username.length > maxLength) {
+        return false;
+      }
+      const pattern = usernameField.pattern;
+      if (pattern) {
+        const regex = new RegExp(pattern);
+        return regex.test(username);
+      }
+    }
+    return /^[a-zA-Z0-9@._-]{3,40}$/.test(username);
   };
+  const getPatternErrorMessage = (
+    pattern: string,
+    fieldName: string,
+    policyMsg?: string
+  ): string => {
+    if (policyMsg && policyMsg.trim() !== '') {
+      return policyMsg;
+    }
+    const predefinedMessages = {
+      '^(?=.*[a-zA-Z])[a-zA-Z ]+$':
+        'Numbers and special characters are not allowed',
+      '^[a-zA-Z][a-zA-Z ]*[a-zA-Z]$':
+        'Numbers and special characters are not allowed',
+      '^[a-zA-Z0-9.@]+$': 'Space and special characters are not allowed',
+      '^[0-9]{10}$': 'Enter a valid Mobile Number',
+      '^\\d{10}$': 'Characters and special characters are not allowed',
+      '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\\-={}:";\'<>?,./\\\\])(?!.*\\s).{8,}$':
+        'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, a special character, and no spaces.',
+    };
+
+    if (predefinedMessages[pattern]) {
+      return predefinedMessages[pattern];
+    }
+    return generateIntelligentErrorMessage(pattern, fieldName);
+  };
+
+  const generateIntelligentErrorMessage = (
+    pattern: string,
+    fieldName: string
+  ): string => {
+    try {
+      if (pattern.includes('^[0-9]') && pattern.includes('{10}$')) {
+        return 'Please enter a valid 10-digit number';
+      }
+
+      if (pattern.includes('^[a-zA-Z]') && pattern.includes('+$')) {
+        return 'Only letters are allowed';
+      }
+
+      if (pattern.includes('^[a-zA-Z0-9]') && !pattern.includes(' ')) {
+        return 'Spaces are not allowed';
+      }
+
+      if (pattern.includes('\\d') && pattern.includes('{6}')) {
+        const match = pattern.match(/\{(\d+)\}/);
+        const length = match ? match[1] : 'required';
+        return `Must be exactly ${length} digits`;
+      }
+
+      if (pattern.includes('@') && pattern.includes('\\.')) {
+        return 'Please enter a valid email address';
+      }
+      return `Please enter a valid ${fieldName.toLowerCase()}`;
+    } catch (error) {
+      return `Invalid format for ${fieldName}`;
+    }
+  };
+
+  const getFieldConstraints = (fieldName: string) => {
+    if (!formSchema?.properties?.[fieldName]) return null;
+
+    const field = formSchema.properties[fieldName];
+    return {
+      isRequired: formSchema.required?.includes(fieldName) || false,
+      minLength: field.minLength,
+      maxLength: field.maxLength,
+      pattern: field.pattern,
+      policyMsg: field.policyMsg, // Add this line
+      isMultiSelect: field.isMultiSelect,
+      maxSelections: field.maxSelections,
+      type: field.type,
+    };
+  };
+
+  const validateFieldDynamically = (
+    fieldName: string,
+    value: any
+  ): string[] => {
+    const constraints = getFieldConstraints(fieldName);
+    const errors: string[] = [];
+
+    if (!constraints) return errors;
+    if (constraints.isRequired) {
+      if (value === undefined || value === null || value === '') {
+        errors.push(`${fieldName} is required`);
+        return errors;
+      }
+
+      if (Array.isArray(value) && value.length === 0) {
+        errors.push(`${fieldName} is required`);
+        return errors;
+      }
+
+      if (typeof value === 'object' && value !== null) {
+        const hasValues = Object.values(value).some(
+          (val) => val !== undefined && val !== null && val !== ''
+        );
+        if (!hasValues) {
+          errors.push(`${fieldName} is required`);
+          return errors;
+        }
+      }
+    }
+    if (!value || value === '') return errors;
+    if (constraints.minLength && String(value).length < constraints.minLength) {
+      errors.push(
+        `${fieldName} must be at least ${constraints.minLength} characters`
+      );
+    }
+
+    if (constraints.maxLength && String(value).length > constraints.maxLength) {
+      errors.push(
+        `${fieldName} must be at most ${constraints.maxLength} characters`
+      );
+    }
+
+    if (constraints.pattern && value) {
+      const regex = new RegExp(constraints.pattern);
+      if (!regex.test(String(value))) {
+        const errorMessage = getPatternErrorMessage(
+          constraints.pattern,
+          fieldName,
+          constraints.policyMsg
+        );
+        errors.push(errorMessage);
+      }
+    }
+    if (constraints.isMultiSelect && Array.isArray(value)) {
+      if (
+        constraints.maxSelections &&
+        value.length > constraints.maxSelections
+      ) {
+        errors.push(
+          `You can select at most ${constraints.maxSelections} options`
+        );
+      }
+    }
+
+    return errors;
+  };
+  const hasValidationErrors = () => {
+    const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
+    const hasFormErrors = Object.keys(formErrors).length > 0;
+    const hasValidContact =
+      (formData.email && isValidEmail(formData.email)) ||
+      (formData.mobile && isValidMobile(formData.mobile));
+    const hasValidUsernameFormat = formData.Username
+      ? isValidEmail(formData.Username) ||
+        isValidMobile(formData.Username) ||
+        isValidUsername(formData.Username)
+      : true;
+    const hasAllRequiredFields = () => {
+      if (!formSchema?.properties) return false;
+
+      const requiredFields = formSchema.required || [];
+
+      return requiredFields.every((fieldName) => {
+        const fieldValue = formData[fieldName];
+        if (Array.isArray(fieldValue)) {
+          return fieldValue.length > 0; // For multi-select fields
+        }
+
+        if (typeof fieldValue === 'object' && fieldValue !== null) {
+          return Object.values(fieldValue).some(
+            (val) => val !== undefined && val !== null && val !== ''
+          );
+        }
+        return (
+          fieldValue !== undefined && fieldValue !== null && fieldValue !== ''
+        );
+      });
+    };
+
+    return (
+      hasFieldErrors ||
+      hasFormErrors ||
+      !hasValidContact ||
+      (!isUsernameValid && formData.Username) ||
+      !hasValidUsernameFormat ||
+      !formData.Username ||
+      !hasAllRequiredFields() // Add this dynamic check
+    );
+  };
+
   const getRegistrationCode = (formData) => {
     const regConfig = schema.meta?.registrationCodeConfig;
-
-    // If meta has a registration_code config with a name
     if (regConfig && regConfig.name) {
       const fieldValue = formData[regConfig.name];
       const valueRef = regConfig.value_ref || 'external_id';
       if (!fieldValue) return '';
 
       if (typeof fieldValue === 'object') {
-        // // API specifies value_ref as external_id (snake); our objects commonly use externalId (camel)
-        // if (valueRef === 'external_id') {
-        //   return String(fieldValue.externalId ?? fieldValue.external_id ?? '');
-        // }
-        // // Any other explicit key
         return String(fieldValue[valueRef] ?? '');
       }
-      // If it's a primitive, return as-is
       return String(fieldValue ?? '');
     }
 
-    // Fallback: take user-entered code from form (lowercase key as per requirement)
     const manual =
       formData.registrationcode ??
       formData['Registration Code'] ??
@@ -152,11 +355,11 @@ const DynamicForm = ({
     }
     return manual != null ? String(manual) : '';
   };
+
   const checkOtpAttempts = () => {
     const now = Date.now();
     const cooldownPeriod = 2 * 60 * 1000; // 2 minutes in milliseconds
 
-    // Reset attempts if more than 2 minutes have passed since last attempt
     if (rateLimitExpiry && now > rateLimitExpiry) {
       setOtpAttempts(0);
       setRateLimitExpiry(null);
@@ -164,7 +367,6 @@ const DynamicForm = ({
       setIsRateLimited(false);
       setOtpDisabled(false);
       setOtpDisabledMessage('');
-      // Reset errorButton only if it was set due to rate limiting
       if (isErrorButtonFromRateLimit) {
         setErrorButton(false);
         setIsErrorButtonFromRateLimit(false);
@@ -172,7 +374,6 @@ const DynamicForm = ({
       return true;
     }
 
-    // Check if user has exceeded attempts
     if (otpAttempts >= 3) {
       setTooManyRequests(true);
       setIsRateLimited(true);
@@ -192,7 +393,6 @@ const DynamicForm = ({
         setIsRateLimited(false);
         setOtpDisabled(false);
         setOtpDisabledMessage('');
-        // Reset errorButton only if it was set due to rate limiting
         if (isErrorButtonFromRateLimit) {
           setErrorButton(false);
           setIsErrorButtonFromRateLimit(false);
@@ -203,12 +403,10 @@ const DynamicForm = ({
     return () => clearInterval(timer);
   }, [rateLimitExpiry, isErrorButtonFromRateLimit]);
 
-  // Update countdown every second when rate limiting is active
   useEffect(() => {
     let timer: NodeJS.Timeout;
 
     if (isRateLimited && rateLimitExpiry) {
-      // Initial update
       setCurrentTime(Date.now());
 
       timer = setInterval(() => {
@@ -236,30 +434,21 @@ const DynamicForm = ({
       }
     };
   }, [isRateLimited, rateLimitExpiry, isErrorButtonFromRateLimit]);
-  //custom validation on formData for learner fields hide on dob
   useEffect(() => {
-    // Remove this line that was clearing error state on every formData change
-    // setErrorButton(false);
-
     if (formData?.dob) {
       let age = calculateAgeFromDate(formData?.dob);
       let oldFormSchema = formSchema;
       let oldFormUiSchema = formUiSchema;
       let requiredArray = oldFormSchema?.required;
       let requiredKeys = ['parent_phone', 'guardian_relation', 'guardian_name'];
-
-      //if learner form then only apply
       if (oldFormSchema?.properties?.guardian_relation) {
         if (age < 18) {
-          // Merge only missing items from required2 into required1
           requiredKeys.forEach((item) => {
             if (!requiredArray.includes(item)) {
               requiredArray.push(item);
             }
           });
-          //set ui schema show
           const updatedUiSchema = { ...oldFormUiSchema };
-          // Clone each key's config and set widget to 'hidden'
           requiredKeys.forEach((key) => {
             if (updatedUiSchema.hasOwnProperty(key)) {
               updatedUiSchema[key] = {
@@ -270,13 +459,10 @@ const DynamicForm = ({
           });
           oldFormUiSchema = updatedUiSchema;
         } else {
-          // remove from required
           requiredArray = requiredArray.filter(
             (key) => !requiredKeys.includes(key)
           );
-          //set ui schema hide
           const updatedUiSchema = { ...oldFormUiSchema };
-          // Clone each key's config and set widget to 'hidden'
           requiredKeys.forEach((key) => {
             if (updatedUiSchema.hasOwnProperty(key)) {
               updatedUiSchema[key] = {
@@ -350,24 +536,8 @@ const DynamicForm = ({
         return newErrors;
       });
     }
-    // if (formData?.email && formUiSchema?.mobile) {
-    //   setFormUiSchema((prev) => ({
-    //     ...prev,
-    //     mobile: {
-    //       ...prev.mobile,
-    //       'ui:widget': 'hidden',
-    //     },
-    //   }));
-    // } else if (formData?.mobile && formUiSchema?.email) {
-    //   setFormUiSchema((prev) => ({
-    //     ...prev,
-    //     email: {
-    //       ...prev.email,
-    //       'ui:widget': 'hidden',
-    //     },
-    //   }));
-    // }
   }, [formData]);
+
   const handleFieldError = (fieldName: string, hasError: boolean) => {
     setFieldErrors((prev) => ({
       ...prev,
@@ -379,7 +549,6 @@ const DynamicForm = ({
 
   useEffect(() => {
     if (isInitialCompleted === true) {
-      // setFormData;
       renderPrefilledForm();
     }
   }, [isInitialCompleted]);
@@ -421,11 +590,10 @@ const DynamicForm = ({
       const initialApis = extractApiProperties(schema, 'initial');
       const dependentApis = extractApiProperties(schema, 'dependent');
       setDependentSchema(dependentApis);
-      // // console.log('!!!', initialApis);
+
       try {
         const apiRequests = initialApis.map((field) => {
           const { api } = field;
-          // If header exists, replace values with localStorage values
           let customHeader = api?.header
             ? {
                 tenantId:
@@ -462,8 +630,6 @@ const DynamicForm = ({
         });
 
         const responses = await Promise.all(apiRequests);
-
-        // Update schema dynamically
         if (!responses[0]?.error) {
           setFormSchema((prevSchema) => {
             const updatedProperties = { ...prevSchema.properties };
@@ -527,7 +693,7 @@ const DynamicForm = ({
 
         setIsInitialCompleted(true);
       } catch (error) {
-        // console.error("Error fetching API data:", error);
+        console.error('Error fetching API data:', error);
       }
     };
 
@@ -538,11 +704,7 @@ const DynamicForm = ({
         return path.split('.').reduce((acc, key) => acc && acc[key], obj);
       }
     };
-
-    // Call the function
     fetchApiData(schema);
-
-    //replace title with language constant
     const updateSchemaTitles = (schema, t) => {
       if (!schema || typeof schema !== 'object') return schema;
 
@@ -564,12 +726,8 @@ const DynamicForm = ({
 
       return updatedSchema;
     };
-    // Dynamically update schema titles
-    // const translatedSchema = updateSchemaTitles(formSchema, t);
-    // setFormSchema(translatedSchema);
   }, []);
 
-  // console.log('schema', schema)
   const extractApiProperties = (schema, callType) => {
     return Object.entries(schema.properties)
       .filter(([_, value]) => value.api && value.api.callType === callType)
@@ -596,8 +754,6 @@ const DynamicForm = ({
         dependentKeys
       );
       setFormData(updatedFormData);
-
-      //prefill other dependent keys
       const filterDependentKeys = (
         formData: Record<string, any>,
         keysToKeep: string[]
@@ -618,7 +774,6 @@ const DynamicForm = ({
           data: schema.properties[filteredFormDataKey[i]],
         });
       }
-      //dependent calls
       const workingSchema = filterDependentApis;
 
       const getNestedValue = (obj, path) => {
@@ -630,7 +785,6 @@ const DynamicForm = ({
       };
 
       const fetchDependentApis = async () => {
-        // Filter only the dependent APIs based on the changed field
         const dependentApis = workingSchema;
         try {
           const apiRequests = dependentApis.map((realField) => {
@@ -691,7 +845,6 @@ const DynamicForm = ({
                 };
 
                 const fetchDependentApis = async () => {
-                  // Filter only the dependent APIs based on the changed field
                   const dependentApis = workingSchema1;
                   try {
                     const apiRequests = dependentApis.map((field) => {
@@ -703,8 +856,6 @@ const DynamicForm = ({
                         changedFieldValue,
                         isMultiSelect
                       );
-
-                      // If header exists, replace values with localStorage values
                       let customHeader = api?.header
                         ? {
                             tenantId:
@@ -816,8 +967,6 @@ const DynamicForm = ({
                     console.error('Error fetching dependent APIs:', error);
                   }
                 };
-
-                // Call the function
                 fetchDependentApis();
               }
             }
@@ -862,11 +1011,7 @@ const DynamicForm = ({
           console.error('Error fetching dependent APIs:', error);
         }
       };
-
-      // Call the function
       fetchDependentApis();
-
-      //setFormData
       setFormData(temp_prefilled_form);
 
       function getSkipKeys(skipHideObject, formData) {
@@ -901,7 +1046,6 @@ const DynamicForm = ({
       const hiddenUISchema = hideFieldsInUISchema(updatedUISchema, skipKeys);
       setFormUiSchema(hiddenUISchema);
     }
-    //Code patch: bug solved for prefilled dependent field options render
     setIsRenderCompleted(true);
   };
 
@@ -929,17 +1073,13 @@ const DynamicForm = ({
     for (let key of keys) {
       const oldValue = oldObj[key] || [];
       const newValue = newObj[key] || [];
-
-      // Handle array comparison
       if (Array.isArray(oldValue) && Array.isArray(newValue)) {
         if (oldValue.length !== newValue.length) return true;
         const isDifferent = oldValue.some(
           (val, index) => val !== newValue[index]
         );
         if (isDifferent) return true;
-      }
-      // Handle normal value comparison
-      else if (oldValue !== newValue) {
+      } else if (oldValue !== newValue) {
         return true;
       }
     }
@@ -952,19 +1092,14 @@ const DynamicForm = ({
     changedFieldValue,
     isMultiSelect
   ) => {
-    // Deep clone to avoid modifying the original object
     const updatedPayload = JSON.parse(JSON.stringify(payload));
-    // Determine new value based on type
     const newValue = isMultiSelect
       ? Array.isArray(changedFieldValue)
         ? [...changedFieldValue]
         : [changedFieldValue]
       : changedFieldValue;
-
-    // Recursive function to replace ** in nested objects/arrays
     const replaceNested = (obj) => {
       if (Array.isArray(obj)) {
-        // If array, iterate through each element
         obj.forEach((item, index) => {
           if (typeof item === 'object' && item !== null) {
             replaceNested(item); // Recursive call for nested objects/arrays
@@ -973,7 +1108,6 @@ const DynamicForm = ({
           }
         });
       } else if (typeof obj === 'object' && obj !== null) {
-        // If object, iterate through keys
         Object.keys(obj).forEach((key) => {
           if (obj[key] === '**') {
             obj[key] = newValue;
@@ -983,12 +1117,11 @@ const DynamicForm = ({
         });
       }
     };
-
-    // Start recursion from the root
     replaceNested(updatedPayload);
 
     return updatedPayload;
   };
+
   const getChangedField = (
     formData: Record<string, any>,
     prevFormData: Record<string, any>
@@ -998,17 +1131,16 @@ const DynamicForm = ({
       const oldValue = prevFormData[key];
 
       if (Array.isArray(newValue) && Array.isArray(oldValue)) {
-        // Check if arrays have different elements (added/removed values)
         return (
           newValue.length !== oldValue.length ||
           !newValue.every((val) => oldValue.includes(val))
         );
       } else {
-        // Check for primitive value changes
         return newValue !== oldValue;
       }
     });
   };
+
   useEffect(() => {
     if (formData.email || formData.mobile) {
       setShowEmailMobileError('');
@@ -1060,11 +1192,16 @@ const DynamicForm = ({
   const handleChange = useCallback(
     async ({ formData, errors }: { formData: any; errors: any }) => {
       const newErrors: Record<string, string[]> = {};
-      Object.keys(errors).forEach((key) => {
-        if (errors[key].__errors && errors[key].__errors.length > 0) {
-          newErrors[key] = errors[key].__errors;
+      Object.keys(formSchema?.properties || {}).forEach((fieldName) => {
+        const fieldErrors = validateFieldDynamically(
+          fieldName,
+          formData[fieldName]
+        );
+        if (fieldErrors.length > 0) {
+          newErrors[fieldName] = fieldErrors;
         }
       });
+
       setFormErrors(newErrors);
 
       const prevRole = prevFormData.current?.Role;
@@ -1072,7 +1209,6 @@ const DynamicForm = ({
       const prevUdise =
         prevFormData.current?.udise || prevFormData.current?.Udise;
       const currentUdise = formData?.Udise;
-      // Create a new form data object
       let newFormData = { ...formData };
       if (currentUdise === undefined) {
         formData.Udise = '';
@@ -1093,14 +1229,12 @@ const DynamicForm = ({
           School: '',
         };
       }
-      // Check if role changed and clear sub-roles if it did
       if (currentRole && currentRole !== prevRole) {
         newFormData = {
           ...newFormData,
           'Sub-Role': undefined,
         };
         setSubroles([]);
-        // Don't call setFormData here, let it be called once at the end
         setFormUiSchema((prev) => ({
           ...prev,
           'Sub-Role': {
@@ -1109,8 +1243,6 @@ const DynamicForm = ({
           },
         }));
       }
-
-      // Only autofill email/mobile if username changed
       const usernameChanged =
         formData.Username !== prevFormData.current?.Username;
 
@@ -1141,12 +1273,9 @@ const DynamicForm = ({
         }
       }
       setIsUsernameValid(false);
-      // Check username availability if username changed
       if (formData.Username) {
         checkUsernameAvailability(formData.Username);
       }
-
-      // Handle email/mobile validation
       if (newFormData.email && newFormData.mobile) {
         setShowEmailMobileError('');
       } else if (newFormData.email) {
@@ -1160,21 +1289,16 @@ const DynamicForm = ({
       } else {
         setShowEmailMobileError('');
       }
-
-      // Update form data only once at the end
       setFormData(newFormData);
       prevFormData.current = newFormData;
-
-      // Call the onChange prop if it exists
       if (onChange) {
-        onChange({ formData: newFormData, errors });
+        onChange({ formData: newFormData, errors: newErrors });
       }
     },
-    [onChange, checkUsernameAvailability]
+    [onChange, checkUsernameAvailability, formSchema]
   );
 
   const handleSubmit = ({ formData }: { formData: any }) => {
-    //step-1 : Check and remove skipped Data
     function filterFormData(skipHideObject, formData) {
       const updatedFormData = { ...formData };
 
@@ -1194,7 +1318,6 @@ const DynamicForm = ({
         ([_, value]) => !Array.isArray(value) || value.length > 0
       )
     );
-    //step-2 : Validate the form data
     function transformFormData(
       formData: Record<string, any>,
       schema: any,
@@ -1224,17 +1347,11 @@ const DynamicForm = ({
 
       return transformedData;
     }
-
-    // Optional extra root-level fields
-    // Extra Field for cohort creation
-
     const transformedFormData = transformFormData(
       cleanedData,
       schema,
       extraFields
     );
-
-    //add name in always lower case
     if (transformedFormData?.name) {
       transformedFormData.name = transformedFormData.name.toLowerCase();
     }
@@ -1242,10 +1359,7 @@ const DynamicForm = ({
     if (!isCallSubmitInHandle) {
       FormSubmitFunction(cleanedData, transformedFormData);
     }
-
-    //live validate error fix
     setSubmitted(true);
-    // Get first error field and scroll into view
     setTimeout(() => {
       const errorField = document.querySelector('.field-error');
       if (errorField) {
@@ -1253,54 +1367,33 @@ const DynamicForm = ({
       }
     }, 100);
   };
-  // console.log(formSchema);
-
-  // Regex to Error Mapping
-  const patternErrorMessages = {
-    '^(?=.*[a-zA-Z])[a-zA-Z ]+$':
-      'Numbers and special characters are not allowed',
-    '^[a-zA-Z][a-zA-Z ]*[a-zA-Z]$':
-      'Numbers and special characters are not allowed',
-    '^[a-zA-Z0-9.@]+$': 'Space and special characters are not allowed',
-    '^[0-9]{10}$': 'Enter a valid Mobile Number',
-    '^d{10}$': 'Characters and special characters are not allowed',
-  };
-
-  // Dynamic custom validation
   const customValidate = (formData, errors) => {
     Object.keys(formSchema.properties).forEach((key) => {
       const field = formSchema.properties[key];
       const value = formData[key];
-      // Ensure errors[key] is defined
       if (!errors[key]) {
         errors[key] = {};
       }
-
-      // ✅ Clear error if field is empty or invalid
       if (!value || value === '' || value === null || value === undefined) {
         if (errors[key]?.__errors) {
-          errors[key].__errors = []; // ✅ Clear existing errors
+          errors[key].__errors = [];
         }
-        delete errors[key]; // ✅ Completely remove errors if empty
+        delete errors[key];
       } else if (field.pattern) {
-        // ✅ Validate pattern only if the field has a value
         const patternRegex = new RegExp(field.pattern);
         if (!patternRegex.test(value)) {
           const errorMessage =
             patternErrorMessages?.[field.pattern] ||
             `Invalid format for ${field.title || key}.`;
-
-          // ✅ Add only if pattern does not match
           if (!errors[key].__errors) {
             errors[key].__errors = [];
           }
           errors[key].__errors = [errorMessage];
         } else {
-          // ✅ Clear errors if pattern matches
           if (errors[key]?.__errors) {
             errors[key].__errors = [];
           }
-          delete errors[key]; // ✅ Remove errors if valid
+          delete errors[key];
         }
       }
     });
@@ -1317,13 +1410,14 @@ const DynamicForm = ({
 
     return updatedError;
   };
+
   useEffect(() => {
     if (!formData.Role) {
       setSubroles([]);
-      // Also clear any selected subroles
       setFormData((prev) => ({ ...prev, 'Sub-Role': [] }));
     }
   }, [formData.Role]);
+
   useEffect(() => {
     setFormSchema((prevSchema) => {
       const updatedProperties = { ...prevSchema.properties };
@@ -1357,9 +1451,8 @@ const DynamicForm = ({
       return updatedUiSchema;
     });
   }, []);
-  const handleFetchData = React.useCallback((response: any) => {
-    // Example: Update specific fields from API response
 
+  const handleFetchData = React.useCallback((response: any) => {
     setFormData((prev) => ({
       ...prev,
       State: response.state ?? { _id: '', name: '', externalId: '' },
@@ -1370,12 +1463,11 @@ const DynamicForm = ({
       udise: response.udise ?? '',
     }));
   }, []);
+
   const MemoizedUdiaseWithButton = React.memo(({ onFetchData, ...props }) => (
     <UdiaseWithButton {...props} onFetchData={onFetchData} />
   ));
   const subrolesRef = useRef<any[]>([]);
-
-  // Update ref whenever subroles change
   useEffect(() => {
     subrolesRef.current = subroles;
   }, [subroles]);
@@ -1420,7 +1512,6 @@ const DynamicForm = ({
             handleFieldError(props.id, hasError);
           }}
           onClearError={(fieldName) => {
-            // Clear error for the other field when one is filled
             setFieldErrors((prev) => ({ ...prev, [fieldName]: false }));
             setFormErrors((prev) => {
               const newErrors = { ...prev };
@@ -1434,19 +1525,20 @@ const DynamicForm = ({
       CustomDateWidget,
       SearchTextFieldWidget,
       CustomRadioWidget,
-      // CustomTextFieldWidget,
       UdiaseWithButton: (props) => (
         <MemoizedUdiaseWithButton {...props} onFetchData={handleFetchData} />
       ),
       CustomEmailWidget,
     }),
-    [handleFetchData, isRateLimited, rateLimitExpiry, countdownUpdate] // Removed subroles from dependency
+    [handleFetchData, isRateLimited, rateLimitExpiry, countdownUpdate]
   );
+
   const validateForm = () => {
     const isValid = !!(formData.email || formData.mobile);
     setShowEmailMobileError(!isValid);
     return isValid;
   };
+
   const handleSendOtp = async () => {
     if (!checkOtpAttempts()) {
       return;
@@ -1455,27 +1547,21 @@ const DynamicForm = ({
     const customFields = Object.entries(fieldIdMapping).flatMap(
       ([name, fieldId]) => {
         let fieldValue = formData[name] ?? '';
-
-        // Skip subRoles if not present or empty
         if (name === 'subRoles') {
           if (
             !fieldValue ||
             (Array.isArray(fieldValue) && fieldValue.length === 0)
           ) {
-            return []; // Skip this field
+            return [];
           }
-          // Ensure it's an array
           fieldValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
           return [{ fieldId, value: fieldValue }];
         }
 
-        // Ensure roles is an array
         if (name === 'roles') {
           fieldValue = Array.isArray(fieldValue) ? fieldValue : [fieldValue];
           return [{ fieldId, value: fieldValue }];
         }
-
-        // For other fields, stringify if object
         if (typeof fieldValue === 'object' && fieldValue !== null) {
           return [
             {
@@ -1487,17 +1573,14 @@ const DynamicForm = ({
             },
           ];
         }
-
-        // For primitives
         return [{ fieldId, value: fieldValue }];
       }
     );
 
-    // const userName = formData.firstName;
     const registrationCode = getRegistrationCode(formData);
 
     let otpPayload;
-    const hasMobile = !!formData.mobile?.trim(); // Checks if user entered any mobile number
+    const hasMobile = !!formData.mobile?.trim();
     const isValidMobile = /^[6-9]\d{9}$/.test(formData.mobile?.trim() ?? '');
 
     otpPayload = {
@@ -1515,7 +1598,6 @@ const DynamicForm = ({
       const registrationResponse = await sendOtp(otpPayload);
       setOtpAttempts((prev) => prev + 1);
       setLastOtpAttemptTime(Date.now());
-      console.log('registrationResponse', registrationResponse.message);
 
       if (registrationResponse?.responseCode === 'OK') {
         setRequestData({
@@ -1525,8 +1607,6 @@ const DynamicForm = ({
             },
           },
         });
-        // setErrorMessage(registrationResponse.message);
-        // setAlertSeverity('success');
         setIsOpenOTP(true);
       } else {
         if (registrationResponse?.message === 'INVALID_ORG_registration_code') {
@@ -1545,8 +1625,8 @@ const DynamicForm = ({
           const now = Date.now();
           setTooManyRequests(true);
           setIsRateLimited(true);
-          setRateLimitExpiry(now + 2 * 60 * 1000); // 2 minutes from now
-          setCurrentTime(now); // Set initial current time
+          setRateLimitExpiry(now + 2 * 60 * 1000);
+          setCurrentTime(now);
           setShowError(true);
           setErrorButton(true);
           setIsErrorButtonFromRateLimit(true);
@@ -1568,12 +1648,12 @@ const DynamicForm = ({
         }
       }
     } catch (error) {
-      // Update OTP attempt tracking even on failure
       setOtpAttempts((prev) => prev + 1);
       setLastOtpAttemptTime(Date.now());
       // ... existing error handling ...
     }
   };
+
   const handleRegister = async (otp) => {
     if (!formData.email && !formData.mobile) {
       setShowEmailMobileError(
@@ -1597,10 +1677,10 @@ const DynamicForm = ({
         return foundOption?._originalData?._id ?? selectedId;
       });
     };
-    // const userName = formData.firstName;
+
     const isMobile = /^[6-9]\d{9}$/.test(formData.mobile);
     const registrationCode = getRegistrationCode(formData);
-    console.log('registrationCode create', registrationCode);
+
     const payload = {
       name:
         formData.firstName + (formData.lastName ? ` ${formData.lastName}` : ''),
@@ -1618,7 +1698,6 @@ const DynamicForm = ({
       professional_role: localStorage.getItem('role'),
       professional_subroles: getSubRoleExternalIds(),
       otp: Number(otp),
-      // customFields,
     };
 
     setRegisterData(payload);
@@ -1649,7 +1728,7 @@ const DynamicForm = ({
         'name',
         registrationResponse?.result?.user?.username
       );
-      localStorage.setItem('userStatus',registrationResponse?.result?.status);
+      localStorage.setItem('userStatus', registrationResponse?.result?.status);
       document.cookie = `userStatus=${registrationResponse?.result?.status}; path=/; secure; SameSite=Lax`;
       const organizations =
         registrationResponse?.result?.user?.organizations ?? [];
@@ -1661,12 +1740,10 @@ const DynamicForm = ({
         );
       }
       router.replace('/home');
-      // setDialogOpen(true);
     } else {
       setShowError(true);
       setAlertSeverity('error');
       setErrorButton(true);
-      console.log('registrationResponse', registrationResponse);
       setErrorMessage(registrationResponse.data.message);
       setTimeout(() => {
         setShowError(false);
@@ -1745,8 +1822,6 @@ const DynamicForm = ({
             }
           }
         }
-
-        // Check rootOrgId and route or show error
       } else {
         setShowError(true);
         setErrorButton(true);
@@ -1762,35 +1837,7 @@ const DynamicForm = ({
       setTimeout(() => {
         setShowError(false);
       }, 8000);
-    } finally {
-      // setLoading(false);
     }
-    // router.push('/');
-    // localStorage.clear();
-  };
-  const hasValidationErrors = () => {
-    const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
-    const hasFormErrors = Object.keys(formErrors).length > 0;
-
-    // Check if we have at least one valid contact method
-    const hasValidContact =
-      (formData.email && isValidEmail(formData.email)) ||
-      (formData.mobile && isValidMobile(formData.mobile));
-
-    // Check if username format is valid (if username is provided)
-    const hasValidUsernameFormat = formData.Username
-      ? isValidEmail(formData.Username) ||
-        isValidMobile(formData.Username) ||
-        isValidUsername(formData.Username)
-      : true;
-
-    return (
-      hasFieldErrors ||
-      hasFormErrors ||
-      !hasValidContact ||
-      (!isUsernameValid && formData.Username) ||
-      !hasValidUsernameFormat
-    );
   };
 
   return (
@@ -1836,24 +1883,9 @@ const DynamicForm = ({
               disabled={
                 isRateLimited ||
                 errorButton ||
-                !formData?.firstName ||
+                hasValidationErrors() || // This now includes all dynamic validations
                 !formData?.password ||
-                (!formData?.email && !formData?.mobile) ||
-                !formData?.confirm_password ||
-                formData.password !== formData.confirm_password ||
-                !formData.Role ||
-                !formData?.udise ||
-                !formData?.Udise ||
-                !formData.Username ||
-                !isUsernameValid ||
-                hasValidationErrors() ||
-                (formData.Role !== 'parents' &&
-                  formData.Role !== 'others' &&
-                  formData.Role !== 'youth' &&
-                  (!formData?.['Sub-Role'] ||
-                    formData['Sub-Role'].length === 0))
-                // !formData?.school ||
-                // !formData?.state
+                formData.password !== formData.confirm_password
               }
               sx={{
                 whiteSpace: 'nowrap',
@@ -1861,10 +1893,8 @@ const DynamicForm = ({
                 color: '#FFFFFF',
                 borderRadius: '30px',
                 textTransform: 'none',
-                // marginTop: '5px',
                 fontWeight: 'bold',
                 fontSize: '14px',
-                // padding: '8px 5px',
                 '&:hover': {
                   bgcolor: '#543E98',
                 },
@@ -1951,7 +1981,6 @@ const DynamicForm = ({
           </Button>
         </DialogActions>
       </Dialog>
-      {/* {errorMessage && <Alert severity={alertSeverity}>{errorMessage}</Alert>} */}
     </>
   );
 };
