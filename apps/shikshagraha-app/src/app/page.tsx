@@ -151,8 +151,8 @@ export default function Login() {
         userName: !formData.userName,
         password: !formData.password,
       });
-      setFormSubmitted(false); // Reset to allow retry
-      loginClickedRef.current = false; // Reset ref
+      setFormSubmitted(false);
+      loginClickedRef.current = false;
       return;
     }
     if (error.password) {
@@ -184,14 +184,14 @@ export default function Login() {
         if (userStatus !== 'ACTIVE') {
           setShowError(true);
           setErrorMessage('The user is deactivated, please contact admin.');
-          setFormSubmitted(false); // Reset to allow retry
-          loginClickedRef.current = false; // Reset ref
-          setLoading(false); // Reset loading state
+          setFormSubmitted(false);
+          loginClickedRef.current = false;
+          setLoading(false);
           return;
         }
         localStorage.setItem('accToken', accessToken);
         localStorage.setItem('refToken', refreshToken);
-        localStorage.setItem('firstname', response?.result?.user?.name);
+        localStorage.setItem('firstName', response?.result?.user?.name);
         let userId = Number(localStorage.getItem('userId'));
         if (userId !== response?.result?.user?.id) {
           clearIndexedDB();
@@ -219,7 +219,7 @@ export default function Login() {
     } finally {
       setLoading(false);
       setFormSubmitted(false);
-      loginClickedRef.current = false; // Reset ref after submission attempt
+      loginClickedRef.current = false;
     }
   };
 
@@ -325,7 +325,6 @@ export default function Login() {
             const isStandalone = window.matchMedia(
               '(display-mode: standalone)'
             ).matches;
-            // Allow submit only if user clicked login explicitly (for standalone apps)
             if (isStandalone && !loginClickedRef.current) {
               return;
             }
@@ -487,7 +486,6 @@ export default function Login() {
               onClick={(e) => {
                 e.preventDefault();
                 loginClickedRef.current = true;
-                // Directly call handleButtonClick to ensure it works on first click
                 handleButtonClick();
               }}
             >

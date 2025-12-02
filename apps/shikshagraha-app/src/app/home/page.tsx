@@ -249,7 +249,7 @@ export default function Home() {
   };
 
   const getUserFirstName = () => {
-    return getUserDataFromLocal('firstname');
+    return getUserDataFromLocal('firstName');
   };
 
   const getEnabledCards = () => {

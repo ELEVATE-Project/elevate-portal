@@ -292,15 +292,11 @@ const DynamicForm = ({
   const hasValidationErrors = () => {
     const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
     const hasFormErrors = Object.keys(formErrors).length > 0;
-
-    // Check if username is valid format
     const hasValidUsernameFormat = formData.Username
       ? isValidEmail(formData.Username) ||
         isValidMobile(formData.Username) ||
         isValidUsername(formData.Username)
       : false;
-
-    // Check if we have at least one valid contact method
     const hasValidContact =
       (formData.email && isValidEmail(formData.email)) ||
       (formData.mobile && isValidMobile(formData.mobile));
@@ -308,40 +304,25 @@ const DynamicForm = ({
       if (!formSchema?.properties || !formData) return false;
       return Object.keys(formSchema.properties).every((fieldName) => {
         const fieldSchema = formSchema.properties[fieldName];
-
-        // Check if field is required (from isRequired property in field schema)
         const isRequired = fieldSchema?.isRequired === true;
-
-        // If field is not required, skip validation
         if (!isRequired) return true;
-
         const fieldValue = formData[fieldName];
-
-        // Handle array fields (multi-select)
         if (Array.isArray(fieldValue)) {
           return fieldValue.length > 0;
         }
-
-        // Handle object fields (e.g., dropdown selections)
         if (typeof fieldValue === 'object' && fieldValue !== null) {
-          // Check if object has any meaningful values
           const hasValue = Object.values(fieldValue).some(
             (val) => val !== undefined && val !== null && val !== ''
           );
           return hasValue;
         }
-
-        // Handle string/number fields - check if value exists and is not empty
         if (fieldValue === undefined || fieldValue === null) {
           return false;
         }
-
-        // Convert to string and check if trimmed length is greater than 0
         const stringValue = String(fieldValue).trim();
         return stringValue.length > 0;
       });
     };
-
     return (
       hasFieldErrors ||
       hasFormErrors ||
@@ -351,20 +332,17 @@ const DynamicForm = ({
       !hasAllRequiredFields()
     );
   };
-
   const getRegistrationCode = (formData) => {
     const regConfig = schema.meta?.registrationCodeConfig;
     if (regConfig && regConfig.name) {
       const fieldValue = formData[regConfig.name];
       const valueRef = regConfig.value_ref || 'external_id';
       if (!fieldValue) return '';
-
       if (typeof fieldValue === 'object') {
         return String(fieldValue[valueRef] ?? '');
       }
       return String(fieldValue ?? '');
     }
-
     const manual =
       formData.registrationcode ??
       formData['Registration Code'] ??
@@ -1784,7 +1762,7 @@ const DynamicForm = ({
         const tenantResponse = await authenticateLoginUser({
           token: response?.result?.access_token,
         });
-        localStorage.setItem('firstname', tenantResponse?.result?.firstName);
+        localStorage.setItem('firstName', tenantResponse?.result?.firstName);
 
         if (tenantResponse?.result?.status === 'archived') {
           setShowError(true);

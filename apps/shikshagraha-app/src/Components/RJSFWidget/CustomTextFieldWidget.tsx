@@ -388,7 +388,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     setIsFocused(true);
     onFocus(id, event.target.value);
   };
-
   const displayErrors = rawErrors.filter(
     (error) => !error.toLowerCase().includes('required')
   );
@@ -396,7 +395,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const toggleShowPassword = () => {
     setShowPassword((prev) => !prev);
   };
-
   const renderLabel = () => {
     const isFieldRequired = fieldSchema?.isRequired === true;
     if (isEmailField || isMobileField) {
@@ -413,7 +411,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         </>
       );
     }
-
     if (isConfirmPasswordField) {
       return (
         <>
@@ -429,7 +426,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         </>
       );
     }
-
     return label;
   };
 
