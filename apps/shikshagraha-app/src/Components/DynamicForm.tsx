@@ -1880,7 +1880,7 @@ const DynamicForm = ({
               disabled={
                 isRateLimited ||
                 errorButton ||
-                hasValidationErrors() || // This now includes all dynamic validations (including contact requirement)
+                hasValidationErrors() ||
                 !formData?.password ||
                 formData.password !== formData.confirm_password
               }
