@@ -142,6 +142,17 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     return required;
   };
 
+  const getMobileMaxLength = (): number => {
+    console.log("fieldPatternString", fieldPatternString);
+    if (fieldPatternString) {
+      const match = fieldPatternString.match(/\{(\d+)\}/);
+      if (match && match[1]) {
+        return parseInt(match[1], 10);
+      }
+    }
+    return 10; // Default fallback
+  };
+
   // Helpers
   const validateWithPattern = (
     val: string,
@@ -335,11 +346,12 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     const val = event.target.value;
 
     if (isMobileField) {
+      const maxLength = getMobileMaxLength();
       const numericValue = val.replace(/\D/g, '');
-      const limitedValue = numericValue.slice(0, 10);
+      const limitedValue = numericValue.slice(0, maxLength);
       if (limitedValue) {
         setLocalError(
-          limitedValue.length === 10
+          limitedValue.length === maxLength
             ? null
             : validateField(label ?? '', limitedValue)
         );
