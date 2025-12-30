@@ -62,7 +62,7 @@ const PasswordReset = ({ name }: { name: string }) => {
   const passwordRegex =
     /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\-={}"';<>?,./\\])(?!.*\s).{8,}$/;
   const [timer, setTimer] = useState(0);
-  const [secondsLeft, setSecondsLeft] = useState(605);
+  const [secondsLeft, setSecondsLeft] = useState(600);
   const [lastResendTime, setLastResendTime] = useState<number | null>(null);
   // Calculate remaining time
   const remainingResendTime = lastResendTime
@@ -240,7 +240,7 @@ const PasswordReset = ({ name }: { name: string }) => {
       console.log(response);
       if (response?.responseCode === 'OK') {
         setStep('otp');
-        setSecondsLeft(605);
+        setSecondsLeft(600);
       } else {
         // Handle specific error cases
         const errorMessage =
