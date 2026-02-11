@@ -1,7 +1,7 @@
 'use client';
 import { useRouter } from 'next/router';
 import React from 'react';
-import { Layout } from '@shared-lib';
+import { Layout, getEnvValue } from '@shared-lib';
 
 interface PlayerPageProps {
   id?: string; // Define the type for the 'id' prop
@@ -32,7 +32,7 @@ const PlayerPage: React.FC<PlayerPageProps> = ({ id }) => {
     >
       <iframe
         src={`${
-          process.env.NEXT_PUBLIC_LEARNER_SBPLAYER
+          getEnvValue('NEXT_PUBLIC_LEARNER_SBPLAYER')
         }?identifier=${identifier}${
           courseId && unitId ? `&courseId=${courseId}&unitId=${unitId}` : ''
         }`}

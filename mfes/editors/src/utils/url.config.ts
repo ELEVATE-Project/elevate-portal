@@ -1,3 +1,5 @@
+import { getEnvValue } from '@shared-lib';
+
 export const URL_CONFIG = {
   PARAMS: {
     CONTENT_GET:
@@ -130,10 +132,10 @@ export const V2PlayerConfig: PlayerConfig = {
     sid: '',
     uid: '',
     timeDiff: -0.089,
-    channel: process.env.NEXT_PUBLIC_CHANNEL_ID || '',
-    tags: [process.env.NEXT_PUBLIC_CHANNEL_ID || ''],
+    channel: getEnvValue('NEXT_PUBLIC_CHANNEL_ID') || '',
+    tags: [getEnvValue('NEXT_PUBLIC_CHANNEL_ID') || ''],
     did: DeviceId,
-    contextRollup: { l1: process.env.NEXT_PUBLIC_CHANNEL_ID || '' },
+    contextRollup: { l1: getEnvValue('NEXT_PUBLIC_CHANNEL_ID') || '' },
     objectRollup: {},
     userData: { firstName: userName, lastName: '' },
     host: '',
@@ -233,11 +235,11 @@ export const V1PlayerConfig: PlayerConfig = {
     uid: '',
     timeDiff: -1.129,
     contextRollup: {},
-    channel: process.env.NEXT_PUBLIC_CHANNEL_ID || '',
+    channel: getEnvValue('NEXT_PUBLIC_CHANNEL_ID') || '',
     did: '',
     dims: [],
-    tags: [process.env.NEXT_PUBLIC_CHANNEL_ID || ''],
-    app: [process.env.NEXT_PUBLIC_CHANNEL_ID || ''],
+    tags: [getEnvValue('NEXT_PUBLIC_CHANNEL_ID') || ''],
+    app: [getEnvValue('NEXT_PUBLIC_CHANNEL_ID') || ''],
     cdata: [],
     userData: {
       firstName: userName,

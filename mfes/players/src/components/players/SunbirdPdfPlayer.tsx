@@ -1,6 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { getTelemetryEvents } from '../../services/TelemetryService';
 import { handleExitEvent } from '../utils/Helper';
+import { getEnvValue } from '@shared-lib';
 
 interface PlayerConfigProps {
   playerConfig: any;
@@ -8,7 +9,7 @@ interface PlayerConfigProps {
   configFunctionality?: any;
 }
 
-const basePath = process.env.NEXT_PUBLIC_ASSETS_CONTENT || '/sbplayer';
+const basePath = getEnvValue('NEXT_PUBLIC_ASSETS_CONTENT') || '/sbplayer';
 
 const SunbirdPdfPlayer = ({
   playerConfig,

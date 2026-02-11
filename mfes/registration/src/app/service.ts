@@ -1,9 +1,10 @@
 import axios from 'axios';
+import { getEnvValue } from '@shared-lib';
 
 export const searchLocation = async (id, type = 'school') => {
   try {
     const headers = {
-      Authorization: process.env.NEXT_PUBLIC_AUTH,
+      Authorization: getEnvValue('NEXT_PUBLIC_AUTH'),
       'Content-Type': 'application/json',
     };
 
@@ -24,7 +25,7 @@ export const searchLocation = async (id, type = 'school') => {
     };
 
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_SEARCH_LOCATION}`,
+      `${getEnvValue('NEXT_PUBLIC_BASE_URL')}${getEnvValue('NEXT_PUBLIC_SEARCH_LOCATION')}`,
       payload,
       { headers }
     );
@@ -110,7 +111,7 @@ export const fetchLocationData = async (udisecode) => {
 
 export const generateOTP = async (key, type) => {
   const headers = {
-    Authorization: process.env.NEXT_PUBLIC_AUTH,
+    Authorization: getEnvValue('NEXT_PUBLIC_AUTH'),
     'Content-Type': 'application/json',
   };
   let req = {};
@@ -134,7 +135,7 @@ export const generateOTP = async (key, type) => {
 
   try {
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_GENRATE_OTP}`,
+      `${getEnvValue('NEXT_PUBLIC_BASE_URL')}${getEnvValue('NEXT_PUBLIC_GENRATE_OTP')}`,
       req,
       { headers }
     );
@@ -147,7 +148,7 @@ export const generateOTP = async (key, type) => {
 export const verifyOtpService = async (email, otp, contactType) => {
   console.log('contactType', contactType);
   const headers = {
-    Authorization: process.env.NEXT_PUBLIC_AUTH,
+    Authorization: getEnvValue('NEXT_PUBLIC_AUTH'),
     'Content-Type': 'application/json',
   };
   const req = {
@@ -160,7 +161,7 @@ export const verifyOtpService = async (email, otp, contactType) => {
 
   try {
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_VERIFT_OTP}`,
+      `${getEnvValue('NEXT_PUBLIC_BASE_URL')}${getEnvValue('NEXT_PUBLIC_VERIFT_OTP')}`,
       req,
       { headers }
     );
@@ -175,7 +176,7 @@ export const registerUserService = async (requestData) => {
 
   try {
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_NEW_REGISTRATION}`,
+      `${getEnvValue('NEXT_PUBLIC_BASE_URL')}${getEnvValue('NEXT_PUBLIC_NEW_REGISTRATION')}`,
       modifiedRequestData
     );
     return response.data;

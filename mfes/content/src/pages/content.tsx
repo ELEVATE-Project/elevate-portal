@@ -4,7 +4,7 @@
 'use client';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Box, Fab, Typography, Button } from '@mui/material';
-import { ContentCard, CommonTabs, Layout, Circular } from '@shared-lib';
+import { ContentCard, CommonTabs, Layout, Circular, getEnvValue } from '@shared-lib';
 import { ContentSearch } from '../services/Search';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SearchIcon from '@mui/icons-material/Search';
@@ -360,7 +360,7 @@ export default function Content() {
 
   const fetchFramework = async () => {
     try {
-      const url = `${process.env.NEXT_PUBLIC_SSUNBIRD_BASE_URL}/api/framework/v1/read/atree-framework`;
+      const url = `${getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL')}/api/framework/v1/read/atree-framework`;
       const frameworkData = await fetch(url).then((res) => res.json());
       const frameworks = frameworkData?.result?.framework;
       setFrameworkFilter(frameworks);

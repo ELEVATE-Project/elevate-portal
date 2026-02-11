@@ -1,5 +1,12 @@
+const getEnvValue = (key) => {
+  if (typeof window !== 'undefined' && window.__ENV && window.__ENV[key]) {
+    return window.__ENV[key];
+  }
+  return process.env[key];
+};
+
 const AppConst = {
-  BASEPATH: process.env.NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH || '',
+  get BASEPATH() { return getEnvValue('NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH') || ''; },
   API_ENDPOINTS: {
     REDIRECT_TOKEN: '/api/auth/redirect-token',
     // Add other API endpoints here

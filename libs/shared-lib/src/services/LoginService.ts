@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { post } from '../utils/RestClient';
+import { getEnvValue } from '../utils/env';
 
 interface LoginParams {
   username: string;
@@ -14,7 +15,7 @@ export const login = async ({
   username,
   password,
 }: LoginParams): Promise<any> => {
-  const apiUrl: string = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/user/v1/auth/login`;
+  const apiUrl: string = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/user/v1/auth/login`;
 
   try {
     const response = await post(apiUrl, { username, password });
@@ -28,7 +29,7 @@ export const login = async ({
 export const refresh = async ({
   refresh_token,
 }: RefreshParams): Promise<any> => {
-  const apiUrl: string = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/user/v1/auth/refresh`;
+  const apiUrl: string = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/user/v1/auth/refresh`;
   try {
     const response = await post(apiUrl, { refresh_token });
     return response?.data;
@@ -39,7 +40,7 @@ export const refresh = async ({
 };
 
 export const logout = async (refreshToken: string): Promise<any> => {
-  const apiUrl: string = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/user/v1/auth/logout`;
+  const apiUrl: string = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/user/v1/auth/logout`;
   try {
     const response = await post(apiUrl, { refresh_token: refreshToken });
     return response;
@@ -50,7 +51,7 @@ export const logout = async (refreshToken: string): Promise<any> => {
 };
 
 export const resetPassword = async (newPassword: any): Promise<any> => {
-  const apiUrl: string = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/user/v1/reset-password`;
+  const apiUrl: string = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/user/v1/reset-password`;
   try {
     const response = await post(apiUrl, { newPassword });
     return response?.data;
@@ -64,7 +65,7 @@ export const forgotPasswordAPI = async (
   newPassword: any,
   token: any
 ): Promise<any> => {
-  const apiUrl: string = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/user/v1/forgot-password`;
+  const apiUrl: string = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/user/v1/forgot-password`;
   try {
     const response = await post(apiUrl, { newPassword, token });
     return response?.data;
@@ -75,9 +76,9 @@ export const forgotPasswordAPI = async (
 };
 
 export const resetPasswordLink = async (username: any): Promise<any> => {
-  const apiUrl: string = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/user/v1/password-reset-link`;
+  const apiUrl: string = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/user/v1/password-reset-link`;
   try {
-    let redirectUrl = process.env.NEXT_PUBLIC_FRONTEND_BASE_URL || '';
+    let redirectUrl = getEnvValue('NEXT_PUBLIC_FRONTEND_BASE_URL') || '';
     if (redirectUrl === '' && typeof window !== 'undefined') {
       redirectUrl = window.location.origin;
     }

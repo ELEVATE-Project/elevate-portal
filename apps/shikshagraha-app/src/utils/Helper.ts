@@ -654,6 +654,9 @@ export const navigateToMitraURL = (url: string) => {
     alert('Error navigating to MITRA application. Please try again.');
   }
 };
+// Flag to prevent multiple redirects when multiple API calls fail simultaneously
+let isAuthRedirecting = false;
+
 export const handleUnauthorizedError = (
   error?: any,
   response?: any
@@ -662,14 +665,39 @@ export const handleUnauthorizedError = (
     error?.status === 401 ||
     error?.response?.status === 401 ||
     error?.response?.data?.responseCode === 401 ||
+    error?.responseCode === 401 ||
     response?.status === 401 ||
-    response?.statusCode === 401;
-  if (is401) {
+    response?.statusCode === 401 ||
+    response?.data?.responseCode === 401 ||
+    response?.data?.statusCode === 401;
+  
+  if (is401 && !isAuthRedirecting) {
+    isAuthRedirecting = true;
+    
+    // Clear all auth-related localStorage items
     localStorage.removeItem('accToken');
+    localStorage.removeItem('refToken');
+    localStorage.removeItem('userId');
+    localStorage.removeItem('userStatus');
     localStorage.clear();
+    
+    // Clear all cookies
+    document.cookie.split(';').forEach((cookie) => {
+      const name = cookie.split('=')[0]?.trim() ?? '';
+      if (name) {
+        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+      }
+    });
+    
+    // Redirect to login with session expiry message
     window.location.replace(window.location.origin + '?unAuth=true');
     return true;
   }
 
-  return false;
+  return is401;
+};
+
+// Reset function for testing purposes
+export const resetAuthRedirectFlag = () => {
+  isAuthRedirecting = false;
 };

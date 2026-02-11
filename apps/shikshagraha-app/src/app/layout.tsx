@@ -1,4 +1,3 @@
-import Head from 'next/head';
 import { getBranding } from '../utils/branding';
 
 export async function generateMetadata() {
@@ -18,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <Head>
+      <head>
         <meta name="theme-color" content="#000000" />
         <meta
           name="viewport"
@@ -29,6 +28,7 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <script src="/env-config.js" defer></script>
          <style
           dangerouslySetInnerHTML={{
             __html: `
@@ -108,7 +108,7 @@ export default function RootLayout({
 					`,
           }}
         />
-      </Head>
+      </head>
       <body>{children}</body>
     </html>
   );

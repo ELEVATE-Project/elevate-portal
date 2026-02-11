@@ -6,6 +6,7 @@ function CustomApp({ Component, pageProps }: AppProps) {
     <>
       <Head>
         <title>Welcome to editors!</title>
+        <script src="/env-config.js" defer />
       </Head>
       <main className="app">
         <Component {...pageProps} />
