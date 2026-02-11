@@ -16,6 +16,9 @@ RUN npm install -g pm2 \
   && npx nx reset \
   && npx nx run-many --target=build --projects=shikshagraha-app,registration,content,players
 
+COPY scripts/generate-env-config.sh ./scripts/generate-env-config.sh
+RUN chmod +x ./scripts/generate-env-config.sh
+
 EXPOSE 3000 4300 4301 4108
 
-CMD ["pm2-runtime", "ecosystem.config.js"]
+CMD ["sh", "-c", "./scripts/generate-env-config.sh && pm2-runtime ecosystem.config.js"]

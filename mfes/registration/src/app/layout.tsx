@@ -12,6 +12,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script src="/env-config.js" defer></script>
+      </head>
       <body>{children}</body>
     </html>
   );

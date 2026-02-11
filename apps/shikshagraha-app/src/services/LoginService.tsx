@@ -1,6 +1,6 @@
-import axios from 'axios';
+import axios from '../utils/axiosConfig';
 import { useRouter } from 'next/router';
-import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
+import { API_ENDPOINTS, getBaseUrl } from '../utils/API/APIEndpoints';
 import { handleUnauthorizedError } from '../utils/Helper';
 
 interface LoginParams {
@@ -48,7 +48,7 @@ export const signin = async ({
 export const authenticateLoginUser = async ({
   token,
 }: AuthParams): Promise<any> => {
-  const apiUrl: string = `${process.env.NEXT_PUBLIC_BASE_URL}/interface/v1/user/auth`;
+  const apiUrl: string = `${getBaseUrl()}/interface/v1/user/auth`;
   try {
     const response = await axios.get(apiUrl, {
       headers: {
@@ -63,7 +63,7 @@ export const authenticateLoginUser = async ({
   }
 };
 export const readHomeListForm = async (token: string) => {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const baseUrl = getBaseUrl();
   if (!baseUrl) {
     throw new Error('NEXT_PUBLIC_BASE_URL is not defined');
   }
@@ -96,7 +96,7 @@ export const authenticateUser = async ({
   userId,
   tenantId,
 }: AuthParamsProfile): Promise<any> => {
-  const apiUrl: string = `${process.env.NEXT_PUBLIC_BASE_URL}/interface/v1/user/read/${userId}?fieldvalue=true`;
+  const apiUrl: string = `${getBaseUrl()}/interface/v1/user/read/${userId}?fieldvalue=true`;
   try {
     const response = await axios.get(apiUrl, {
       headers: {
@@ -119,7 +119,7 @@ export const fetchTenantData = async ({
   tenantId,
   token,
 }: TenantParams): Promise<any> => {
-  const apiUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/interface/v1/tenant/read`;
+  const apiUrl = `${getBaseUrl()}/interface/v1/tenant/read`;
 
   try {
     const response = await axios.get(apiUrl, {
@@ -161,7 +161,7 @@ export const getSubroles = async (parentEntityId: string) => {
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/entity-management/v1/entities/subEntityList/${parentEntityId}?type=professional_subroles`,
+      `${getBaseUrl()}/entity-management/v1/entities/subEntityList/${parentEntityId}?type=professional_subroles`,
       {
         headers: {
           tenantId: tenantId, // guaranteed to be a string
@@ -302,7 +302,7 @@ export const sendForgetOtp = async (requestData: any) => {
 };
 
 export const readIndividualTenantData = async (tenantId: string) => {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+  const baseUrl = getBaseUrl();
   if (!baseUrl) {
     throw new Error('NEXT_PUBLIC_BASE_URL is not defined');
   }
@@ -354,7 +354,7 @@ export const resetPassword = async (payload: {
 }) => {
   try {
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}/interface/v1/user/forgot-password`,
+      `${getBaseUrl()}/interface/v1/user/forgot-password`,
       payload
     );
     return response.data;

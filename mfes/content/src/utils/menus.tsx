@@ -4,12 +4,13 @@ import CardMembershipIcon from '@mui/icons-material/CardMembership';
 import { useRouter } from 'next/router';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import { useEffect, useState } from 'react';
+import { getEnvValue } from '@shared-lib';
 
 export const ProfileMenu = () => {
   const router = useRouter();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const profile = process.env.NEXT_PUBLIC_PROFILE;
+  const profile = getEnvValue('NEXT_PUBLIC_PROFILE');
 
   const handleMenuClick = (item: any, hardRedirect?: boolean) => {
     if (hardRedirect && item != '') {
@@ -30,7 +31,7 @@ export const ProfileMenu = () => {
     setAnchorEl(null);
     localStorage.removeItem('accToken');
     localStorage.removeItem('refToken');
-    let LOGIN = process.env.NEXT_PUBLIC_LOGIN;
+    let LOGIN = getEnvValue('NEXT_PUBLIC_LOGIN');
     //@ts-ignore
     window.location.href = LOGIN;
   };

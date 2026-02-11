@@ -2,6 +2,7 @@ import { ContentCreate } from '../utils/Interface';
 import { URL_CONFIG } from '../utils/url.config';
 import axios from 'axios';
 import { v4 as uuidv4 } from 'uuid';
+import { getEnvValue } from '@shared-lib';
 export const fetchContent = async (identifier: any) => {
   try {
     const API_URL = `${URL_CONFIG.API.CONTENT_READ}${identifier}`;
@@ -85,7 +86,7 @@ export const getQumlData = async (identifier: any) => {
 };
 
 export const createContentTracking = async (reqBody: ContentCreate) => {
-  const apiUrl = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/tracking/content/create`;
+  const apiUrl = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/content/create`;
   try {
     const response = await axios.post(apiUrl, reqBody);
     return response?.data;
@@ -141,7 +142,7 @@ export const createAssessmentTracking = async ({
         totalScore,
         assessmentSummary: scoreDetails,
       };
-      const apiUrl = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/tracking/assessment/create`;
+      const apiUrl = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/assessment/create`;
 
       const response = await axios.post(apiUrl, data);
       console.log('Assessment tracking created:', response.data);
@@ -163,7 +164,7 @@ export const updateCOurseAndIssueCertificate = async ({
   unitId: any;
   isGenerateCertificate?: boolean;
 }) => {
-  const apiUrl = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/tracking/content/course/status`;
+  const apiUrl = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/content/course/status`;
   const data = {
     courseId: [course?.identifier],
     userId: [userId],
@@ -270,7 +271,7 @@ export const updateUserCourseStatus = async ({
   courseId: string;
   status: string;
 }) => {
-  const apiUrl = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/tracking/user_certificate/status/update`;
+  const apiUrl = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/user_certificate/status/update`;
   try {
     const response = await axios.post(
       apiUrl,
@@ -293,7 +294,7 @@ export const updateUserCourseStatus = async ({
 };
 
 export const issueCertificate = async (reqBody: any) => {
-  const apiUrl = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/tracking/certificate/issue`;
+  const apiUrl = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/certificate/issue`;
   try {
     const response = await axios.post(apiUrl, reqBody, {
       headers: {
@@ -308,7 +309,7 @@ export const issueCertificate = async (reqBody: any) => {
 };
 
 export const getUserId = async (): Promise<any> => {
-  const apiUrl = `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/user/auth`;
+  const apiUrl = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/user/auth`;
 
   try {
     const token = localStorage.getItem('token');

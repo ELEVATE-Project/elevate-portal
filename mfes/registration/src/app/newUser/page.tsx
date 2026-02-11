@@ -28,6 +28,7 @@ import {
   registerUserService,
 } from '../service'; // Import OTP verify service
 import { useRouter } from 'next/navigation';
+import { getEnvValue } from '@shared-lib';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import {
@@ -314,7 +315,7 @@ const NewUserWithStepper: React.FC = () => {
         //         request: {
         //           firstName,
         //           lastName,
-        //           organisationId: process.env.NEXT_PUBLIC_ORGID, // Update to match your env variable
+        //           organisationId: getEnvValue('NEXT_PUBLIC_ORGID'), // Update to match your env variable
         //           email: contact,
         //           emailVerified: true,
         //           userName,
@@ -332,7 +333,7 @@ const NewUserWithStepper: React.FC = () => {
         //         request: {
         //           firstName,
         //           lastName,
-        //           organisationId: process.env.NEXT_PUBLIC_ORGID, // Update to match your env variable
+        //           organisationId: getEnvValue('NEXT_PUBLIC_ORGID'), // Update to match your env variable
         //           phone: contact,
         //           phoneVerified: true,
         //           userName,
@@ -507,7 +508,7 @@ const NewUserWithStepper: React.FC = () => {
 
   const handleDialogClose = () => {
     setDialogOpen(false);
-    router.push(`${process.env.NEXT_PUBLIC_LOGINPAGE}`);
+    router.push(`${getEnvValue('NEXT_PUBLIC_LOGINPAGE')}`);
     localStorage.clear();
   };
 
@@ -1308,7 +1309,7 @@ const NewUserWithStepper: React.FC = () => {
             color: '#582E92',
             fontWeight: 'bold',
           }}
-          onClick={() => router.push(`${process.env.NEXT_PUBLIC_LOGINPAGE}`)}
+          onClick={() => router.push(`${getEnvValue('NEXT_PUBLIC_LOGINPAGE')}`)}
         >
           Sign In
         </Button>

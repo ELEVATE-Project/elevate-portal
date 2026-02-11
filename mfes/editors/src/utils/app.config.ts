@@ -1,3 +1,5 @@
+import { getEnvValue } from '@shared-lib';
+
 export const MIME_TYPE = {
   COLLECTION_MIME_TYPE: 'application/vnd.ekstep.content-collection',
   ECML_MIME_TYPE: 'application/vnd.ekstep.ecml-archive',
@@ -22,21 +24,21 @@ export const MIME_TYPE = {
   ],
 };
 
-export const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID || '';
+export const TENANT_ID = getEnvValue('NEXT_PUBLIC_TENANT_ID') || '';
 if (!TENANT_ID) {
   console.warn(
     'NEXT_PUBLIC_TENANT_ID is not set in the environment variables.'
   );
 }
 
-export const CHANNEL_ID = process.env.NEXT_PUBLIC_CHANNEL_ID || '';
+export const CHANNEL_ID = getEnvValue('NEXT_PUBLIC_CHANNEL_ID') || '';
 if (!CHANNEL_ID) {
   console.warn(
     'NEXT_PUBLIC_CHANNEL_ID is not set in the environment variables.'
   );
 }
 
-export const FRAMEWORK_ID = process.env.NEXT_PUBLIC_FRAMEWORK_ID || '';
+export const FRAMEWORK_ID = getEnvValue('NEXT_PUBLIC_FRAMEWORK_ID') || '';
 if (!FRAMEWORK_ID) {
   console.warn(
     'NEXT_PUBLIC_FRAMEWORK_ID is not set in the environment variables.'
@@ -44,7 +46,7 @@ if (!FRAMEWORK_ID) {
 }
 
 export const CLOUD_STORAGE_URL =
-  process.env.NEXT_PUBLIC_CLOUD_STORAGE_URL || '';
+  getEnvValue('NEXT_PUBLIC_CLOUD_STORAGE_URL') || '';
 if (!CLOUD_STORAGE_URL) {
   throw new Error(
     'NEXT_PUBLIC_CLOUD_STORAGE_URL is not set in the environment variables.'

@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { handleTelemetryEventQuml } from '../../services/TelemetryService';
 import { handleExitEvent } from '../utils/Helper';
 import { createAssessmentTracking } from '../../services/PlayerService';
+import { getEnvValue } from '@shared-lib';
 
 interface PlayerConfigProps {
   playerConfig: any;
@@ -11,7 +12,7 @@ interface PlayerConfigProps {
   configFunctionality?: boolean;
 }
 
-const basePath = process.env.NEXT_PUBLIC_ASSETS_CONTENT || '/sbplayer';
+const basePath = getEnvValue('NEXT_PUBLIC_ASSETS_CONTENT') || '/sbplayer';
 
 const SunbirdQuMLPlayer = ({
   playerConfig,
@@ -66,7 +67,7 @@ const SunbirdQuMLPlayer = ({
               'qumlPlayerObject',
               JSON.stringify({
                 qumlPlayerConfig: playerConfig,
-                questionListUrl: `${process.env.NEXT_PUBLIC_MIDDLEWARE_URL}/api/question/v2/list`,
+                questionListUrl: `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/api/question/v2/list`,
               })
             );
 

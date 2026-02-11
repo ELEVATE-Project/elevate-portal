@@ -1,5 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { getTelemetryEvents } from '../../services/TelemetryService';
+import { getEnvValue } from '@shared-lib';
 
 interface PlayerProps {
   playerConfig: any;
@@ -7,7 +8,7 @@ interface PlayerProps {
   configFunctionality?: boolean;
 }
 
-const basePath = process.env.NEXT_PUBLIC_ASSETS_CONTENT || '/sbplayer';
+const basePath = getEnvValue('NEXT_PUBLIC_ASSETS_CONTENT') || '/sbplayer';
 
 const V1Player = ({
   playerConfig,

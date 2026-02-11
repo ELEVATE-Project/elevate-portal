@@ -1,4 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
+import { getEnvValue } from '../utils/env';
 
 export const trackingData = (subIds: string[], courseIds: string[]) => {
   const data = JSON.stringify({
@@ -6,7 +7,7 @@ export const trackingData = (subIds: string[], courseIds: string[]) => {
     courseId: courseIds,
   });
 
-  const trackingApiUrl = process.env.NEXT_PUBLIC_TRACKING_BASE_URL;
+  const trackingApiUrl = getEnvValue('NEXT_PUBLIC_TRACKING_BASE_URL');
 
   if (!trackingApiUrl) {
     console.error('Tracking API URL is not defined in environment variables.');

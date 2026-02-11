@@ -9,5 +9,5 @@ services:
       - '4300:4300'
       - '4301:4301'
       - '4108:4108'
-    environment:
-      - NODE_ENV=production
+    env_file: 
+      - .env      
