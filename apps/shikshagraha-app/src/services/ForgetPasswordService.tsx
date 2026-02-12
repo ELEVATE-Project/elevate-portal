@@ -1,12 +1,12 @@
-
 import axios from 'axios';
+import { getEnvValue } from '@shared-lib';
 export const verifyOtp = async (
   contactValue: string,
   contactMethod: 'email' | 'phone',
   otp: string
 ) => {
   const response = await axios.post(
-    `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_VERIFY_OTP}`,
+    `${getEnvValue('NEXT_PUBLIC_BASE_URL')}${getEnvValue('NEXT_PUBLIC_VERIFY_OTP')}`,
     {
       request: { key: contactValue, type: contactMethod, otp },
     }
@@ -18,7 +18,7 @@ export const resetPassword = async (
   contactValue: string,
   newPassword: string
 ) => {
-  return axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/api/password/reset`, {
+  return axios.post(`${getEnvValue('NEXT_PUBLIC_BASE_URL')}/api/password/reset`, {
     request: { key: contactValue, password: newPassword },
   });
 };

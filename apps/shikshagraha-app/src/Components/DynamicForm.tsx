@@ -43,7 +43,8 @@ import {
 } from '../services/LoginService';
 import { useRouter } from 'next/navigation';
 import OTPDialog from './OTPDialog';
-import { API_ENDPOINTS, getOrgId } from '../utils/API/APIEndpoints';
+import { getOrgId } from '@shared-lib';
+import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 
 const SubmitButton: React.FC<SubmitButtonProps> = (props) => {
   const { uiSchema } = props;

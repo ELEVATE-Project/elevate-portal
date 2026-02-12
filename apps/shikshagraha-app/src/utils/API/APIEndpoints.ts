@@ -1,15 +1,4 @@
-declare global {
-  interface Window {
-    __ENV: Record<string, string>;
-  }
-}
-
-export const getEnvValue = (key: string): string | undefined => {
-  if (typeof window !== 'undefined' && window.__ENV && window.__ENV[key]) {
-    return window.__ENV[key];
-  }
-  return process.env[key];
-};
+import { getEnvValue } from '@shared-lib';
 
 export const getBaseUrl = () => getEnvValue('NEXT_PUBLIC_BASE_URL') || '';
 export const getSunbirdBaseUrl = () => getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL') || '';
