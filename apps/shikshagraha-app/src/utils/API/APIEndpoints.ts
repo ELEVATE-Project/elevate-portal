@@ -1,8 +1,4 @@
-import { getEnvValue } from '@shared-lib';
-
-export const getBaseUrl = () => getEnvValue('NEXT_PUBLIC_BASE_URL') || '';
-export const getSunbirdBaseUrl = () => getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL') || '';
-export const getOrgId = () => getEnvValue('NEXT_PUBLIC_ORGID') || '';
+import { getEnvValue, getBaseUrl, getSunbirdBaseUrl, getOrgId } from '@shared-lib';
 export const getTeacherSbPlayer = () => getEnvValue('NEXT_PUBLIC_TEACHER_SBPLAYER') || '';
 
 export const API_ENDPOINTS = {
@@ -65,6 +61,6 @@ export const API_ENDPOINTS = {
   get downloadCertificate() { return `${getBaseUrl()}/tracking/certificate/render-PDF`; },
 };
 
-export const getCoursePlannerUploadEndpoints = () => `${getEnvValue('NEXT_PUBLIC_BASE_URL')}/prathamservice/v1/course-planner/upload`;
+export const getCoursePlannerUploadEndpoints = () => `${getEnvValue('NEXT_PUBLIC_BASE_URL') || ''}/prathamservice/v1/course-planner/upload`;
 
-export const getTargetSolutionEndpoints = () => `${getEnvValue('NEXT_PUBLIC_COURSE_PLANNER_API_URL')}/solutions/targetedSolutions?type=improvementProject&currentScopeOnly=true`;
+export const getTargetSolutionEndpoints = () => `${getEnvValue('NEXT_PUBLIC_COURSE_PLANNER_API_URL') || ''}/solutions/targetedSolutions?type=improvementProject&currentScopeOnly=true`;

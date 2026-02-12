@@ -41,7 +41,7 @@ export const fetchLocationDetails = async (locations: any[]) => {
     const responses = await Promise.all(
       locations.map(async (location: { id: any }) => {
         const response = await fetch(
-          `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_LOCATION_SEARCH')}`,
+          `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_LOCATION_SEARCH') || ''}`,
           {
             method: 'POST',
             headers: {
@@ -100,7 +100,7 @@ export const updateProfile = async (
 
   try {
     const response = await fetch(
-      `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_UPDATE_USER')}`,
+      `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_UPDATE_USER') || ''}`,
       {
         method: 'PATCH',
         headers: {
@@ -138,7 +138,7 @@ export const deleteUser = async () => {
 
   try {
     const response = await axios.post(
-      `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_DELETE_USER')}`,
+      `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_DELETE_USER') || ''}`,
       req,
       { headers }
     );
