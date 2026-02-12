@@ -1,9 +1,4 @@
-const getEnvValue = (key) => {
-  if (typeof window !== 'undefined' && window.__ENV && window.__ENV[key]) {
-    return window.__ENV[key];
-  }
-  return process.env[key];
-};
+import { getEnvValue } from '@shared-lib';
 
 const AppConst = {
   get BASEPATH() { return getEnvValue('NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH') || ''; },

@@ -1,6 +1,7 @@
-import axios from '../utils/axiosConfig';
+import axios from 'axios';
 import { useRouter } from 'next/router';
-import { API_ENDPOINTS, getBaseUrl } from '../utils/API/APIEndpoints';
+import { getBaseUrl } from '@shared-lib';
+import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import { handleUnauthorizedError } from '../utils/Helper';
 
 interface LoginParams {

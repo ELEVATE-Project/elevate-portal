@@ -1,5 +1,6 @@
 // src/services/profileService.ts
-import { API_ENDPOINTS, getBaseUrl, getEnvValue, getSunbirdBaseUrl } from '../utils/API/APIEndpoints';
+import { getEnvValue, getBaseUrl, getSunbirdBaseUrl } from '@shared-lib';
+import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import axios from 'axios';
 import { handleUnauthorizedError } from '../utils/Helper';
 interface MyCourseDetailsProps {
