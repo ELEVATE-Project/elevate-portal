@@ -1,5 +1,7 @@
+import { getEnvValue } from '@shared-lib';
+
 export const getLocalStoredUserId = () => {
-  const fallbackUserId = process.env.NEXT_PUBLIC_DEFAULT_USER_ID || null;
+  const fallbackUserId = getEnvValue('NEXT_PUBLIC_DEFAULT_USER_ID') || null;
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     try {
       const userId = localStorage.getItem('userId');
@@ -16,7 +18,7 @@ export const getLocalStoredUserId = () => {
 };
 
 export const getLocalStoredUserName = () => {
-  const fallbackUserName = process.env.NEXT_PUBLIC_DEFAULT_USER_NAME || null;
+  const fallbackUserName = getEnvValue('NEXT_PUBLIC_DEFAULT_USER_NAME') || null;
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     try {
       const username = localStorage.getItem('name');

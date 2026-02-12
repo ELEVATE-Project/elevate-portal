@@ -8,6 +8,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import { useRouter, usePathname } from 'next/navigation';
+import { getEnvValue } from '../../utils/env';
 
 const isMobile = () => {
   return /iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent);
@@ -23,7 +24,7 @@ export const Footer: React.FC = () => {
     setIsMobileDevice(isMobile());
   }, []);
   const downloadsUrl =
-    process.env.NEXT_PUBLIC_DOWNLOADS_URL || '/observations/downloads';
+    getEnvValue('NEXT_PUBLIC_DOWNLOADS_URL') || '/observations/downloads';
   // Map paths to their corresponding tab values
   const prevPathRef = useRef<string>('');
   const pathToValueMap = {

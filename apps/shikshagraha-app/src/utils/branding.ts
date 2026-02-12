@@ -27,7 +27,7 @@ export const getBranding = async () => {
   let appName = core;
 
   try {
-    const base = process.env.NEXT_PUBLIC_BASE_URL;
+    const base = (typeof window !== 'undefined' ? window.__ENV?.NEXT_PUBLIC_BASE_URL : process.env['NEXT_PUBLIC_BASE_URL']);
     if (base) {
       const res = await fetch(`${base}/user/v1/public/branding`, {
         headers: { Origin: `https://${host}` },

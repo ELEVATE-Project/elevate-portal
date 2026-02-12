@@ -20,6 +20,7 @@ import {
   Circular,
   CommonDialog,
   CommonTextField,
+  getEnvValue,
 } from '@shared-lib';
 import { ContentSearch } from '../services/Search';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -147,7 +148,7 @@ export default function ContentHelp() {
     setAnchorEl(null);
     localStorage.removeItem('accToken');
     localStorage.removeItem('refToken');
-    let LOGIN = process.env.NEXT_PUBLIC_LOGIN;
+    let LOGIN = getEnvValue('NEXT_PUBLIC_LOGIN');
     //@ts-ignore
     window.location.href = LOGIN;
   };
@@ -328,7 +329,7 @@ export default function ContentHelp() {
   }, [router]);
   const fetchFramework = async () => {
     try {
-      const url = `${process.env.NEXT_PUBLIC_SSUNBIRD_BASE_URL}/api/framework/v1/read/${process.env.NEXT_PUBLIC_FRAMEWORK}`;
+      const url = `${getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL')}/api/framework/v1/read/${getEnvValue('NEXT_PUBLIC_FRAMEWORK')}`;
       const frameworkData = await fetch(url).then((res) => res.json());
       const frameworks = frameworkData?.result?.framework;
       setFrameworkFilter(frameworks);

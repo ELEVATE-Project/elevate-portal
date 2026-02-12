@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import { updateProfile, fetchProfileData } from '../../services/ProfileService'; // Import the service
+import { getSunbirdBaseUrl } from '../../utils/API/APIEndpoints';
 
 export default function ProfileEdit() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function ProfileEdit() {
         console.error('Framework ID not found in localStorage');
         return;
       }
-      const url = `${process.env.NEXT_PUBLIC_SSUNBIRD_BASE_URL}/api/framework/v1/read/${frameworkId}`;
+      const url = `${getSunbirdBaseUrl()}/api/framework/v1/read/${frameworkId}`;
       const response = await fetch(url);
       const frameworkData = await response.json();
       setFrameworkFilter(frameworkData?.result?.framework || {});

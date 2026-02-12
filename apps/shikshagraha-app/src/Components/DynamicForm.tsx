@@ -43,6 +43,7 @@ import {
 } from '../services/LoginService';
 import { useRouter } from 'next/navigation';
 import OTPDialog from './OTPDialog';
+import { getOrgId } from '@shared-lib';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 
 const SubmitButton: React.FC<SubmitButtonProps> = (props) => {
@@ -1803,7 +1804,7 @@ const DynamicForm = ({
                 'frameworkname',
                 matchedTenant?.contentFramework
               );
-              if (tenantIdToCompare === process.env.NEXT_PUBLIC_ORGID) {
+              if (tenantIdToCompare === getOrgId()) {
                 const redirectUrl = '/home';
                 router.push(redirectUrl);
               } else {

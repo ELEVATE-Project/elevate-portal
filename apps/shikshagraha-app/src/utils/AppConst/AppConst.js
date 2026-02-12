@@ -1,5 +1,7 @@
+import { getEnvValue } from '@shared-lib';
+
 const AppConst = {
-  BASEPATH: process.env.NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH || '',
+  get BASEPATH() { return getEnvValue('NEXT_PUBLIC_SHIKSHAGRAHA_BASEPATH') || ''; },
   API_ENDPOINTS: {
     REDIRECT_TOKEN: '/api/auth/redirect-token',
     // Add other API endpoints here

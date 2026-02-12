@@ -1,67 +1,70 @@
-import ForgotPassword from '../../app/forgetpassword/page';
+import { getEnvValue } from '@shared-lib';
 
-const baseurl = process.env.NEXT_PUBLIC_BASE_URL;
+export const getBaseUrl = () => getEnvValue('NEXT_PUBLIC_BASE_URL') || '';
+export const getSunbirdBaseUrl = () => getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL') || '';
+export const getOrgId = () => getEnvValue('NEXT_PUBLIC_ORGID') || '';
+export const getTeacherSbPlayer = () => getEnvValue('NEXT_PUBLIC_TEACHER_SBPLAYER') || '';
 
 export const API_ENDPOINTS = {
   contentRead: (doId: string) =>
-    `${baseurl}/api/content/v1/read/${doId}?fields=artifactUrl`,
-  academicYearsList: `${baseurl}/academicyears/list`,
-  accountCreate: `${baseurl}/account/create`,
-  userUpdate: (userId: string) => `${baseurl}/user/update/${userId}`,
+    `${getBaseUrl()}/api/content/v1/read/${doId}?fields=artifactUrl`,
+  get academicYearsList() { return `${getBaseUrl()}/academicyears/list`; },
+  get accountCreate() { return `${getBaseUrl()}/account/create`; },
+  userUpdate: (userId: string) => `${getBaseUrl()}/user/update/${userId}`,
   myCohorts: (userId: string | string[]) =>
-    `${baseurl}/cohort/mycohorts/${userId}`,
-  authRefresh: `${baseurl}/account/auth/refresh`,
-  authLogout: `${baseurl}/account/auth/logout`,
-  userAuth: `${baseurl}/user/auth`,
+    `${getBaseUrl()}/cohort/mycohorts/${userId}`,
+  get authRefresh() { return `${getBaseUrl()}/account/auth/refresh`; },
+  get authLogout() { return `${getBaseUrl()}/account/auth/logout`; },
+  get userAuth() { return `${getBaseUrl()}/user/auth`; },
 
-  accountLogin: `${baseurl}/user/v1/account/login`,
-  sendOtp: `${baseurl}/user/v1/account/registrationOtp`,
-  userProfileRead: `${baseurl}/user/v1/user/read`,
-  resetPassword: `${baseurl}/user/v1/account/changePassword`,
-  formRead: `${baseurl}/user/v1/form/read`,
-  ForgotPassword: `${baseurl}/user/v1/account/resetPassword`,
-  sendForgetOtp: `${baseurl}/user/v1/account/generateOtp`,
-  deleteAccount: `${baseurl}/user/v1/account/delete`,
-  roleRead: `${baseurl}/entity-management/v1/entities/entityListBasedOnEntityType?entityType=professional_role`,
-  userCreate: `${baseurl}/interface/v1/account/create`,
-  tenantRead: `${baseurl}/user/v1/public/branding`,
+  get accountLogin() { return `${getBaseUrl()}/user/v1/account/login`; },
+  get sendOtp() { return `${getBaseUrl()}/user/v1/account/registrationOtp`; },
+  get userProfileRead() { return `${getBaseUrl()}/user/v1/user/read`; },
+  get resetPassword() { return `${getBaseUrl()}/user/v1/account/changePassword`; },
+  get formRead() { return `${getBaseUrl()}/user/v1/form/read`; },
+  get ForgotPassword() { return `${getBaseUrl()}/user/v1/account/resetPassword`; },
+  get sendForgetOtp() { return `${getBaseUrl()}/user/v1/account/generateOtp`; },
+  get deleteAccount() { return `${getBaseUrl()}/user/v1/account/delete`; },
+  get roleRead() { return `${getBaseUrl()}/entity-management/v1/entities/entityListBasedOnEntityType?entityType=professional_role`; },
+  get userCreate() { return `${getBaseUrl()}/interface/v1/account/create`; },
+  get tenantRead() { return `${getBaseUrl()}/user/v1/public/branding`; },
   checkUser: (email: string) =>
-    `${baseurl}/user/v1/public/checkUsername?username=${email}`,
+    `${getBaseUrl()}/user/v1/public/checkUsername?username=${email}`,
   udiseSearch: (udise: string) =>
-    `${baseurl}/entity-management/v1/entities/details/${udise}`,
-  fieldOptionsRead: `${baseurl}/fields/options/read`,
-  cohortSearch: `${baseurl}/cohort/search`,
+    `${getBaseUrl()}/entity-management/v1/entities/details/${udise}`,
+  get fieldOptionsRead() { return `${getBaseUrl()}/fields/options/read`; },
+  get cohortSearch() { return `${getBaseUrl()}/cohort/search`; },
   fieldOptionDelete: (type: string, option: string) =>
-    `${baseurl}/fields/options/delete/${type}?option=${option}`,
-  fieldUpdate: (fieldId: string) => `${baseurl}/fields/update/${fieldId}`,
-  cohortUpdate: (cohortId: string) => `${baseurl}/cohort/update/${cohortId}`,
-  notificationSend: `${baseurl}/notification/send`,
+    `${getBaseUrl()}/fields/options/delete/${type}?option=${option}`,
+  fieldUpdate: (fieldId: string) => `${getBaseUrl()}/fields/update/${fieldId}`,
+  cohortUpdate: (cohortId: string) => `${getBaseUrl()}/cohort/update/${cohortId}`,
+  get notificationSend() { return `${getBaseUrl()}/notification/send`; },
   // tenantRead: `${baseurl}/tenant/read`,
-  tenantCreate: `${baseurl}/tenant/create`,
-  tenantUpdate: (tenantId: string) => `${baseurl}/tenant/update/${tenantId}`,
-  tenantDelete: (tenantId: string) => `${baseurl}/tenant/delete/${tenantId}`,
-  tenantSearch: `${baseurl}/tenant/search`,
-  userList: `${baseurl}/user/list`,
-  cohortMemberList: `${baseurl}/cohortmember/list`,
+  get tenantCreate() { return `${getBaseUrl()}/tenant/create`; },
+  tenantUpdate: (tenantId: string) => `${getBaseUrl()}/tenant/update/${tenantId}`,
+  tenantDelete: (tenantId: string) => `${getBaseUrl()}/tenant/delete/${tenantId}`,
+  get tenantSearch() { return `${getBaseUrl()}/tenant/search`; },
+  get userList() { return `${getBaseUrl()}/user/list`; },
+  get cohortMemberList() { return `${getBaseUrl()}/cohortmember/list`; },
   userRead: (userId: string | string[], fieldValue: boolean) =>
-    `${baseurl}/user/read/${userId}?fieldvalue=${fieldValue}`,
-  suggestUsername: `${baseurl}/user/suggestUsername`,
-  cohortUpdateUser: (userId?: string) => `${baseurl}/cohort/update/${userId}`,
+    `${getBaseUrl()}/user/read/${userId}?fieldvalue=${fieldValue}`,
+  get suggestUsername() { return `${getBaseUrl()}/user/suggestUsername`; },
+  cohortUpdateUser: (userId?: string) => `${getBaseUrl()}/cohort/update/${userId}`,
   formReadWithContext: (context: string, contextType: string) =>
-    `${baseurl}/form/read?context=${context}&contextType=${contextType}`,
-  cohortCreate: `${baseurl}/cohort/create`,
-  cohortMemberBulkCreate: `${baseurl}/cohortmember/bulkCreate`,
+    `${getBaseUrl()}/form/read?context=${context}&contextType=${contextType}`,
+  get cohortCreate() { return `${getBaseUrl()}/cohort/create`; },
+  get cohortMemberBulkCreate() { return `${getBaseUrl()}/cohortmember/bulkCreate`; },
   cohortMemberUpdate: (membershipId: string | number) =>
-    `${baseurl}/cohortmember/update/${membershipId}`,
-  notificationTemplate: `${baseurl}/notification-templates`,
-  courseStatus: `${baseurl}/tracking/user_certificate/user_course_status`,
-  courseWiseLernerList: `${baseurl}/tracking/user_certificate/status/search`,
-  getCourseName: `${baseurl}/action/composite/v3/search`,
-  issueCertificate: `${baseurl}/tracking/certificate/issue`,
-  renderCertificate: `${baseurl}/tracking/certificate/render`,
-  downloadCertificate: `${baseurl}/tracking/certificate/render-PDF`,
+    `${getBaseUrl()}/cohortmember/update/${membershipId}`,
+  get notificationTemplate() { return `${getBaseUrl()}/notification-templates`; },
+  get courseStatus() { return `${getBaseUrl()}/tracking/user_certificate/user_course_status`; },
+  get courseWiseLernerList() { return `${getBaseUrl()}/tracking/user_certificate/status/search`; },
+  get getCourseName() { return `${getBaseUrl()}/action/composite/v3/search`; },
+  get issueCertificate() { return `${getBaseUrl()}/tracking/certificate/issue`; },
+  get renderCertificate() { return `${getBaseUrl()}/tracking/certificate/render`; },
+  get downloadCertificate() { return `${getBaseUrl()}/tracking/certificate/render-PDF`; },
 };
 
-export const COURSE_PLANNER_UPLOAD_ENDPOINTS = `${process.env.NEXT_PUBLIC_BASE_URL}/prathamservice/v1/course-planner/upload`;
+export const getCoursePlannerUploadEndpoints = () => `${getEnvValue('NEXT_PUBLIC_BASE_URL')}/prathamservice/v1/course-planner/upload`;
 
-export const TARGET_SOLUTION_ENDPOINTS = `${process.env.NEXT_PUBLIC_COURSE_PLANNER_API_URL}/solutions/targetedSolutions?type=improvementProject&currentScopeOnly=true`;
+export const getTargetSolutionEndpoints = () => `${getEnvValue('NEXT_PUBLIC_COURSE_PLANNER_API_URL')}/solutions/targetedSolutions?type=improvementProject&currentScopeOnly=true`;

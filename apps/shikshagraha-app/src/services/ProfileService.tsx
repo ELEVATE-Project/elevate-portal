@@ -1,4 +1,5 @@
 // src/services/profileService.ts
+import { getEnvValue, getBaseUrl, getSunbirdBaseUrl } from '@shared-lib';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import axios from 'axios';
 import { handleUnauthorizedError } from '../utils/Helper';
@@ -40,11 +41,11 @@ export const fetchLocationDetails = async (locations: any[]) => {
     const responses = await Promise.all(
       locations.map(async (location: { id: any }) => {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_LOCATION_SEARCH}`,
+          `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_LOCATION_SEARCH')}`,
           {
             method: 'POST',
             headers: {
-              Authorization: process.env.NEXT_PUBLIC_AUTH || '', // Ensure it's always a string
+              Authorization: getEnvValue('NEXT_PUBLIC_AUTH') || '', // Ensure it's always a string
               'Content-Type': 'application/json',
             } as HeadersInit, // Explicitly cast as HeadersInit
             body: JSON.stringify({
@@ -99,12 +100,12 @@ export const updateProfile = async (
 
   try {
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_UPDATE_USER}`,
+      `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_UPDATE_USER')}`,
       {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `${process.env.NEXT_PUBLIC_AUTH}`, // Replace with actual token
+          Authorization: `${getEnvValue('NEXT_PUBLIC_AUTH')}`, // Replace with actual token
           'x-authenticated-user-token': localStorage.getItem('accToken') ?? '', // Add null check
         },
         body: JSON.stringify(requestData),
@@ -125,7 +126,7 @@ export const updateProfile = async (
 
 export const deleteUser = async () => {
   const headers = {
-    Authorization: process.env.NEXT_PUBLIC_AUTH,
+    Authorization: getEnvValue('NEXT_PUBLIC_AUTH'),
     'Content-Type': 'application/json',
     'x-authenticated-user-token': localStorage.getItem('accToken'),
   };
@@ -137,7 +138,7 @@ export const deleteUser = async () => {
 
   try {
     const response = await axios.post(
-      `${process.env.NEXT_PUBLIC_BASE_URL}${process.env.NEXT_PUBLIC_DELETE_USER}`,
+      `${getBaseUrl()}${getEnvValue('NEXT_PUBLIC_DELETE_USER')}`,
       req,
       { headers }
     );
@@ -155,7 +156,7 @@ export const myCourseDetails = async ({
   token,
   userId,
 }: MyCourseDetailsProps): Promise<any> => {
-  const apiUrl = `${process.env.NEXT_PUBLIC_SSUNBIRD_BASE_URL}/tracking/user_certificate/status/search`;
+  const apiUrl = `${getSunbirdBaseUrl()}/tracking/user_certificate/status/search`;
   try {
     const response = await axios.post(
       apiUrl,
@@ -182,7 +183,7 @@ export const renderCertificate = async (
   credentialId: string,
   templateId?: string
 ): Promise<string> => {
-  const apiUrl = `${process.env.NEXT_PUBLIC_SSUNBIRD_BASE_URL}/tracking/certificate/render`;
+  const apiUrl = `${getSunbirdBaseUrl()}/tracking/certificate/render`;
 
   try {
     if (typeof window === 'undefined') {

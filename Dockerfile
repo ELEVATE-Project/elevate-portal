@@ -34,8 +34,9 @@ COPY . .
 # --verbose ensures Jenkins shows progress
 RUN npx nx build shikshagraha-app --verbose
 
-# ---------- Expose app port ----------
-EXPOSE 3000
+COPY scripts/generate-env-config.sh ./scripts/generate-env-config.sh
+RUN chmod +x ./scripts/generate-env-config.sh
 
-# ---------- Start app ----------
-CMD ["pm2-runtime", "ecosystem.config.js"]
+EXPOSE 3000 4300 4301 4108
+
+CMD ["sh", "-c", "./scripts/generate-env-config.sh && pm2-runtime ecosystem.config.js"]

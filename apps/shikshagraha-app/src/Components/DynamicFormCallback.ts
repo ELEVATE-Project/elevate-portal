@@ -207,8 +207,9 @@ export const notificationCallback = async (
   let replacements: { [key: string]: string };
   replacements = {};
   let cleanedUrl = '';
-  if (process.env.NEXT_PUBLIC_TEACHER_SBPLAYER) {
-    cleanedUrl = process.env.NEXT_PUBLIC_TEACHER_SBPLAYER.replace(
+  const teacherSbPlayer = getTeacherSbPlayer();
+  if (teacherSbPlayer) {
+    cleanedUrl = teacherSbPlayer.replace(
       /\/sbplayer$/,
       ''
     );

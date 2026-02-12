@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { Role } from './utils/app.constant';
+import { getEnvValue } from './utils/env';
 
 export const AttendanceAPILimit: number = 300;
 export const lowLearnerAttendanceLimit: number = 32;
@@ -75,7 +76,7 @@ export const Program = ['Second Chance', 'secondchance'];
 //below line cause issue in react vite build as vite not able to access next env public variables
 export const tenantId =
   (typeof window !== 'undefined' && localStorage.getItem('tenantCode')) ||
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_TENANT_ID) ||
+  getEnvValue('NEXT_PUBLIC_TENANT_ID') ||
   (typeof import.meta !== 'undefined' && import.meta.env.VITE_TENANT_ID);
 
 if (!tenantId && typeof window !== 'undefined') {
@@ -85,7 +86,7 @@ if (!tenantId && typeof window !== 'undefined') {
 }
 
 export const frameworkId =
-  (typeof process !== 'undefined' && process.env.NEXT_PUBLIC_FRAMEWORK_ID) ||
+  getEnvValue('NEXT_PUBLIC_FRAMEWORK_ID') ||
   (typeof import.meta !== 'undefined' && import.meta.env.VITE_FRAMEWORK_ID);
 
 if (!frameworkId) {

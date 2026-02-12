@@ -37,3 +37,4 @@ export const IMAGES = {
 
 //utils
 export * from './utils/DataClient';
+export * from './utils/env';
