@@ -1,8 +1,11 @@
-.env
-.env.*
-node_modules
+**/.next
+**/node_modules
+**/.nx
 .git
-.nx
-dist
-.vscode
+.github
 *.log
+dist
+.env*
+coverage
+*.md
+.DS_Store
