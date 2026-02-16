@@ -15,7 +15,7 @@ ENV NX_DAEMON=false
 ENV NX_CLOUD=false
 ENV NODE_OPTIONS="--max-old-space-size=8192 "
 
-RUN npx nx run-many --target=build --projects=shikshagraha-app, --parallel=1
+RUN npx nx run-many --target=build --projects=shikshagraha-app --parallel=1
 
 RUN npm install -g pm2
 
