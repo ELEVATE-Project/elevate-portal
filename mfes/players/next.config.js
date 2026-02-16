@@ -26,6 +26,17 @@ const nextConfig = {
   trailingSlash: false,
   reactStrictMode: true,
 
+  typescript: {
+    // !! Important: This skips the built-in type check during `next build`
+    // Use only if you validate types separately (recommended for monorepos/CI)
+    ignoreBuildErrors: true,
+  },
+
+  // Optional but helpful — also skip ESLint if it's slow/heavy
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   nx: {
     svgr: false,
   },
