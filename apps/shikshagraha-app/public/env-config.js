@@ -1,3 +1,3 @@
 window.__ENV = {
-  "NEXT_PUBLIC_BASE_URL": "https://test-api.example.com",
+  "NEXT_PUBLIC_BASE_URL": "https://qa.elevate-apis.shikshalokam.org",
 };
