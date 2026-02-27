@@ -34,22 +34,14 @@ ENV NODE_OPTIONS="--max-old-space-size=8192 "
 # Build all REQUIRED apps used in ecosystem.config.js
 RUN npx nx run-many --target=build --projects=shikshagraha-app,registration,content,players --parallel=1
 
-# DIAGNOSTIC: List all files in dist to find where .next folders are
-RUN find dist -maxdepth 3 -type d
 
 # ---------- Copy Back Strategy ----------
 # Guarantee that Next.js finds the .next folder by copying from dist back to source
-# (We will fix these paths once we see the diagnostic output)
-RUN cp -r dist/apps/shikshagraha-app/.next apps/shikshagraha-app/ || true && \
-    cp -r dist/mfes/registration/.next mfes/registration/ || true && \
-    cp -r dist/mfes/content/.next mfes/content/ || true && \
-    cp -r dist/mfes/players/.next mfes/players/ || true
+# Only 'players' builds to dist/mfes/players, others build in-place
+RUN cp -r dist/mfes/players/.next mfes/players/
 
 # Also copy public folders back to ensure static assets are found
-RUN cp -r dist/apps/shikshagraha-app/public apps/shikshagraha-app/ || true && \
-    cp -r dist/mfes/registration/public mfes/registration/ || true && \
-    cp -r dist/mfes/content/public mfes/content/ || true && \
-    cp -r dist/mfes/players/public mfes/players/ || true
+RUN cp -r dist/mfes/players/public mfes/players/
 
 RUN npm install -g pm2
 
