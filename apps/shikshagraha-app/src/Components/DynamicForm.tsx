@@ -1183,8 +1183,11 @@ const DynamicForm = ({
           }
         );
 
-        const msg = response?.data?.message || '';
-        if (isUserExistsError(msg)) {
+        const respData = response?.data;
+        const msg = respData?.message || '';
+        const isTaken = respData?.result?.available === false || isUserExistsError(msg);
+
+        if (isTaken) {
           setDialogConfig((prev) => ({
             ...prev,
             open: true,
@@ -1196,13 +1199,8 @@ const DynamicForm = ({
             route: null,
             showCloseIcon: true,
           }));
-          setShowError(true);
           setErrorButton(true);
-          setAlertSeverity('error');
           setIsUsernameValid(false);
-          setTimeout(() => {
-            setShowError(false);
-          }, 8000);
         } else {
           setErrorMessage('');
           setErrorButton(false);
@@ -1665,7 +1663,7 @@ const DynamicForm = ({
             setShowError(false);
           }, 8000);
           return;
-        } else if (isUserExistsError(registrationResponse?.message)) {
+        } else if (isUserExistsError(registrationResponse?.message) || registrationResponse?.result?.available === false) {
           setDialogConfig((prev) => ({
             ...prev,
             open: true,
