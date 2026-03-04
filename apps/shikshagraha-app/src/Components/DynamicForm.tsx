@@ -43,8 +43,11 @@ import {
 } from '../services/LoginService';
 import { useRouter } from 'next/navigation';
 import OTPDialog from './OTPDialog';
+import DynamicNotificationDialog from './DynamicNotificationDialog';
 import { getOrgId } from '@shared-lib';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
+import { Close } from '@mui/icons-material';
+import IconButton from '@mui/material/IconButton';
 
 const SubmitButton: React.FC<SubmitButtonProps> = (props) => {
   const { uiSchema } = props;
@@ -77,7 +80,6 @@ const DynamicForm = ({
   const [isInitialCompleted, setIsInitialCompleted] = useState(false);
   const [hideAndSkipFields, setHideAndSkipFields] = useState({});
   const [isRenderCompleted, setIsRenderCompleted] = useState(false);
-  const [dialogOpen, setDialogOpen] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, boolean>>({});
   const [isTouched, setIsTouched] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -90,6 +92,15 @@ const DynamicForm = ({
   const [hashCode, setHashCode] = useState('');
   const [subroles, setSubroles] = useState<any[]>([]);
   const [alertSeverity, setAlertSeverity] = useState('');
+  const [dialogConfig, setDialogConfig] = useState({
+    open: false,
+    type: '' as 'success' | 'userExists' | 'error' | '',
+    title: '',
+    message: '',
+    buttonText: 'OK',
+    showCloseIcon: false,
+    route: null as string | null,
+  });
   const [usernameError, setUsernameError] = useState('');
   const [isUsernameValid, setIsUsernameValid] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string[]>>({});
@@ -1163,8 +1174,20 @@ const DynamicForm = ({
           }
         );
 
-        if (response?.data?.message === 'Username is already taken') {
-          setErrorMessage(response?.data?.message);
+        const msg = response?.data?.message?.toLowerCase() || '';
+        if (msg.includes('already taken') || msg.includes('already exists')) {
+          setDialogConfig((prev) => ({
+            ...prev,
+            open: true,
+            type: 'userExists',
+            title: response?.data?.message || 'User already exists',
+            message:
+              'This email/mobile number is already registered with an existing account. Please log in to continue.',
+            buttonText: 'OK',
+            route: null,
+            showCloseIcon: true,
+          }));
+          // setErrorMessage(response?.data?.message);
           setShowError(true);
           setErrorButton(true);
           setAlertSeverity('error');
@@ -1634,6 +1657,22 @@ const DynamicForm = ({
             setShowError(false);
           }, 8000);
           return;
+        } else if (
+          registrationResponse?.message?.toLowerCase().includes('already exists') ||
+          registrationResponse?.message?.toLowerCase().includes('already taken') ||
+          registrationResponse?.message?.toLowerCase().includes('already registered')
+        ) {
+          setDialogConfig((prev) => ({
+            ...prev,
+            open: true,
+            type: 'userExists',
+            title: registrationResponse?.message || 'User already exists',
+            message:
+              'This email/mobile number is already registered with an existing account. Please log in to continue.',
+            buttonText: 'Go to Login',
+            route: '/',
+            showCloseIcon: true,
+          }));
         } else {
           setShowError(true);
           setErrorButton(true);
@@ -1750,7 +1789,14 @@ const DynamicForm = ({
   };
 
   const handleDialogClose = async () => {
-    setDialogOpen(false);
+    setDialogConfig((prev) => ({ ...prev, open: false }));
+    if (dialogConfig.route) {
+      router.push(dialogConfig.route);
+      return;
+    }
+    if (dialogConfig.type !== 'success') {
+      return;
+    }
     try {
       const response = await signin({
         username: formData.Username,
@@ -1960,25 +2006,16 @@ const DynamicForm = ({
         onSubmit={handleRegister}
         onResendOtp={handleSendOtp}
       />
-      <Dialog open={dialogOpen} onClose={handleDialogClose}>
-        <DialogTitle>Registration Successful</DialogTitle>
-        <DialogContent>
-          <DialogContentText>
-            Welcome,
-            <span style={{ fontWeight: 'bold' }}>
-              {' '}
-              {requestData?.usercreate?.request?.userName}{' '}
-            </span>{' '}
-            Your account has been successfully registered. Please use your
-            username to login.
-          </DialogContentText>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleDialogClose} color="primary">
-            OK
-          </Button>
-        </DialogActions>
-      </Dialog>
+      <DynamicNotificationDialog
+        open={dialogConfig.open}
+        onClose={handleDialogClose}
+        title={dialogConfig.title}
+        type={dialogConfig.type}
+        message={dialogConfig.message}
+        userName={requestData?.usercreate?.request?.userName}
+        buttonText={dialogConfig.buttonText}
+        showCloseIcon={dialogConfig.showCloseIcon}
+      />
     </>
   );
 };
