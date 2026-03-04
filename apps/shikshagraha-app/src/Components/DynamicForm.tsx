@@ -109,6 +109,15 @@ const DynamicForm = ({
   const [lastOtpAttemptTime, setLastOtpAttemptTime] = useState<number | null>(
     null
   );
+
+  const isUserExistsError = (msg: string) => {
+    const lowerMsg = msg?.toLowerCase() || '';
+    return (
+      lowerMsg.includes('already taken') ||
+      lowerMsg.includes('already exists') ||
+      lowerMsg.includes('already registered')
+    );
+  };
   const [otpDisabled, setOtpDisabled] = useState(false);
   const [otpDisabledMessage, setOtpDisabledMessage] = useState('');
   const [tooManyRequests, setTooManyRequests] = useState(false);
@@ -1174,20 +1183,19 @@ const DynamicForm = ({
           }
         );
 
-        const msg = response?.data?.message?.toLowerCase() || '';
-        if (msg.includes('already taken') || msg.includes('already exists')) {
+        const msg = response?.data?.message || '';
+        if (isUserExistsError(msg)) {
           setDialogConfig((prev) => ({
             ...prev,
             open: true,
             type: 'userExists',
-            title: response?.data?.message || 'User already exists',
+            title: msg || 'User already exists',
             message:
               'This email/mobile number is already registered with an existing account. Please log in to continue.',
             buttonText: 'OK',
             route: null,
             showCloseIcon: true,
           }));
-          // setErrorMessage(response?.data?.message);
           setShowError(true);
           setErrorButton(true);
           setAlertSeverity('error');
@@ -1657,11 +1665,7 @@ const DynamicForm = ({
             setShowError(false);
           }, 8000);
           return;
-        } else if (
-          registrationResponse?.message?.toLowerCase().includes('already exists') ||
-          registrationResponse?.message?.toLowerCase().includes('already taken') ||
-          registrationResponse?.message?.toLowerCase().includes('already registered')
-        ) {
+        } else if (isUserExistsError(registrationResponse?.message)) {
           setDialogConfig((prev) => ({
             ...prev,
             open: true,
@@ -1678,7 +1682,7 @@ const DynamicForm = ({
           setErrorButton(true);
           setIsErrorButtonFromRateLimit(false);
           setAlertSeverity('error');
-          setErrorMessage(registrationResponse.message);
+          setErrorMessage(registrationResponse?.message || 'Verification failed');
           setTimeout(() => {
             setShowError(false);
           }, 8000);
@@ -1776,7 +1780,15 @@ const DynamicForm = ({
           JSON.stringify({ 'org-id': orgId.toString() })
         );
       }
-      router.replace('/home');
+      setDialogConfig((prev) => ({
+        ...prev,
+        open: true,
+        type: 'success',
+        title: 'Registration Successful',
+        buttonText: 'OK',
+        route: null,
+        showCloseIcon: false,
+      }));
     } else {
       setShowError(true);
       setAlertSeverity('error');
@@ -1788,12 +1800,18 @@ const DynamicForm = ({
     }
   };
 
-  const handleDialogClose = async () => {
+  const handleDialogClose = () => {
     setDialogConfig((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleDialogAction = async () => {
+    setDialogConfig((prev) => ({ ...prev, open: false }));
+
     if (dialogConfig.route) {
       router.push(dialogConfig.route);
       return;
     }
+
     if (dialogConfig.type !== 'success') {
       return;
     }
@@ -2009,6 +2027,7 @@ const DynamicForm = ({
       <DynamicNotificationDialog
         open={dialogConfig.open}
         onClose={handleDialogClose}
+        onAction={handleDialogAction}
         title={dialogConfig.title}
         type={dialogConfig.type}
         message={dialogConfig.message}

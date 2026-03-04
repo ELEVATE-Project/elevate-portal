@@ -15,6 +15,7 @@ import { Close } from '@mui/icons-material';
 interface DynamicNotificationDialogProps {
   open: boolean;
   onClose: () => void;
+  onAction?: () => void;
   title: string;
   type: 'success' | 'userExists' | 'error' | '';
   message?: string;
@@ -26,6 +27,7 @@ interface DynamicNotificationDialogProps {
 const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
   open,
   onClose,
+  onAction,
   title,
   type,
   message,
@@ -33,6 +35,14 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
   buttonText,
   showCloseIcon = false,
 }) => {
+  const handleAction = () => {
+    if (onAction) {
+      onAction();
+    } else {
+      onClose();
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -55,7 +65,7 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
     >
       {showCloseIcon && (
         <Box position="absolute" top={8} right={8}>
-          <IconButton onClick={onClose} size="small">
+          <IconButton onClick={onClose} size="small" aria-label="Close">
             <Close fontSize="small" />
           </IconButton>
         </Box>
@@ -70,9 +80,9 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
           {type === 'success' ? (
             <>
               Welcome,
-              <span style={{ fontWeight: 'bold' }}> {userName} </span> Your
-              account has been successfully registered. Please use your username
-              to login.
+              <span style={{ fontWeight: 'bold' }}> {userName || 'User'} </span>{' '}
+              Your account has been successfully registered. Please use your
+              username to login.
             </>
           ) : (
             <Typography variant="body2" color="text.secondary">
@@ -83,7 +93,7 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
       </DialogContent>
       <DialogActions sx={{ justifyContent: 'center', pt: 2, pb: 3 }}>
         <Button
-          onClick={onClose}
+          onClick={handleAction}
           variant="contained"
           sx={{
             bgcolor: '#582E92',
