@@ -33,6 +33,9 @@
       register: envConfig
     - debug: msg=" cred {{ envConfig }} "
 
+    - name: Set permission for generate-env-config.sh
+      shell: chmod 744 {{ project_path }}/scripts/generate-env-config.sh
+
     - name: Generate runtime env-config.js from vault values
       shell: cd {{project_path}} && ./scripts/generate-env-config.sh
 
