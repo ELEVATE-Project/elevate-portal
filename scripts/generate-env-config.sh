@@ -3,6 +3,38 @@
 # This script generates env-config.js for runtime environment variables.
 # It finds all 'public' directories in the project and creates the config file.
 
+load_env_file() {
+    local env_file="$1"
+
+    [ -f "$env_file" ] || return 0
+
+    while IFS= read -r raw_line || [ -n "$raw_line" ]; do
+        # Trim leading/trailing whitespace
+        line=$(echo "$raw_line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        # Skip blank lines and comments
+        [ -z "$line" ] && continue
+        case "$line" in
+            \#*) continue ;;
+        esac
+
+        key=$(echo "$line" | cut -d '=' -f 1 | sed 's/[[:space:]]*$//')
+        value=$(echo "$line" | sed 's/^[^=]*=[[:space:]]*//')
+
+        # Strip optional surrounding quotes
+        value=$(echo "$value" | sed 's/^"//;s/"$//')
+
+        if [ -n "$key" ]; then
+            export "$key=$value"
+        fi
+    done < "$env_file"
+}
+
+# Fallback for environments where vars are present in .env but not exported.
+if ! printenv | grep -q '^NEXT_PUBLIC_'; then
+    load_env_file "./.env"
+fi
+
 generate_config() {
     local output_file="$1"
     echo "window.__ENV = {" > "$output_file"
