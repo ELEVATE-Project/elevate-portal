@@ -23,6 +23,9 @@
       shell: cd {{project_path}} && npm i --legacy-peer-deps
     - name: Set permission
       shell: chmod 744 {{ project_path }}/apps/scripts/json2env.sh
+
+    - name: Set permission for runtime env generator
+      shell: chmod 744 {{ project_path }}/scripts/generate-env-config.sh
     # - name: Generate .env
     #   shell: cat {{root_path}}/data2.json | jq '.data' > {{ project_path }}/.env && sed -i '1s/^/export const environment = \n/' {{ project_path }}/.env
     #   register: envConfig
@@ -33,11 +36,8 @@
       register: envConfig
     - debug: msg=" cred {{ envConfig }} "
 
-    - name: Set permission for generate-env-config.sh
-      shell: chmod 744 {{ project_path }}/scripts/generate-env-config.sh
-
     - name: Generate runtime env-config.js from vault values
-      shell: cd {{project_path}} && ./scripts/generate-env-config.sh
+      shell: cd {{project_path}} && sh ./scripts/generate-env-config.sh
 
     - name: Change directory
       shell: chdir {{project_path}}
