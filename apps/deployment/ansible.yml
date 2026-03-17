@@ -51,4 +51,7 @@
     # - name: Build pwa app
     #   shell: cd {{project_path}} && pm2 delete shikshagraha-app
     - name: Start pm2
-      shell: cd {{project_path}} && set -a && . ./.env && set +a && pm2 start "npx nx dev shikshagraha-app --port=8000 --verbose" --name shikshagraha-app --update-env
+      shell: |
+        cd {{ project_path }} && \
+        ./scripts/generate-env-config.sh && \
+        pm2 start "npx nx dev shikshagraha-app --port=8000 --verbose" --name shikshagraha-app --update-env
