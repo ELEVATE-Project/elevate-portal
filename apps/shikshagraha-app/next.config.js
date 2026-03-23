@@ -25,10 +25,15 @@ const routes = {
 const TELEMETRY_BASE = process.env.NEXT_PUBLIC_TELEMETRY_URL;
 const CLOUD_STORAGE_BASE = process.env.NEXT_PUBLIC_CLOUD_STORAGE_URL;
 
+const CONTENT_BASE_URL = process.env.NEXT_PUBLIC_CONTENT_BASE_URL;
+
 /**
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
  **/
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_CONTENT_BASE_URL: CONTENT_BASE_URL || 'https://interface.tekdinext.com',
+  },
   experimental: {
     missingSuspenseWithCSRBailout: false,
   },

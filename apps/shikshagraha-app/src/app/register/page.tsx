@@ -74,11 +74,9 @@ export default function Register() {
         }
 
         try {
-          console.log('Fetching branding for domain:', coreDomain);
           const brandingData = await fetchBranding(coreDomain);
 
           if (brandingData && brandingData.result) {
-            console.log('Branding data received:', brandingData.result);
             const tenantCode = brandingData.result.code;
             const tenantId = brandingData.result.id;
 
@@ -88,10 +86,6 @@ export default function Register() {
 
             setDisplayName(toPascalCase(tenantCode));
             setTenantConfigured(true);
-            console.log('Tenant configured successfully:', {
-              tenantCode,
-              tenantId,
-            });
           } else {
             // Fallback for incognito mode or when branding fails
             console.warn(
@@ -122,16 +116,11 @@ export default function Register() {
     const fetchSchema = async () => {
       // Wait for tenant configuration to complete
       if (!tenantConfigured) {
-        console.log('Waiting for tenant configuration...');
         return;
       }
-
-      console.log('Tenant configured, fetching schema...');
       try {
         setLoading(true);
-        const origin = localStorage.getItem('origin') || '';
-        // const isShikshalokam = origin.includes('shikshalokam');
-        // console.log('isShikshalokam', isShikshalokam);
+        const tenantCode = localStorage.getItem('tenantCode') || '';
 
         const rolesResponse = await fetchRoleData();
         const rolesData = rolesResponse?.result ?? [];
@@ -140,7 +129,6 @@ export default function Register() {
         const response = await schemaRead();
         const fields = response?.result?.data?.fields?.result ?? [];
         const meta = response?.result?.data?.fields?.meta ?? {};
-        console.log('meta', meta);
         if (fields.length === 0) {
           throw new Error('No form fields received from API');
         }
@@ -159,7 +147,6 @@ export default function Register() {
           delete uiSchema?.['Sub-Role'];
         }
 
-        console.log('schema', schema);
         const registrationCodeConfig = meta.registration_code;
 
         setFormSchema({
@@ -189,16 +176,6 @@ export default function Register() {
   const handleBack = () => {
     router.push('/');
   };
-
-  useEffect(() => {
-    if (formSchema && uiSchema) {
-      console.log('Final Role field schema:', {
-        schema: formSchema.properties?.Role,
-        uiSchema: uiSchema?.Role,
-        rolesList,
-      });
-    }
-  }, [formSchema, uiSchema]);
 
   const StaticHeader = () => (
     <Box

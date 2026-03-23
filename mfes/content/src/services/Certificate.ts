@@ -8,15 +8,18 @@ export const getUserCertificateStatus = async ({
   userId: string;
   courseId: string;
 }) => {
+  if (typeof window === 'undefined') {
+    return {};
+  }
   const response = await axios.post(
-    `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/user_certificate/status/get`,
+    `${getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL')}/tracking/user_certificate/status/get`,
     {
       userId,
       courseId,
     },
     {
       headers: {
-        tenantId: localStorage.getItem('tenantId') ?? '',
+        tenantId: localStorage.getItem('tenantId') ?? 'ebae40d1-b78a-4f73-8756-df5e4b060436',
         Authorization: `Bearer ${localStorage.getItem('accToken') ?? ''}`,
       },
     }
@@ -35,14 +38,14 @@ export const createUserCertificateStatus = async ({
     throw new Error('Cannot access localStorage in server environment');
   }
   const response = await axios.post(
-    `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/user_certificate/status/create`,
+    `${getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL')}/tracking/user_certificate/status/create`,
     {
       userId,
       courseId,
     },
     {
       headers: {
-        tenantId: localStorage.getItem('tenantId') ?? '8',
+        tenantId: localStorage.getItem('tenantId') ?? 'ebae40d1-b78a-4f73-8756-df5e4b060436',
         Authorization: `Bearer ${localStorage.getItem('accToken') ?? ''}`,
       },
     }
@@ -61,9 +64,9 @@ export const getUserCertificates = async ({
 }): Promise<any> => {
   try {
     // Ensure the environment variable is defined
-    const searchApiUrl = getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL');
+    const searchApiUrl = getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL');
     if (!searchApiUrl) {
-      throw new Error('Search API URL environment variable is not configured');
+      throw new Error('Content API URL environment variable is not configured');
     }
     // Axios request configuration
     const data = {
@@ -76,7 +79,7 @@ export const getUserCertificates = async ({
 
     // Execute the request
     const response = await axios.post(
-      `${searchApiUrl}/tracking/user_certificate/status/search`,
+      `${searchApiUrl}/interface/v1/tracking/user_certificate/status/search`,
       data
     );
     const res = response?.data;
@@ -99,7 +102,7 @@ export const courseUpdate = async ({
     throw new Error('Cannot access localStorage in server environment');
   }
   const response = await axios.post(
-    `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/user_certificate/status/update`,
+    `${getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL')}/tracking/user_certificate/status/update`,
     {
       userId,
       courseId,
@@ -123,7 +126,7 @@ export const courseIssue = async (data: {
     throw new Error('Cannot access localStorage in server environment');
   }
   const response = await axios.post(
-    `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/certificate/issue`,
+    `${getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL')}/tracking/certificate/issue`,
     data,
     {
       headers: {
@@ -135,7 +138,7 @@ export const courseIssue = async (data: {
   return response?.data ?? {};
 };
 export const getUserByToken = async (token: string): Promise<any> => {
-  const apiUrl = `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/user/auth`;
+  const apiUrl = `${getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL')}/user/auth`;
   try {
     const response = await axios.get(apiUrl, {
       headers: {
@@ -160,7 +163,7 @@ export const showCertificate = async ({
     throw new Error('Cannot access localStorage in a server environment');
   }
   const response = await axios.post(
-    `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/tracking/certificate/render`,
+    `${getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL')}/tracking/certificate/render`,
     {
       credentialId,
       templateId,

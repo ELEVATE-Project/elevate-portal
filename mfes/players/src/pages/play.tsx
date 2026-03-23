@@ -90,40 +90,20 @@ const Players: React.FC<SunbirdPlayerProps> = ({
     router.back();
   };
   return (
-    <Layout
-      showTopAppBar={{
-        title: '',
-        showMenuIcon: true,
-        showBackIcon: true,
-        backIconClick: onBackClick,
-      }}
-      isFooter={true}
-      showLogo={true}
-      showBack={false}
-    >
-      <Box>
-        {loading ? (
-          <Box
-            display="flex"
-            justifyContent="center"
-            alignItems="center"
-            height="100vh"
-          >
-            <Loader showBackdrop={false} />
-          </Box>
-        ) : (
-          <Box height="100vh" width="100%" p="14px" overflow={'hidden'}>
-            {/* <Typography
-            color="#024f9d"
-            sx={{ padding: '0 0 4px 4px', fontWeight: 'bold' }}
-          >
-            {playerConfig?.metadata?.name || 'Loading...'}
-          </Typography> */}
-            <SunbirdPlayers player-config={playerConfig} />
-          </Box>
-        )}
-      </Box>
-    </Layout>
+    <Box height="100vh" width="100%" p="14px" overflow={'hidden'}>
+      {loading ? (
+        <Box
+          display="flex"
+          justifyContent="center"
+          alignItems="center"
+          height="100vh"
+        >
+          <Loader showBackdrop={false} />
+        </Box>
+      ) : (
+        <SunbirdPlayers player-config={playerConfig} />
+      )}
+    </Box>
   );
 };
 

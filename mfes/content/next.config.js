@@ -18,6 +18,7 @@ const routes = {
 // ✅ Safely read env vars (may be undefined in Docker)
 const TELEMETRY_BASE = process.env.NEXT_PUBLIC_TELEMETRY_URL;
 const CLOUD_STORAGE_BASE = process.env.NEXT_PUBLIC_CLOUD_STORAGE_URL;
+const CONTENT_BASE_URL = process.env.NEXT_PUBLIC_CONTENT_BASE_URL;
 
 /**
  * @type {import('@nx/next/plugins/with-nx').WithNxOptions}
@@ -28,6 +29,11 @@ const nextConfig = {
   },
   nx: {
     svgr: false,
+  },
+
+  // Explicitly expose env vars to client-side (needed because content MFE doesn't read root .env)
+  env: {
+    NEXT_PUBLIC_CONTENT_BASE_URL: CONTENT_BASE_URL || 'https://interface.tekdinext.com',
   },
 
   // Must match nginx location
@@ -62,6 +68,10 @@ const nextConfig = {
       {
         source: '/action/:path*',
         destination: '/api/proxy?path=/action/:path*',
+      },
+      {
+        source: '/interface/:path*',
+        destination: '/api/proxy?path=/interface/:path*',
       },
       {
         source: '/api/:path*',

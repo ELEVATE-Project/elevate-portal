@@ -9,7 +9,7 @@ export default function MyApp({ Component, pageProps }: AppProps) {
     // <ThemeProvider theme={customTheme}>
     <ThemeProvider>
       <Head>
-        <script src="/env-config.js" defer />
+        <script src="/content/env-config.js" defer />
       </Head>
       <Component {...pageProps} />
     </ThemeProvider>

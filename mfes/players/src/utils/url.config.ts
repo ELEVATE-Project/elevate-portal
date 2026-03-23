@@ -1,4 +1,4 @@
-import { getEnvValue } from '@shared-lib';
+import { getEnvValue, getContentBaseUrl } from '@shared-lib';
 
 export const URL_CONFIG = {
   PARAMS: {
@@ -8,11 +8,12 @@ export const URL_CONFIG = {
     HIERARCHY_FEILDS: 'instructions,outcomeDeclaration',
   },
   API: {
-    get CONTENT_READ() { return `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/api/content/v1/read/`; },
-    get HIERARCHY_API() { return `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/action/questionset/v2/hierarchy/`; },
-    get QUESTIONSET_READ() { return `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/action/questionset/v2/read/`; },
-    get COMPOSITE_SEARCH() { return `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/action/composite/v3/search`; },
-    get CONTENT_HIERARCHY() { return `${getEnvValue('NEXT_PUBLIC_MIDDLEWARE_URL')}/action/content/v3/hierarchy`; },
+    get CONTENT_READ() { return `${getContentBaseUrl()}/interface/v1/api/content/v1/read/`; },
+    get HIERARCHY_API() { return `${getContentBaseUrl()}/interface/v1/action/questionset/v2/hierarchy/`; },
+    get FRAMEWORK_READ() { return `${getContentBaseUrl()}/interface/v1/api/framework/v1/read/`; },
+    get QUESTIONSET_READ() { return `${getContentBaseUrl()}/interface/v1/action/questionset/v2/read/`; },
+    get COMPOSITE_SEARCH() { return `${getContentBaseUrl()}/interface/v1/action/composite/v3/search`; },
+    get CONTENT_HIERARCHY() { return `${getContentBaseUrl()}/interface/v1/action/content/v3/hierarchy`; },
   },
 };
 

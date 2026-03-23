@@ -10,7 +10,7 @@ import {
   IconButton,
   Box,
 } from '@mui/material';
-import { Close } from '@mui/icons-material';
+import { Close, GppMaybe, CheckCircle } from '@mui/icons-material';
 
 interface DynamicNotificationDialogProps {
   open: boolean;
@@ -66,11 +66,31 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
       {showCloseIcon && (
         <Box position="absolute" top={8} right={8}>
           <IconButton onClick={onClose} size="small" aria-label="Close">
-            <Close fontSize="small" />
+            <Close fontSize="small" sx={{ color: 'text.secondary' }} />
           </IconButton>
         </Box>
       )}
-      <DialogTitle sx={{ textAlign: 'center', pt: 3, pb: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', pt: 4, pb: 1 }}>
+        {type === 'userExists' && (
+          <Box
+            sx={{
+              width: 80,
+              height: 80,
+              borderRadius: '50%',
+              bgcolor: '#F3E5F5',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <GppMaybe sx={{ fontSize: 45, color: '#582E92' }} />
+          </Box>
+        )}
+        {type === 'success' && (
+          <CheckCircle sx={{ fontSize: 75, color: '#4CAF50' }} />
+        )}
+      </Box>
+      <DialogTitle sx={{ textAlign: 'center', pt: 1, pb: 1 }}>
         <Typography variant="h6" fontWeight="bold" color="text.primary">
           {title}
         </Typography>
@@ -95,15 +115,16 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
         <Button
           onClick={handleAction}
           variant="contained"
+          fullWidth
           sx={{
             bgcolor: '#582E92',
             color: '#FFFFFF',
-            borderRadius: '30px',
+            borderRadius: '12px',
             textTransform: 'none',
             fontWeight: 'bold',
-            fontSize: '14px',
-            px: 4,
-            py: 1,
+            fontSize: '16px',
+            py: 1.5,
+            mx: 2,
             '&:hover': {
               bgcolor: '#4a267a',
             },

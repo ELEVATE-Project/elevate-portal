@@ -203,11 +203,16 @@ export default function Login() {
         router.replace('/home');
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
+        const frameworkId = organizations[0]?.meta?.framework?.node_id;
         if (orgId) {
           localStorage.setItem(
             'headers',
             JSON.stringify({ 'org-id': orgId.toString() })
           );
+        }
+        if (frameworkId) {
+          localStorage.setItem('frameworkId', frameworkId);
+          document.cookie = `frameworkId=${frameworkId}; path=/; secure; SameSite=Lax`;
         }
       } else {
         setShowError(true);
@@ -224,7 +229,6 @@ export default function Login() {
   };
 
   function clearIndexedDB() {
-    console.log('db clearing...');
     indexedDB
       .databases()
       .then((databases) => {
@@ -233,7 +237,6 @@ export default function Login() {
           const deleteRequest = indexedDB.deleteDatabase(database.name);
 
           deleteRequest.onsuccess = () => {
-            console.log(`Database "${database.name}" deleted successfully.`);
           };
 
           deleteRequest.onerror = (event) => {

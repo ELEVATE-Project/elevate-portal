@@ -1,5 +1,5 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { getEnvValue } from '@shared-lib';
+import { getEnvValue, getContentBaseUrl } from '@shared-lib';
 import { URL_CONFIG } from '../utils/url.config';
 interface ContentSearchResponse {
   ownershipType?: string[];
@@ -111,35 +111,27 @@ interface ContentSearchResponse {
 
 export const contentReadAPI = async (doId: string) => {
   try {
-    // Ensure the environment variable is defined
-    const searchApiUrl = getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL');
-    if (!searchApiUrl) {
-      throw new Error('Search API URL environment variable is not configured');
-    }
-    console.log('doId', doId);
-
     // Axios request configuration
     const config: AxiosRequestConfig = {
       method: 'get',
       maxBodyLength: Infinity,
-      url: `${searchApiUrl}/api/content/v1/read/` + doId,
+      url: `${URL_CONFIG.API.CONTENT_READ}${doId}`,
       headers: {
-        Authorization: `'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJ0WEZYTWFVOWFBanpUbk5aSXNySEpyV0hwVW94bzY3NyJ9.WSWVtVh5MCH_yymFEM_qpVzXGdDO5mukrqmIii1C5Ww'`,
+        Authorization: `Bearer ${(typeof window !== 'undefined' && localStorage.getItem('accToken')) || ''}`,
       },
     };
-    console.log('config', config);
     // Execute the request
     const response = await axios.request(config);
     const res = response?.data?.result?.content;
 
     return res;
   } catch (error) {
-    console.error('Error in ContentSearch:', error);
+    console.error('Error in ContentRead:', error);
     throw error;
   }
 };
 
-export const fetchContent = async (identifier: any) => {
+export const fetchContent = async (identifier: string) => {
   try {
     const API_URL = `${URL_CONFIG.API.CONTENT_READ}${identifier}`;
     const FIELDS = URL_CONFIG.PARAMS.CONTENT_GET;
@@ -148,7 +140,6 @@ export const fetchContent = async (identifier: any) => {
     const response = await axios.get(
       `${API_URL}?fields=${FIELDS}&mode=${MODE}&licenseDetails=${LICENSE_DETAILS}`
     );
-    console.log('response =====>', response);
     return response?.data?.result?.content;
   } catch (error) {
     console.error('Error fetching content:', error);

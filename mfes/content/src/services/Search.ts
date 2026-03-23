@@ -1,5 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { getEnvValue } from '@shared-lib';
+import { getEnvValue, getContentBaseUrl } from '@shared-lib';
+import { URL_CONFIG } from '../utils/url.config';
+
 interface ContentSearchResponse {
   ownershipType?: string[];
   publish_type?: string;
@@ -116,39 +118,17 @@ export const ContentSearch = async (
   offset: number = 0
 ): Promise<ContentSearchResponse[]> => {
   try {
-    // Ensure the environment variable is defined
-    const searchApiUrl = getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL');
-    if (!searchApiUrl) {
-      throw new Error('Search API URL environment variable is not configured');
-    }
     // Axios request configuration
-    const channel = `${localStorage.getItem('tenantCode')}-channel`;
+    const tenantId = (typeof window !== 'undefined' && localStorage.getItem('tenantCode')) || '';
+    const channel = tenantId ? `${tenantId}-channel` : '';
 
     const data = {
       request: {
         filters: {
-          // identifier: 'do_114228944942358528173',
-          // identifier: 'do_1141652605790289921389',
           ...filterValues,
-          //need below after login user channel for dynamic load content
           channel: channel,
-
           primaryCategory: [type],
         },
-        // fields: [
-        //   'name',
-        //   'appIcon',
-        //   'description',
-        //   'posterImage',
-        //   'mimeType',
-        //   'identifier',
-        //   'resourceType',
-        //   'primaryCategory',
-        //   'contentType',
-        //   'trackable',
-        //   'children',
-        //   'leafNodes',
-        // ],
         query: searchText,
         limit: limit,
         offset: offset,
@@ -157,7 +137,7 @@ export const ContentSearch = async (
     const config: AxiosRequestConfig = {
       method: 'post',
       maxBodyLength: Infinity,
-      url: `${searchApiUrl}/action/composite/v3/search`,
+      url: URL_CONFIG.API.COMPOSITE_SEARCH,
       data: data,
     };
 

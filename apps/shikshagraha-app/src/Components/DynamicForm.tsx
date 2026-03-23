@@ -1177,9 +1177,7 @@ const DynamicForm = ({
         const response = await axios.get(
           `${API_ENDPOINTS.checkUser(username)}`,
           {
-            headers: {
-              Origin: 'localhost',
-            },
+            headers: {},
           }
         );
 
@@ -1194,7 +1192,7 @@ const DynamicForm = ({
             type: 'userExists',
             title: msg || 'User already exists',
             message:
-              'This email/mobile number is already registered with an existing account. Please log in to continue.',
+              'This email/mobile number is already registered with an existing account.Please login to continue.',
             buttonText: 'OK',
             route: null,
             showCloseIcon: true,
@@ -1668,7 +1666,7 @@ const DynamicForm = ({
             ...prev,
             open: true,
             type: 'userExists',
-            title: registrationResponse?.message || 'User already exists',
+            title: registrationResponse?.message?.replace(/[._]+$/, '').replace(/_/g, ' ') || 'User already exists',
             message:
               'This email/mobile number is already registered with an existing account. Please log in to continue.',
             buttonText: 'Go to Login',
@@ -1783,7 +1781,7 @@ const DynamicForm = ({
         open: true,
         type: 'success',
         title: 'Registration Successful',
-        buttonText: 'OK',
+        buttonText: 'Go to Home',
         route: null,
         showCloseIcon: false,
       }));
@@ -1815,7 +1813,7 @@ const DynamicForm = ({
     }
     try {
       const response = await signin({
-        username: formData.Username,
+        username: formData.Username || formData.username,
         password: formData.password,
       });
 
