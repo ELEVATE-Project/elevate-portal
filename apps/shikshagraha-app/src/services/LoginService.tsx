@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useRouter } from 'next/router';
-import { getBaseUrl } from '../utils/API/APIEndpoints';
+import { getBaseUrl, getEnvValue } from '../utils/API/APIEndpoints';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import { handleUnauthorizedError } from '../utils/Helper';
 
@@ -101,7 +101,7 @@ export const authenticateUser = async ({
     const response = await axios.get(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
-        tenantId: localStorage.getItem('tenantId') ?? 'ebae40d1-b78a-4f73-8756-df5e4b060436', // Fallback to provided default if missing
+        tenantId: localStorage.getItem('tenantId') ?? getEnvValue('NEXT_PUBLIC_TENANT_ID') ?? '', // Fallback to getEnvValue if missing
       },
     });
     handleUnauthorizedError(undefined, response);
@@ -362,9 +362,13 @@ export const resetPassword = async (payload: {
 
 // services/loginService.ts
 export const fetchBranding = async (origin: string) => {
-  const apiUrl = `${API_ENDPOINTS.tenantRead}?tenantId=${origin}`;
+  const apiUrl = `${API_ENDPOINTS.tenantRead}`;
   try {
-    const response = await axios.get(apiUrl)
+    const response = await axios.get(apiUrl, {
+      headers: {
+        tenantId: origin,
+      },
+    });
 
     return response?.data;
   } catch (error: any) {

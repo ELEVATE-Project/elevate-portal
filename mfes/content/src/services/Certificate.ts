@@ -19,7 +19,7 @@ export const getUserCertificateStatus = async ({
     },
     {
       headers: {
-        tenantId: localStorage.getItem('tenantId') ?? 'ebae40d1-b78a-4f73-8756-df5e4b060436',
+        tenantId: localStorage.getItem('tenantId') ?? getEnvValue('NEXT_PUBLIC_TENANT_ID') ?? '',
         Authorization: `Bearer ${localStorage.getItem('accToken') ?? ''}`,
       },
     }
@@ -45,7 +45,7 @@ export const createUserCertificateStatus = async ({
     },
     {
       headers: {
-        tenantId: localStorage.getItem('tenantId') ?? 'ebae40d1-b78a-4f73-8756-df5e4b060436',
+        tenantId: localStorage.getItem('tenantId') ?? getEnvValue('NEXT_PUBLIC_TENANT_ID') ?? '',
         Authorization: `Bearer ${localStorage.getItem('accToken') ?? ''}`,
       },
     }

@@ -1190,9 +1190,9 @@ const DynamicForm = ({
             ...prev,
             open: true,
             type: 'userExists',
-            title: msg || 'User already exists',
+            title: msg?.replace(/[._]+$/, '').replace(/_/g, ' ') || 'User already exists',
             message:
-              'This email/mobile number is already registered with an existing account.Please login to continue.',
+              'This email/mobile number is already registered with an existing account. Please log in to continue.',
             buttonText: 'OK',
             route: null,
             showCloseIcon: true,
@@ -1628,7 +1628,7 @@ const DynamicForm = ({
         setRequestData({
           usercreate: {
             request: {
-              userName: formData.username,
+              userName: formData.Username,
             },
           },
         });
@@ -1813,7 +1813,7 @@ const DynamicForm = ({
     }
     try {
       const response = await signin({
-        username: formData.Username || formData.username,
+        username: formData.Username,
         password: formData.password,
       });
 

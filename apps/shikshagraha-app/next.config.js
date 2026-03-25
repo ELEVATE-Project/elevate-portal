@@ -32,7 +32,7 @@ const CONTENT_BASE_URL = process.env.NEXT_PUBLIC_CONTENT_BASE_URL;
  **/
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_CONTENT_BASE_URL: CONTENT_BASE_URL || 'https://interface.tekdinext.com',
+    NEXT_PUBLIC_CONTENT_BASE_URL: CONTENT_BASE_URL,
   },
   experimental: {
     missingSuspenseWithCSRBailout: false,

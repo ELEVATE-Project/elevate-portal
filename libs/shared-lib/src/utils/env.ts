@@ -32,7 +32,7 @@ export const getEnvValue = (key: string): string | undefined => {
 };
 
 export const getBaseUrl = () => '/api/proxy';
-export const getContentBaseUrl = () => getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL') || 'https://interface.tekdinext.com';
+export const getContentBaseUrl = () => getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL') || '';
 
 export const getCookie = (name: string): string | null => {
   if (typeof document === 'undefined') return null;
