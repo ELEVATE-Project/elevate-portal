@@ -4,15 +4,17 @@
 'use client';
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { Box, Fab, Typography, Button } from '@mui/material';
-import { ContentCard, CommonTabs, Layout, Circular, getEnvValue } from '@shared-lib';
+import { ContentCard, CommonTabs, Layout, Circular, getEnvValue, getContentBaseUrl, getCookie } from '@shared-lib';
 import { ContentSearch } from '../services/Search';
 import LogoutIcon from '@mui/icons-material/Logout';
 import SearchIcon from '@mui/icons-material/Search';
 import Grid from '@mui/material/Grid2';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/router';
+import { useSearchParams } from 'next/navigation';
 import CircleIcon from '@mui/icons-material/Circle';
 import { hierarchyAPI } from '../services/Hierarchy';
 import { contentReadAPI } from '../services/Read';
+import { URL_CONFIG } from '../utils/url.config';
 import { useTheme } from '@mui/material/styles';
 import ArrowUpwardIcon from '@mui/icons-material/ArrowUpward';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -61,12 +63,7 @@ export default function Content() {
   const observer = useRef<IntersectionObserver>();
   const loadingRef = useRef<HTMLDivElement>(null);
 
-  const getCookie = (name: any) => {
-    const cookies = document.cookie.split('; ');
-    const cookie = cookies.find((row) => row.startsWith(name + '='));
-    const value = cookie ? cookie.split('=')[1] : null;
-    return value && value !== 'null' && value !== 'undefined' ? value : null;
-  };
+
 
   useEffect(() => {
     const token = getCookie('accToken');
@@ -94,6 +91,7 @@ export default function Content() {
         if (identifier) {
           result = await hierarchyAPI(identifier);
           setContentData([result]);
+          setHasMoreData(false); // Disable infinite scroll when viewing a single item
         } else {
           result =
             type &&
@@ -110,11 +108,12 @@ export default function Content() {
           } else {
             setContentData((prevData) => [...prevData, ...result]);
             fetchDataTrack(result);
-            setHasMoreData(true);
+            setHasMoreData(result.length === limit); // Only more if we got a full page
           }
         }
       } catch (error) {
         console.error('Failed to fetch content:', error);
+        setHasMoreData(false); // Stop trying to load more if it fails
       } finally {
         setIsLoading(false);
       }
@@ -158,7 +157,7 @@ export default function Content() {
       if (target.isIntersecting) {
         const newOffset = offset + limit;
         setOffset(newOffset);
-        const type = tabValue === 0 ? 'Course' : 'Learning Resource';
+        const type = 'Learning Resource';
         fetchContent(type, searchValue, filterValues, limit, newOffset);
       }
     };
@@ -188,7 +187,7 @@ export default function Content() {
   ]);
 
   useEffect(() => {
-    const type = tabValue === 0 ? 'Course' : 'Learning Resource';
+    const type = 'Learning Resource';
     const cookies = document.cookie.split('; ');
     const subid = cookies
       .find((row) => row.startsWith('subid='))
@@ -203,7 +202,7 @@ export default function Content() {
   }, [tabValue, filterValues]);
 
   const handleSearchClick = async () => {
-    const type = tabValue === 0 ? 'Course' : 'Learning Resource';
+    const type = 'Learning Resource';
     setContentData([]);
     setOffset(0);
     if (searchValue.trim()) {
@@ -222,7 +221,7 @@ export default function Content() {
       setSearchValue('');
       setContentData([]);
       setOffset(0);
-      const type = tabValue === 0 ? 'Course' : 'Learning Resource';
+      const type = 'Learning Resource';
       fetchContent(type, '', filterValues, limit, 0);
     }
   };
@@ -301,7 +300,7 @@ export default function Content() {
               orientation="vertical"
               item={[item]}
               TrackData={trackData}
-              type={tabValue === 0 ? 'Course' : 'Learning Resource'}
+              type={'Learning Resource'}
               onClick={() => handleCardClick(item?.identifier, item?.mimeType)}
             />
           </Grid>
@@ -326,7 +325,6 @@ export default function Content() {
   );
 
   const tabs = [
-    { label: 'Courses', content: renderTabContent() },
     { label: 'Resource', content: renderTabContent() },
   ];
 
@@ -342,7 +340,7 @@ export default function Content() {
   const handleApplyFilters = async (selectedValues: any) => {
     setContentData([]);
     setOffset(0);
-    const type = tabValue === 0 ? 'Course' : 'Learning Resource';
+    const type = 'Learning Resource';
     let result = await ContentSearch(
       type,
       searchValue,
@@ -356,11 +354,13 @@ export default function Content() {
 
   useEffect(() => {
     fetchFramework();
-  }, [router]);
+  }, []); // Run only once on mount
 
   const fetchFramework = async () => {
     try {
-      const url = `${getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL')}/api/framework/v1/read/atree-framework`;
+      const frameworkId = getCookie('frameworkId')
+      if (!frameworkId) return;
+      const url = `${URL_CONFIG.API.FRAMEWORK_READ}${frameworkId}`;
       const frameworkData = await fetch(url).then((res) => res.json());
       const frameworks = frameworkData?.result?.framework;
       setFrameworkFilter(frameworks);

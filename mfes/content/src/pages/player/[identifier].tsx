@@ -10,7 +10,6 @@ interface PlayerPageProps {
 const PlayerPage: React.FC<PlayerPageProps> = ({ id }) => {
   const router = useRouter();
   const { identifier, courseId, unitId } = router.query; // Access the identifier from the URL
-  console.log('Router Query:', identifier);
   if (!identifier) {
     return <div>Loading...</div>;
   }
@@ -31,9 +30,7 @@ const PlayerPage: React.FC<PlayerPageProps> = ({ id }) => {
       showBack={true}
     >
       <iframe
-        src={`${
-          getEnvValue('NEXT_PUBLIC_LEARNER_SBPLAYER')
-        }?identifier=${identifier}${
+        src={`/sbplayer?identifier=${identifier}${
           courseId && unitId ? `&courseId=${courseId}&unitId=${unitId}` : ''
         }`}
         style={{

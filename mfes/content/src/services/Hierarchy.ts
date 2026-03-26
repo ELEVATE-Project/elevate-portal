@@ -1,5 +1,7 @@
 import axios, { AxiosRequestConfig } from 'axios';
-import { getEnvValue } from '@shared-lib';
+import { getEnvValue, getContentBaseUrl } from '@shared-lib';
+import { URL_CONFIG } from '../utils/url.config';
+
 interface ContentSearchResponse {
   ownershipType?: string[];
   publish_type?: string;
@@ -112,16 +114,11 @@ export const hierarchyAPI = async (
   doId: string
 ): Promise<ContentSearchResponse[]> => {
   try {
-    // Ensure the environment variable is defined
-    const searchApiUrl = getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL');
-    if (!searchApiUrl) {
-      throw new Error('Search API URL environment variable is not configured');
-    }
     // Axios request configuration
     const config: AxiosRequestConfig = {
       method: 'get',
       maxBodyLength: Infinity,
-      url: `${searchApiUrl}/api/course/v1/hierarchy/${doId}`,
+      url: `${URL_CONFIG.API.CONTENT_HIERARCHY}/${doId}`,
     };
 
     // Execute the request
@@ -130,7 +127,7 @@ export const hierarchyAPI = async (
 
     return res;
   } catch (error) {
-    console.error('Error in ContentSearch:', error);
+    console.error('Error in HierarchySearch:', error);
     throw error;
   }
 };

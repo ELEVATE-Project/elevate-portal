@@ -1,4 +1,5 @@
 import { getEnvValue } from '@shared-lib';
+export { getEnvValue };
 
 export const getBaseUrl = () => getEnvValue('NEXT_PUBLIC_BASE_URL') || '';
 export const getSunbirdBaseUrl = () => getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL') || '';

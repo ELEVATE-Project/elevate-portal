@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useRouter } from 'next/router';
-import { getBaseUrl } from '@shared-lib';
+import { getBaseUrl, getEnvValue } from '../utils/API/APIEndpoints';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import { handleUnauthorizedError } from '../utils/Helper';
 
@@ -25,7 +25,6 @@ export const signin = async ({
   password,
 }: LoginParams): Promise<any> => {
   const apiUrl: string = `${API_ENDPOINTS.accountLogin}`;
-  console.log('username:', username);
   const isMobile = /^[6-9]\d{9}$/.test(username);
   const requestBody: any = {
     identifier: username,
@@ -102,7 +101,7 @@ export const authenticateUser = async ({
     const response = await axios.get(apiUrl, {
       headers: {
         Authorization: `Bearer ${token}`,
-        tenantId: 'ebae40d1-b78a-4f73-8756-df5e4b060436', // Token passed as a parameter
+        tenantId: localStorage.getItem('tenantId') ?? getEnvValue('NEXT_PUBLIC_TENANT_ID') ?? '', // Fallback to getEnvValue if missing
       },
     });
     handleUnauthorizedError(undefined, response);
@@ -143,7 +142,6 @@ export const fetchTenantData = async ({
 export const fetchRoleData = async (): Promise<any> => {
   const apiUrl = `${API_ENDPOINTS.roleRead}`;
   const tenantId = localStorage.getItem('tenantCode');
-  console.log('tenantId', tenantId);
   try {
     const response = await axios.get(apiUrl, {
       headers: {
@@ -187,10 +185,7 @@ export const getSubroles = async (parentEntityId: string) => {
 
 export const schemaRead = async (): Promise<any> => {
   const apiUrl: string = `${API_ENDPOINTS.formRead}`;
-  console.log(apiUrl);
-  const tenantId = localStorage.getItem('origin') ?? '';
-
-  const requestOrigin = tenantId;
+  const tenantId = localStorage.getItem('tenantCode') || '';
   try {
     const response = await axios.post(
       apiUrl,
@@ -201,7 +196,7 @@ export const schemaRead = async (): Promise<any> => {
       {
         headers: {
           'Content-Type': 'application/json',
-          Origin: origin,
+          tenantId: tenantId,
         },
       }
     );
@@ -218,6 +213,7 @@ export const schemaRead = async (): Promise<any> => {
 
 export const registerUserService = async (requestData: any) => {
   const modifiedRequestData = requestData?.requestData || requestData;
+  const tenantId = localStorage.getItem('tenantCode') || '';
 
   try {
     const response = await axios.post(
@@ -225,10 +221,9 @@ export const registerUserService = async (requestData: any) => {
       modifiedRequestData,
       {
         headers: {
-          Origin: 'http://localhost:3000',
           'Content-Type': 'application/json',
           Accept: 'application/json, text/plain, */*',
-          Referer: 'http://localhost:3000/',
+          tenantId: tenantId,
         },
       }
     );
@@ -371,7 +366,7 @@ export const fetchBranding = async (origin: string) => {
   try {
     const response = await axios.get(apiUrl, {
       headers: {
-        origin: localStorage.getItem('origin'),
+        tenantId: origin,
       },
     });
 

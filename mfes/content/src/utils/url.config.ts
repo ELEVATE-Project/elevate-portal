@@ -1,3 +1,5 @@
+import { getContentBaseUrl } from '@shared-lib';
+
 export const URL_CONFIG = {
   PARAMS: {
     CONTENT_GET:
@@ -6,11 +8,11 @@ export const URL_CONFIG = {
     HIERARCHY_FEILDS: 'instructions,outcomeDeclaration',
   },
   API: {
-    CONTENT_READ:
-      'https://shiksha-dev-interface.tekdinext.com/interface/v1/action/content/v3/read/',
-    HIERARCHY_API: '/action/questionset/v2/hierarchy/',
-    QUESTIONSET_READ: '/action/questionset/v2/read/',
-    COMPOSITE_SEARCH: '/action/composite/v3/search',
-    CONTENT_HIERARCHY: '/action/content/v3/hierarchy',
+    get CONTENT_READ() { return `${getContentBaseUrl()}/interface/v1/api/content/v1/read/`; },
+    get HIERARCHY_API() { return `${getContentBaseUrl()}/interface/v1/action/questionset/v2/hierarchy/`; },
+    get FRAMEWORK_READ() { return `${getContentBaseUrl()}/interface/v1/api/framework/v1/read/`; },
+    get QUESTIONSET_READ() { return `${getContentBaseUrl()}/interface/v1/action/questionset/v2/read/`; },
+    get COMPOSITE_SEARCH() { return `${getContentBaseUrl()}/interface/v1/action/composite/v3/search`; },
+    get CONTENT_HIERARCHY() { return `${getContentBaseUrl()}/interface/v1/action/content/v3/hierarchy`; },
   },
 };
