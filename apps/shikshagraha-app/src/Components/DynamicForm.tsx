@@ -1782,7 +1782,7 @@ const DynamicForm = ({
         type: 'success',
         title: 'Registration Successful',
         buttonText: 'Go to Home',
-        route: null,
+        route: '/home',
         showCloseIcon: false,
       }));
     } else {
