@@ -104,6 +104,7 @@ const DynamicForm = ({
   const [usernameError, setUsernameError] = useState('');
   const [isUsernameValid, setIsUsernameValid] = useState(false);
   const [formErrors, setFormErrors] = useState<Record<string, string[]>>({});
+  const [firstNameUsernameError, setFirstNameUsernameError] = useState('');
   const [errorButton, setErrorButton] = useState(false);
   const [otpAttempts, setOtpAttempts] = useState(0);
   const [lastOtpAttemptTime, setLastOtpAttemptTime] = useState<number | null>(
@@ -350,7 +351,8 @@ const DynamicForm = ({
       !hasValidContact ||
       !hasValidUsernameFormat ||
       !formData.Username ||
-      !hasAllRequiredFields()
+      !hasAllRequiredFields() ||
+      !!firstNameUsernameError
     );
   };
   const getRegistrationCode = (formData) => {
@@ -1268,6 +1270,31 @@ const DynamicForm = ({
           },
         }));
       }
+      // Cross-field validation: first name and username must not be the same
+      const currentFirstName = (formData.firstName || '').trim().toLowerCase();
+      const currentUsername = (formData.Username || '').trim().toLowerCase();
+      if (
+        currentFirstName &&
+        currentUsername &&
+        currentFirstName === currentUsername
+      ) {
+        setFirstNameUsernameError(
+          'First name and username cannot be the same'
+        );
+        setDialogConfig((prev) => ({
+          ...prev,
+          open: true,
+          type: 'error',
+          title: 'Validation Error',
+          message: 'First name and username cannot be the same.',
+          buttonText: 'OK',
+          route: null,
+          showCloseIcon: false,
+        }));
+      } else {
+        setFirstNameUsernameError('');
+      }
+
       const usernameChanged =
         formData.Username !== prevFormData.current?.Username;
 
