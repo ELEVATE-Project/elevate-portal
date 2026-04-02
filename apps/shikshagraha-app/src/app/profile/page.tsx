@@ -579,7 +579,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                       height: 50,
                       boxShadow: '0px 4px 8px rgba(0, 0, 0, 0.2)',
                     }}
-                    src={profileData?.avatar ?? ''}
+                    src={profileData?.image ?? ''}
                   >
                     {(userData?.name?.charAt(0) ?? 'U').toUpperCase()}
                   </Avatar>
