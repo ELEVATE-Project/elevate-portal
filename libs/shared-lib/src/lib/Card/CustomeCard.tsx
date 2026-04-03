@@ -10,7 +10,7 @@ export const DynamicCard = ({ title, icon, onClick }) => {
   return (
     <Card
       sx={{
-        width: { xs: '110px', sm: '200px' },
+        width: { xs: '125px', sm: '200px' },
         minHeight: { xs: 150, sm: 180 }, // Fixed minimum height
         height: { xs: 150, sm: 180 },
         // Ensuring fixed height

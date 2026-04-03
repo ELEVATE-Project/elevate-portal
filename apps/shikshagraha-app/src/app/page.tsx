@@ -103,9 +103,6 @@ export default function Login() {
           if (apiLogo && typeof apiLogo === 'string') {
             setLogoSrc(apiLogo);
             localStorage.setItem('brandingLogoUrl', apiLogo);
-          } else if (TENANT_LOGOS[normalized]) {
-            setLogoSrc(TENANT_LOGOS[normalized]);
-            localStorage.setItem('brandingLogoUrl', TENANT_LOGOS[normalized]);
           }
         }
       });
@@ -232,11 +229,11 @@ export default function Login() {
     indexedDB
       .databases()
       .then((databases) => {
-        console.log(databases);
         databases.forEach((database) => {
           const deleteRequest = indexedDB.deleteDatabase(database.name);
 
           deleteRequest.onsuccess = () => {
+            console.log(`Database "${database.name}" deleted successfully.`);
           };
 
           deleteRequest.onerror = (event) => {
