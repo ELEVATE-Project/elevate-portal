@@ -38,7 +38,7 @@ export default async function manifest(): Promise<MetadataRoute.Manifest> {
         src: logo,
         sizes: '512x512',
         type: iconType,
-        purpose: 'maskable',
+        purpose: 'any',
       },
     ],
   };
