@@ -103,9 +103,6 @@ export default function Login() {
           if (apiLogo && typeof apiLogo === 'string') {
             setLogoSrc(apiLogo);
             localStorage.setItem('brandingLogoUrl', apiLogo);
-          } else if (TENANT_LOGOS[normalized]) {
-            setLogoSrc(TENANT_LOGOS[normalized]);
-            localStorage.setItem('brandingLogoUrl', TENANT_LOGOS[normalized]);
           }
         }
       });
@@ -229,6 +226,7 @@ export default function Login() {
   };
 
   function clearIndexedDB() {
+    console.log('db clearing...');
     indexedDB
       .databases()
       .then((databases) => {
@@ -237,6 +235,7 @@ export default function Login() {
           const deleteRequest = indexedDB.deleteDatabase(database.name);
 
           deleteRequest.onsuccess = () => {
+            console.log(`Database "${database.name}" deleted successfully.`);
           };
 
           deleteRequest.onerror = (event) => {
