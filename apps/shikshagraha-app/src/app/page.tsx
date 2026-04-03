@@ -226,11 +226,9 @@ export default function Login() {
   };
 
   function clearIndexedDB() {
-    console.log('db clearing...');
     indexedDB
       .databases()
       .then((databases) => {
-        console.log(databases);
         databases.forEach((database) => {
           const deleteRequest = indexedDB.deleteDatabase(database.name);
 
