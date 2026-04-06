@@ -177,7 +177,7 @@ export default function Login() {
       if (accessToken) {
         const userStatus = response?.result?.user?.status;
         localStorage.setItem('userStatus', userStatus);
-        document.cookie = `userStatus=${userStatus}; path=/; secure; SameSite=Lax`;
+        document.cookie = `userStatus=${userStatus}; path=/; max-age=86400; secure; SameSite=Lax`;
         if (userStatus !== 'ACTIVE') {
           setShowError(true);
           setErrorMessage('The user is deactivated, please contact admin.');
@@ -195,8 +195,8 @@ export default function Login() {
         }
         localStorage.setItem('userId', response?.result?.user?.id);
         localStorage.setItem('name', response?.result?.user?.username);
-        document.cookie = `accToken=${accessToken}; path=/; secure; SameSite=Lax`;
-        document.cookie = `userId=${userId}; path=/; secure; SameSite=Lax`;
+        document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
+        document.cookie = `userId=${userId}; path=/; max-age=86400; secure; SameSite=Lax`;
         router.replace('/home');
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
@@ -209,7 +209,7 @@ export default function Login() {
         }
         if (frameworkId) {
           localStorage.setItem('frameworkId', frameworkId);
-          document.cookie = `frameworkId=${frameworkId}; path=/; secure; SameSite=Lax`;
+          document.cookie = `frameworkId=${frameworkId}; path=/; max-age=86400; secure; SameSite=Lax`;
         }
       } else {
         setShowError(true);

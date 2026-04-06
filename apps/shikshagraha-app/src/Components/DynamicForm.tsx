@@ -1778,7 +1778,7 @@ const DynamicForm = ({
       setErrorMessage(registrationResponse.message);
       setAlertSeverity('success');
       const accessToken = registrationResponse?.result?.access_token;
-      document.cookie = `accToken=${accessToken}; path=/; secure; SameSite=Lax`;
+      document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
       const refreshToken = registrationResponse?.result?.refresh_token;
       localStorage.setItem('accToken', accessToken);
       localStorage.setItem('refToken', refreshToken);
@@ -1787,13 +1787,13 @@ const DynamicForm = ({
         registrationResponse?.result?.user?.name
       );
       localStorage.setItem('userId', registrationResponse?.result?.user?.id);
-      document.cookie = `userId=${registrationResponse?.result?.user?.id}; path=/; secure; SameSite=Lax`;
+      document.cookie = `userId=${registrationResponse?.result?.user?.id}; path=/; max-age=86400; secure; SameSite=Lax`;
       localStorage.setItem(
         'name',
         registrationResponse?.result?.user?.username
       );
       localStorage.setItem('userStatus', registrationResponse?.result?.status);
-      document.cookie = `userStatus=${registrationResponse?.result?.status}; path=/; secure; SameSite=Lax`;
+      document.cookie = `userStatus=${registrationResponse?.result?.status}; path=/; max-age=86400; secure; SameSite=Lax`;
       const organizations =
         registrationResponse?.result?.user?.organizations ?? [];
       const orgId = organizations[0]?.id;
