@@ -164,7 +164,7 @@ export const V2PlayerConfig: PlayerConfig = {
     showEndPage: false,
     endPage: [{ template: 'assessment', contentType: ['SelfAssess'] }],
     showStartPage: true,
-    host: process.env.NEXT_PUBLIC_CONTENT_BASE_URL || 'https://interface.tekdinext.com',
+    host: process.env.NEXT_PUBLIC_CONTENT_BASE_URL,
     overlay: { showUser: false },
     splash: {
       text: '',

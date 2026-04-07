@@ -1,6 +1,6 @@
 import { getEnvValue } from '@shared-lib';
 
-export const getBaseUrl = () => '/api/proxy';
+export const getBaseUrl = () => getEnvValue('NEXT_PUBLIC_BASE_URL') || '';
 export const getSunbirdBaseUrl = () => getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL') || '';
 export const getOrgId = () => getEnvValue('NEXT_PUBLIC_ORGID') || '';
 export const getTeacherSbPlayer = () => getEnvValue('NEXT_PUBLIC_TEACHER_SBPLAYER') || '';
