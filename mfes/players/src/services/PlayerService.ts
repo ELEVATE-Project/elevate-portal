@@ -86,7 +86,7 @@ export const getQumlData = async (identifier: any) => {
 };
 
 export const createContentTracking = async (reqBody: ContentCreate) => {
-  const apiUrl = `${getContentBaseUrl()}/tracking/content/create`;
+  const apiUrl = `${getContentBaseUrl()}/interface/v1/tracking/content/create`;
   try {
     const response = await axios.post(apiUrl, reqBody);
     return response?.data;

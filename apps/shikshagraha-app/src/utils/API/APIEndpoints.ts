@@ -1,14 +1,13 @@
 import { getEnvValue } from '@shared-lib';
-export { getEnvValue };
 
-export const getBaseUrl = () => getEnvValue('NEXT_PUBLIC_BASE_URL') || '';
+export const getBaseUrl = () => '/api/proxy';
 export const getSunbirdBaseUrl = () => getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL') || '';
 export const getOrgId = () => getEnvValue('NEXT_PUBLIC_ORGID') || '';
 export const getTeacherSbPlayer = () => getEnvValue('NEXT_PUBLIC_TEACHER_SBPLAYER') || '';
-
+export const getContentURL = () => getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL') || '';
 export const API_ENDPOINTS = {
   contentRead: (doId: string) =>
-    `${getBaseUrl()}/api/content/v1/read/${doId}?fields=artifactUrl`,
+    `${getContentURL()}/api/content/v1/read/${doId}?fields=artifactUrl`,
   get academicYearsList() { return `${getBaseUrl()}/academicyears/list`; },
   get accountCreate() { return `${getBaseUrl()}/account/create`; },
   userUpdate: (userId: string) => `${getBaseUrl()}/user/update/${userId}`,
@@ -28,7 +27,7 @@ export const API_ENDPOINTS = {
   get deleteAccount() { return `${getBaseUrl()}/user/v1/account/delete`; },
   get roleRead() { return `${getBaseUrl()}/entity-management/v1/entities/entityListBasedOnEntityType?entityType=professional_role`; },
   get userCreate() { return `${getBaseUrl()}/interface/v1/account/create`; },
-  get tenantRead() { return `${getBaseUrl()}/user/v1/public/branding`; },
+  get tenantRead() { return `/api/branding`; },
   checkUser: (email: string) =>
     `${getBaseUrl()}/user/v1/public/checkUsername?username=${email}`,
   udiseSearch: (udise: string) =>
