@@ -1,14 +1,13 @@
 import { getEnvValue } from '@shared-lib';
-export { getEnvValue };
 
 export const getBaseUrl = () => getEnvValue('NEXT_PUBLIC_BASE_URL') || '';
 export const getSunbirdBaseUrl = () => getEnvValue('NEXT_PUBLIC_SSUNBIRD_BASE_URL') || '';
 export const getOrgId = () => getEnvValue('NEXT_PUBLIC_ORGID') || '';
 export const getTeacherSbPlayer = () => getEnvValue('NEXT_PUBLIC_TEACHER_SBPLAYER') || '';
-
+export const getContentURL = () => getEnvValue('NEXT_PUBLIC_CONTENT_BASE_URL') || '';
 export const API_ENDPOINTS = {
   contentRead: (doId: string) =>
-    `${getBaseUrl()}/api/content/v1/read/${doId}?fields=artifactUrl`,
+    `${getContentURL()}/api/content/v1/read/${doId}?fields=artifactUrl`,
   get academicYearsList() { return `${getBaseUrl()}/academicyears/list`; },
   get accountCreate() { return `${getBaseUrl()}/account/create`; },
   userUpdate: (userId: string) => `${getBaseUrl()}/user/update/${userId}`,

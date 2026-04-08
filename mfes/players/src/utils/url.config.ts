@@ -10,7 +10,8 @@ export const URL_CONFIG = {
   API: {
     get CONTENT_READ() { return `${getContentBaseUrl()}/interface/v1/api/content/v1/read/`; },
     get HIERARCHY_API() { return `${getContentBaseUrl()}/interface/v1/action/questionset/v2/hierarchy/`; },
-    get FRAMEWORK_READ() { return `${getContentBaseUrl()}/interface/v1/api/framework/v1/read/`; },
+    get 
+    () { return `${getContentBaseUrl()}/interface/v1/api/framework/v1/read/`; },
     get QUESTIONSET_READ() { return `${getContentBaseUrl()}/interface/v1/action/questionset/v2/read/`; },
     get COMPOSITE_SEARCH() { return `${getContentBaseUrl()}/interface/v1/action/composite/v3/search`; },
     get CONTENT_HIERARCHY() { return `${getContentBaseUrl()}/interface/v1/action/content/v3/hierarchy`; },
@@ -151,7 +152,7 @@ export const getTelemetryConfig = (): Context => {
     contextRollup: { l1: localStorageData.tenantCode },
     objectRollup: {},
     userData: { firstName: localStorageData.userName, lastName: '' },
-    host: '',
+    host: process.env.NEXT_PUBLIC_CONTENT_BASE_URL,
     endpoint: '/v1/telemetry',
     ...localStorageData,
   };
@@ -163,7 +164,7 @@ export const V2PlayerConfig: PlayerConfig = {
     showEndPage: false,
     endPage: [{ template: 'assessment', contentType: ['SelfAssess'] }],
     showStartPage: true,
-    host: '',
+    host: process.env.NEXT_PUBLIC_CONTENT_BASE_URL,
     overlay: { showUser: false },
     splash: {
       text: '',
@@ -199,7 +200,7 @@ export const V1PlayerConfig: PlayerConfig = {
       },
     ],
     showStartPage: true,
-    host: '',
+    host: process.env.NEXT_PUBLIC_CONTENT_BASE_URL,
     endpoint: '/v1/telemetry',
     overlay: {
       enableUserSwitcher: true,

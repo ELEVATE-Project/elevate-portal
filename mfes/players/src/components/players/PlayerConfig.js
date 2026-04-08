@@ -19,7 +19,7 @@ export const playerConfig = {
     userData: { firstName: 'Guest', lastName: 'User' },
 
     //telemetry
-    host: '',
+    host: process.env.NEXT_PUBLIC_CONTENT_BASE_URL,
     endpoint: '/v1/telemetry',
   },
   config: {
