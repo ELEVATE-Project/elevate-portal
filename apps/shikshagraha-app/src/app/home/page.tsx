@@ -264,21 +264,7 @@ export default function Home() {
         fontWeight="bold"
         fontSize={{ xs: '22px', sm: '24px', md: '26px' }}
       >
-        Welcome,
-        <Box
-          component="span"
-          sx={{
-            display: 'inline-block',
-            maxWidth: '250px',
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            verticalAlign: 'bottom',
-            ml: 1,
-          }}
-        >
-          {getUserFirstName()}
-        </Box>
+        Welcome, {getUserFirstName()}
       </Typography>
     </Box>
   );

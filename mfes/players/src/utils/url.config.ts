@@ -152,7 +152,7 @@ export const getTelemetryConfig = (): Context => {
     contextRollup: { l1: localStorageData.tenantCode },
     objectRollup: {},
     userData: { firstName: localStorageData.userName, lastName: '' },
-    host: process.env.NEXT_PUBLIC_CONTENT_BASE_URL || 'https://interface.tekdinext.com',
+    host: process.env.NEXT_PUBLIC_CONTENT_BASE_URL,
     endpoint: '/v1/telemetry',
     ...localStorageData,
   };

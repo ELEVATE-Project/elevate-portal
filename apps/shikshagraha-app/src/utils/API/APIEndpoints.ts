@@ -27,7 +27,7 @@ export const API_ENDPOINTS = {
   get deleteAccount() { return `${getBaseUrl()}/user/v1/account/delete`; },
   get roleRead() { return `${getBaseUrl()}/entity-management/v1/entities/entityListBasedOnEntityType?entityType=professional_role`; },
   get userCreate() { return `${getBaseUrl()}/interface/v1/account/create`; },
-  get tenantRead() { return `/api/branding`; },
+  get tenantRead() { return `${getBaseUrl()}/user/v1/public/branding`; },
   checkUser: (email: string) =>
     `${getBaseUrl()}/user/v1/public/checkUsername?username=${email}`,
   udiseSearch: (udise: string) =>
