@@ -181,11 +181,11 @@ export default function Home() {
   };
 
   const navigateToExternal = (url: string, title?: string) => {
-    if (title === 'MITRA') {
-      navigateToMitraURL(url);
-    } else {
+    // if (title === 'MITRA') {
+    //   navigateToMitraURL(url);
+    // } else {
       navigateToGenericExternal(url);
-    }
+    // }
   };
 
   const navigateToGenericExternal = async (url: string) => {
