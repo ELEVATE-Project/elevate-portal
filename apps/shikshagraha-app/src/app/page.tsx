@@ -26,6 +26,7 @@ import {
   fetchBranding,
 } from '../services/LoginService';
 import AppConst from '../utils/AppConst/AppConst';
+import { setAccessTokenCookie } from '../utils/Helper';
 export default function Login() {
   const [formData, setFormData] = useState({ userName: '', password: '' });
   const [error, setError] = useState({ userName: false, password: false });
@@ -195,6 +196,7 @@ export default function Login() {
         }
         localStorage.setItem('userId', response?.result?.user?.id);
         localStorage.setItem('name', response?.result?.user?.username);
+        setAccessTokenCookie(accessToken);
         document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
         document.cookie = `userId=${userId}; path=/; max-age=86400; secure; SameSite=Lax`;
         router.replace('/home');

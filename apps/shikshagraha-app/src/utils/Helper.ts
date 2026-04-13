@@ -630,30 +630,30 @@ export const getUserDataFromLocal = (key: any) => {
     return null;
   }
 };
-export const navigateToMitraURL = (url: string) => {
-  try {
-    const currentUrl = window.location.href;
-    const encodedUrl = encodeURIComponent(currentUrl);
-    const accessToken = localStorage.getItem(
-      AppConst.STORAGE_KEYS.ACCESS_TOKEN
-    );
-    if (!accessToken) {
-      console.error('No access token found for MITRA navigation');
-      alert('Authentication token missing. Please login again.');
-      return;
-    }
+// export const navigateToMitraURL = (url: string) => {
+//   try {
+//     const currentUrl = window.location.href;
+//     const encodedUrl = encodeURIComponent(currentUrl);
+//     const accessToken = localStorage.getItem(
+//       AppConst.STORAGE_KEYS.ACCESS_TOKEN
+//     );
+//     if (!accessToken) {
+//       console.error('No access token found for MITRA navigation');
+//       alert('Authentication token missing. Please login again.');
+//       return;
+//     }
 
-    let mitraUrl = url.trim();
+//     // let mitraUrl = url.trim();
 
-    const separator = mitraUrl.includes('?') ? '&' : '?';
-    mitraUrl += `${separator}accToken=${accessToken}&rerouteUrl=${encodedUrl}`;
+//     // const separator = mitraUrl.includes('?') ? '&' : '?';
+//     // mitraUrl += `${separator}accToken=${accessToken}&rerouteUrl=${encodedUrl}`;
 
-    window.location.href = mitraUrl;
-  } catch (error) {
-    console.error('Error navigating to MITRA:', error);
-    alert('Error navigating to MITRA application. Please try again.');
-  }
-};
+//     window.location.href = mitraUrl;
+//   } catch (error) {
+//     console.error('Error navigating to MITRA:', error);
+//     alert('Error navigating to MITRA application. Please try again.');
+//   }
+// };
 // Flag to prevent multiple redirects when multiple API calls fail simultaneously
 let isAuthRedirecting = false;
 
@@ -682,10 +682,14 @@ export const handleUnauthorizedError = (
     localStorage.clear();
     
     // Clear all cookies
+    const parentDomain = getParentDomain();
     document.cookie.split(';').forEach((cookie) => {
       const name = cookie.split('=')[0]?.trim() ?? '';
       if (name) {
         document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        if (parentDomain) {
+          document.cookie = `${name}=; domain=${parentDomain}; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`;
+        }
       }
     });
     
@@ -700,4 +704,21 @@ export const handleUnauthorizedError = (
 // Reset function for testing purposes
 export const resetAuthRedirectFlag = () => {
   isAuthRedirecting = false;
+};
+
+export const getParentDomain = () => {
+  if (typeof window === 'undefined') return '';
+  const hostname = window.location.hostname;
+  const parts = hostname.split('.');
+  if (parts.length >= 2) {
+    return '.' + parts.slice(-2).join('.');
+  }
+  return '';
+};
+
+export const setAccessTokenCookie = (accessToken: string) => {
+  const domain = getParentDomain();
+  if (domain) {
+    document.cookie = `accessToken=${accessToken}; domain=${domain}; path=/; max-age=86400; secure; SameSite=Lax`;
+  }
 };

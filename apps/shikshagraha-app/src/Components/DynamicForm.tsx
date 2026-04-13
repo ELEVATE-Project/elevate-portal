@@ -28,6 +28,7 @@ import {
   calculateAgeFromDate,
   toPascalCase,
   transformLabel,
+  setAccessTokenCookie,
 } from '../utils/Helper';
 import UdiaseWithButton from './RJSFWidget/UdiaseWithButton';
 import CustomEmailWidget from './RJSFWidget/CustomEmailWidget';
@@ -1778,6 +1779,7 @@ const DynamicForm = ({
       setErrorMessage(registrationResponse.message);
       setAlertSeverity('success');
       const accessToken = registrationResponse?.result?.access_token;
+      setAccessTokenCookie(accessToken);
       document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
       const refreshToken = registrationResponse?.result?.refresh_token;
       localStorage.setItem('accToken', accessToken);
