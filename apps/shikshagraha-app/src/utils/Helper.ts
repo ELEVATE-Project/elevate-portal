@@ -721,12 +721,7 @@ export const setAccessTokenCookie = (accessToken: string) => {
   const mitraUrl = getEnvValue('NEXT_PUBLIC_MITRA_URL');
   let domain = '';
 
-  if (
-    mitraUrl &&
-    mitraUrl !== 'null' &&
-    mitraUrl !== 'undefined' &&
-    mitraUrl !== ''
-  ) {
+  if (mitraUrl) {
     try {
       // Check if it's a full URL
       const url =
