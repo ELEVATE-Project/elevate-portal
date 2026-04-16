@@ -8,6 +8,7 @@ import {
 import { State } from './Interfaces';
 import axios from 'axios';
 import AppConst from './AppConst/AppConst';
+import { getEnvValue } from '@shared-lib';
 interface Value {
   value: string;
   label: string;
@@ -706,9 +707,9 @@ export const resetAuthRedirectFlag = () => {
   isAuthRedirecting = false;
 };
 
-export const getParentDomain = () => {
-  if (typeof window === 'undefined') return '';
-  const hostname = window.location.hostname;
+export const getParentDomain = (hostName?: string) => {
+  if (typeof window === 'undefined' && !hostName) return '';
+  const hostname = hostName || window.location.hostname;
   const parts = hostname.split('.');
   if (parts.length >= 2) {
     return '.' + parts.slice(-2).join('.');
@@ -717,7 +718,24 @@ export const getParentDomain = () => {
 };
 
 export const setAccessTokenCookie = (accessToken: string) => {
-  const domain = getParentDomain();
+  const mitraUrl = getEnvValue('NEXT_PUBLIC_MITRA_URL');
+  let domain = '';
+
+  if (mitraUrl) {
+    try {
+      // Check if it's a full URL
+      const url =
+        mitraUrl.startsWith('http') ? new URL(mitraUrl) : { hostname: mitraUrl };
+      domain = getParentDomain(url.hostname);
+    } catch (e) {
+      console.error('Error parsing NEXT_PUBLIC_MITRA_URL:', e);
+    }
+  }
+
+  if (!domain) {
+    domain = getParentDomain();
+  }
+
   if (domain) {
     document.cookie = `accessToken=${accessToken}; domain=${domain}; path=/; max-age=86400; secure; SameSite=Lax`;
   }
