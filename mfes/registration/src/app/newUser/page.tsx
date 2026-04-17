@@ -1321,7 +1321,7 @@ const NewUserWithStepper: React.FC = () => {
         <DialogContent>
           <DialogContentText>
             Welcome, {requestData?.usercreate?.request?.userName} Your account
-            has been successfully registered. Please use your username to login.
+            has been successfully registered.
           </DialogContentText>
         </DialogContent>
         <DialogActions>
