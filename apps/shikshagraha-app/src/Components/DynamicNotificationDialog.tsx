@@ -101,8 +101,7 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
             <>
               Welcome,
               <span style={{ fontWeight: 'bold' }}> {userName || 'User'} </span>{' '}
-              Your account has been successfully registered. Please use your
-              username to login.
+              Your account has been successfully registered.
             </>
           ) : (
             <Typography variant="body2" color="text.secondary">
