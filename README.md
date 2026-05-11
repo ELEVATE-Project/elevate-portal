@@ -67,6 +67,39 @@ Review the development dependencies in your local package.json file.
    git pull origin <branch-name>
    ```
 
+
+## Backend Service Configuration
+
+The portal depends on the User Service backend.
+
+### Backend Repository
+Clone and run the backend service locally:
+
+- Backend Repository: https://github.com/ELEVATE-Project/user
+
+Read the steps to run the user project from above git repo README.md file.
+
+### Update Frontend Environment for Local Backend
+
+After starting the backend service locally, update the frontend `.env` file:
+
+Environment file path:
+```sh
+elevate-portal/.env
+```
+
+Update the backend API base URL:
+
+```env
+NEXT_PUBLIC_BASE_URL=http://localhost:3000
+```
+
+> Replace the localhost port if your backend service is running on a different port.
+
+
+Note: To add new entities or features refer this [document](https://docs.google.com/document/d/13zmU5H8Vr3tnYEGI89y-Az5TgCqYyNEFqTX4VWr_zQ0/edit?tab=t.9eay87atygxp#heading=h.cks0qro68z5i)
+> Replace the localhost port with the backend service port used in your local setup.
+
 ## Setting up the Project
 
 ### Project Installation
@@ -98,13 +131,13 @@ For detailed environment variable configuration including sample values and desc
 
 #### Host App (shikshagraha-app)
 ```sh
-nx dev shikshagraha-app --port=3000 --verbose
+npx nx dev shikshagraha-app --port=8000 --verbose
 ```
-- Port: `3000`
+- Port: `8000`
 
 #### Content Micro Frontend
 ```sh
-nx dev content --port=4301 --verbose
+npx nx dev content --port=4301 --verbose
 ```
 - basePath: `http://localhost:4301/mfe_content/`
 - Port: `4301`
@@ -113,7 +146,7 @@ nx dev content --port=4301 --verbose
 
 #### View Nx Graph
 ```sh
-nx graph
+npx nx graph
 ```
 
 #### Build All Projects
@@ -187,7 +220,7 @@ sudo docker run -p 3000:3000 -p 4301:4301 shikshagraha-app
 ### shikshagraha-app
 Next JS, run:
 ```sh
-nx dev shikshagraha-app --port=3000 --verbose
+npx dev shikshagraha-app --port=3000 --verbose
 ```
 Port: `3000`
 
@@ -196,7 +229,7 @@ Port: `3000`
 ### content
 Next JS, run:
 ```sh
-nx dev content --port=4301 --verbose
+npx dev content --port=4301 --verbose
 ```
 basePath: `http://localhost:4301/mfe_content/`
 Port: `4301`
