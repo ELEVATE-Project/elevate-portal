@@ -1825,6 +1825,31 @@ const DynamicForm = ({
     }
   };
 
+  const performRedirect = (accessToken: string, defaultRoute: string = '/home') => {
+    const redirectUrl = localStorage.getItem('redirectUrl');
+    localStorage.removeItem('redirectUrl');
+
+    if (redirectUrl) {
+      let targetUrl = redirectUrl;
+      try {
+        const urlObj = new URL(redirectUrl);
+        urlObj.searchParams.set('accToken', accessToken);
+        targetUrl = urlObj.toString();
+      } catch (e) {
+        const separator = targetUrl.includes('?') ? '&' : '?';
+        targetUrl = `${targetUrl}${separator}accToken=${encodeURIComponent(accessToken)}`;
+      }
+
+      if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+        window.location.replace(targetUrl);
+      } else {
+        router.replace(targetUrl);
+      }
+    } else {
+      router.replace(defaultRoute);
+    }
+  };
+
   const handleDialogClose = () => {
     setDialogConfig((prev) => ({ ...prev, open: false }));
   };
@@ -1833,7 +1858,12 @@ const DynamicForm = ({
     setDialogConfig((prev) => ({ ...prev, open: false }));
 
     if (dialogConfig.route) {
-      router.push(dialogConfig.route);
+      const accessToken = localStorage.getItem('accToken');
+      if (accessToken) {
+        performRedirect(accessToken, dialogConfig.route);
+      } else {
+        router.replace(dialogConfig.route);
+      }
       return;
     }
 
@@ -1894,8 +1924,7 @@ const DynamicForm = ({
                 matchedTenant?.contentFramework
               );
               if (tenantIdToCompare === getOrgId()) {
-                const redirectUrl = '/home';
-                router.push(redirectUrl);
+                performRedirect(response?.result?.access_token || '', '/home');
               } else {
                 setShowError(true);
                 setErrorButton(true);
