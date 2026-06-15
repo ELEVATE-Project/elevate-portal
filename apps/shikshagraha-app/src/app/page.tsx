@@ -26,7 +26,7 @@ import {
   fetchBranding,
 } from '../services/LoginService';
 import AppConst from '../utils/AppConst/AppConst';
-import { setAccessTokenCookie } from '../utils/Helper';
+import { setAccessTokenCookie, performRedirect } from '../utils/Helper';
 export default function Login() {
   const [formData, setFormData] = useState({ userName: '', password: '' });
   const [error, setError] = useState({ userName: false, password: false });
@@ -49,18 +49,24 @@ export default function Login() {
   const passwordRegex =
     /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+\-={}:";'<>?,./\\]).{8,}$/;
   useEffect(() => {
+    const redirectUrl = queryRouter.get('redirectUrl');
+    if (redirectUrl) {
+      localStorage.setItem('redirectUrl', decodeURIComponent(redirectUrl));
+    }
+  }, [queryRouter]);
+
+  useEffect(() => {
     const token = localStorage.getItem('accToken');
     const status = localStorage.getItem('userStatus');
     if (token && status !== 'archived') {
-      router.replace('/home');
-      // router.push('/home');
+      performRedirect(token, router);
     }
     // Remove readonly after a short delay to prevent autofill
     const timer = setTimeout(() => {
       setReadOnly(false);
     }, 500);
     return () => clearTimeout(timer);
-  }, []);
+  }, [router]);
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const hostname = window.location.hostname;
@@ -199,7 +205,7 @@ export default function Login() {
         setAccessTokenCookie(accessToken);
         document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
         document.cookie = `userId=${userId}; path=/; max-age=86400; secure; SameSite=Lax`;
-        router.replace('/home');
+        performRedirect(accessToken, router);
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
         const frameworkId = organizations[0]?.meta?.framework?.node_id;
@@ -256,7 +262,12 @@ export default function Login() {
   }
 
   const handleRegisterClick = () => {
-    router.push('/register');
+    const redirectUrl = queryRouter.get('redirectUrl');
+    if (redirectUrl) {
+      router.replace(`/register?redirectUrl=${encodeURIComponent(redirectUrl)}`);
+    } else {
+      router.replace('/register');
+    }
   };
   const handlePasswordClick = () => {
     router.push('/forgetpassword');

@@ -29,6 +29,7 @@ import {
   toPascalCase,
   transformLabel,
   setAccessTokenCookie,
+  performRedirect,
 } from '../utils/Helper';
 import UdiaseWithButton from './RJSFWidget/UdiaseWithButton';
 import CustomEmailWidget from './RJSFWidget/CustomEmailWidget';
@@ -1833,7 +1834,12 @@ const DynamicForm = ({
     setDialogConfig((prev) => ({ ...prev, open: false }));
 
     if (dialogConfig.route) {
-      router.push(dialogConfig.route);
+      const accessToken = localStorage.getItem('accToken');
+      if (accessToken) {
+        performRedirect(accessToken, router, dialogConfig.route);
+      } else {
+        router.replace(dialogConfig.route);
+      }
       return;
     }
 
@@ -1894,8 +1900,7 @@ const DynamicForm = ({
                 matchedTenant?.contentFramework
               );
               if (tenantIdToCompare === getOrgId()) {
-                const redirectUrl = '/home';
-                router.push(redirectUrl);
+                performRedirect(response?.result?.access_token || '', router, '/home');
               } else {
                 setShowError(true);
                 setErrorButton(true);

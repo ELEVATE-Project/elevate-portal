@@ -19,13 +19,21 @@ import {
   schemaRead,
   fetchBranding,
 } from '../../services/LoginService';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function Register() {
   const [formSchema, setFormSchema] = useState<any>();
   const [uiSchema, setUiSchema] = useState<any>();
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const queryRouter = useSearchParams();
+
+  useEffect(() => {
+    const redirectUrl = queryRouter.get('redirectUrl');
+    if (redirectUrl) {
+      localStorage.setItem('redirectUrl', decodeURIComponent(redirectUrl));
+    }
+  }, [queryRouter]);
   const [formData, setFormData] = useState();
   const [fieldNameToFieldIdMapping, setFieldNameToFieldIdMapping] = useState(
     {}
@@ -174,7 +182,12 @@ export default function Register() {
   };
 
   const handleBack = () => {
-    router.push('/');
+    const redirectUrl = queryRouter.get('redirectUrl');
+    if (redirectUrl) {
+      router.push(`/?redirectUrl=${encodeURIComponent(redirectUrl)}`);
+    } else {
+      router.push('/');
+    }
   };
 
   const StaticHeader = () => (
@@ -367,6 +380,6 @@ export default function Register() {
     );
   } else {
     const redirectUrl = '/';
-    router.push(redirectUrl);
+    router.replace(redirectUrl);
   }
 }
