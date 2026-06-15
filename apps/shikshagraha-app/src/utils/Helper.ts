@@ -740,3 +740,32 @@ export const setAccessTokenCookie = (accessToken: string) => {
     document.cookie = `accessToken=${accessToken}; domain=${domain}; path=/; max-age=86400; secure; SameSite=Lax`;
   }
 };
+
+export const performRedirect = (
+  accessToken: string,
+  router: any,
+  defaultRoute: string = '/home'
+) => {
+  const redirectUrl = localStorage.getItem('redirectUrl');
+  localStorage.removeItem('redirectUrl');
+
+  if (redirectUrl) {
+    let targetUrl = redirectUrl;
+    try {
+      const urlObj = new URL(redirectUrl);
+      urlObj.searchParams.set('accToken', accessToken);
+      targetUrl = urlObj.toString();
+    } catch (e) {
+      const separator = targetUrl.includes('?') ? '&' : '?';
+      targetUrl = `${targetUrl}${separator}accToken=${encodeURIComponent(accessToken)}`;
+    }
+
+    if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
+      window.location.replace(targetUrl);
+    } else {
+      router.replace(targetUrl);
+    }
+  } else {
+    router.replace(defaultRoute);
+  }
+};

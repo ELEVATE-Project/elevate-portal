@@ -26,7 +26,7 @@ import {
   fetchBranding,
 } from '../services/LoginService';
 import AppConst from '../utils/AppConst/AppConst';
-import { setAccessTokenCookie } from '../utils/Helper';
+import { setAccessTokenCookie, performRedirect } from '../utils/Helper';
 export default function Login() {
   const [formData, setFormData] = useState({ userName: '', password: '' });
   const [error, setError] = useState({ userName: false, password: false });
@@ -55,36 +55,11 @@ export default function Login() {
     }
   }, [queryRouter]);
 
-  const performRedirect = (accessToken: string) => {
-    const redirectUrl = localStorage.getItem('redirectUrl');
-    localStorage.removeItem('redirectUrl');
-
-    if (redirectUrl) {
-      let targetUrl = redirectUrl;
-      try {
-        const urlObj = new URL(redirectUrl);
-        urlObj.searchParams.set('accToken', accessToken);
-        targetUrl = urlObj.toString();
-      } catch (e) {
-        const separator = targetUrl.includes('?') ? '&' : '?';
-        targetUrl = `${targetUrl}${separator}accToken=${encodeURIComponent(accessToken)}`;
-      }
-
-      if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
-        window.location.replace(targetUrl);
-      } else {
-        router.replace(targetUrl);
-      }
-    } else {
-      router.replace('/home');
-    }
-  };
-
   useEffect(() => {
     const token = localStorage.getItem('accToken');
     const status = localStorage.getItem('userStatus');
     if (token && status !== 'archived') {
-      performRedirect(token);
+      performRedirect(token, router);
     }
     // Remove readonly after a short delay to prevent autofill
     const timer = setTimeout(() => {
@@ -230,7 +205,7 @@ export default function Login() {
         setAccessTokenCookie(accessToken);
         document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
         document.cookie = `userId=${userId}; path=/; max-age=86400; secure; SameSite=Lax`;
-        performRedirect(accessToken);
+        performRedirect(accessToken, router);
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
         const frameworkId = organizations[0]?.meta?.framework?.node_id;
