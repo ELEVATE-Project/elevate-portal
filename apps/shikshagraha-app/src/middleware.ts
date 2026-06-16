@@ -6,9 +6,10 @@ export function middleware(request: NextRequest) {
 
   // Get tokens from cookies using NextRequest
   const accToken = request.cookies.get('accToken');
+  const redirectUrl = request.nextUrl.searchParams.get('redirectUrl');
   // Authentication checks
-  // If user has valid token and tries to access root/login, redirect to home
-  if ((pathname === '/' || pathname === '/login') && accToken) {
+  // If user has valid token and tries to access root/login, redirect to home (only if not an SSO redirect flow)
+  if ((pathname === '/' || pathname === '/login') && accToken && !redirectUrl) {
     return NextResponse.redirect(new URL('/home', request.nextUrl.toString()));
   }
 

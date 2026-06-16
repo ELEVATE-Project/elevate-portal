@@ -750,6 +750,19 @@ export const performRedirect = (
   localStorage.removeItem('redirectUrl');
 
   if (redirectUrl) {
+    try {
+      const urlObj = new URL(redirectUrl);
+      const domain = getParentDomain(urlObj.hostname);
+      const isSecure = window.location.protocol === 'https:';
+      const secureFlag = isSecure ? 'secure;' : '';
+      if (domain) {
+        document.cookie = `accToken=${accessToken}; domain=${domain}; path=/; max-age=86400; ${secureFlag} SameSite=Lax`;
+        document.cookie = `accessToken=${accessToken}; domain=${domain}; path=/; max-age=86400; ${secureFlag} SameSite=Lax`;
+      }
+    } catch (e) {
+      console.error('Error setting redirect cookie:', e);
+    }
+
     let targetUrl = redirectUrl;
     try {
       const urlObj = new URL(redirectUrl);

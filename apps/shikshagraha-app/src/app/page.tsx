@@ -193,15 +193,21 @@ export default function Login() {
           setLoading(false);
           return;
         }
+        const isRedirectActive = !!localStorage.getItem('redirectUrl');
+        if (!isRedirectActive) {
         localStorage.setItem('accToken', accessToken);
         localStorage.setItem('refToken', refreshToken);
         localStorage.setItem('firstName', response?.result?.user?.name);
-        let userId = Number(localStorage.getItem('userId'));
+        }
+        let storedUserId = localStorage.getItem('userId');
+        let userId = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
         if (userId !== response?.result?.user?.id) {
           clearIndexedDB();
         }
+        if (!isRedirectActive) {
         localStorage.setItem('userId', response?.result?.user?.id);
         localStorage.setItem('name', response?.result?.user?.username);
+        }
         setAccessTokenCookie(accessToken);
         document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
         document.cookie = `userId=${userId}; path=/; max-age=86400; secure; SameSite=Lax`;
@@ -209,14 +215,16 @@ export default function Login() {
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
         const frameworkId = organizations[0]?.meta?.framework?.node_id;
-        if (orgId) {
+        if (orgId && !isRedirectActive) {
           localStorage.setItem(
             'headers',
             JSON.stringify({ 'org-id': orgId.toString() })
           );
         }
         if (frameworkId) {
+          if (!isRedirectActive) {
           localStorage.setItem('frameworkId', frameworkId);
+          }
           document.cookie = `frameworkId=${frameworkId}; path=/; max-age=86400; secure; SameSite=Lax`;
         }
       } else {
