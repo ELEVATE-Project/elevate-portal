@@ -102,6 +102,7 @@ const DynamicForm = ({
     buttonText: 'OK',
     showCloseIcon: false,
     route: null as string | null,
+    accessToken: '',
   });
   const [usernameError, setUsernameError] = useState('');
   const [isUsernameValid, setIsUsernameValid] = useState(false);
@@ -1783,6 +1784,8 @@ const DynamicForm = ({
       setAccessTokenCookie(accessToken);
       document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
       const refreshToken = registrationResponse?.result?.refresh_token;
+      const isRedirectActive = !!localStorage.getItem('redirectUrl');
+      if (!isRedirectActive) {
       localStorage.setItem('accToken', accessToken);
       localStorage.setItem('refToken', refreshToken);
       localStorage.setItem(
@@ -1790,17 +1793,18 @@ const DynamicForm = ({
         registrationResponse?.result?.user?.name
       );
       localStorage.setItem('userId', registrationResponse?.result?.user?.id);
-      document.cookie = `userId=${registrationResponse?.result?.user?.id}; path=/; max-age=86400; secure; SameSite=Lax`;
       localStorage.setItem(
         'name',
         registrationResponse?.result?.user?.username
       );
       localStorage.setItem('userStatus', registrationResponse?.result?.status);
+      }
+      document.cookie = `userId=${registrationResponse?.result?.user?.id}; path=/; max-age=86400; secure; SameSite=Lax`;
       document.cookie = `userStatus=${registrationResponse?.result?.status}; path=/; max-age=86400; secure; SameSite=Lax`;
       const organizations =
         registrationResponse?.result?.user?.organizations ?? [];
       const orgId = organizations[0]?.id;
-      if (orgId) {
+      if (orgId && !isRedirectActive) {
         localStorage.setItem(
           'headers',
           JSON.stringify({ 'org-id': orgId.toString() })
@@ -1814,6 +1818,7 @@ const DynamicForm = ({
         buttonText: 'Go to Home',
         route: '/home',
         showCloseIcon: false,
+        accessToken,
       }));
     } else {
       setShowError(true);
@@ -1834,7 +1839,7 @@ const DynamicForm = ({
     setDialogConfig((prev) => ({ ...prev, open: false }));
 
     if (dialogConfig.route) {
-      const accessToken = localStorage.getItem('accToken');
+      const accessToken = dialogConfig.accessToken || localStorage.getItem('accToken');
       if (accessToken) {
         performRedirect(accessToken, router, dialogConfig.route);
       } else {
@@ -1853,12 +1858,17 @@ const DynamicForm = ({
       });
 
       if (response?.result?.access_token) {
+        const isRedirectActive = !!localStorage.getItem('redirectUrl');
+        if (!isRedirectActive) {
         localStorage.setItem('accToken', response?.result?.access_token);
         localStorage.setItem('refToken', response?.result?.refresh_token);
+        }
         const tenantResponse = await authenticateLoginUser({
           token: response?.result?.access_token,
         });
-        localStorage.setItem('firstName', tenantResponse?.result?.firstName);
+        if (!isRedirectActive) {
+          localStorage.setItem('firstName', tenantResponse?.result?.firstName);
+        }
 
         if (tenantResponse?.result?.status === 'archived') {
           setShowError(true);
@@ -1870,15 +1880,17 @@ const DynamicForm = ({
           return;
         } else {
           if (tenantResponse?.result?.tenantData?.[0]?.tenantId) {
+            if (!isRedirectActive) {
             localStorage.setItem('userId', tenantResponse?.result?.userId);
             localStorage.setItem(
               'firstName',
               tenantResponse?.result?.firstName
             );
             localStorage.setItem('name', tenantResponse?.result?.username);
+            }
             const tenantIdToCompare =
               tenantResponse?.result?.tenantData?.[0]?.tenantId;
-            if (tenantIdToCompare) {
+            if (tenantIdToCompare && !isRedirectActive) {
               localStorage.setItem(
                 'headers',
                 JSON.stringify({
@@ -1894,11 +1906,13 @@ const DynamicForm = ({
               const matchedTenant = tenantData?.result?.find(
                 (tenant) => tenant.tenantId === tenantIdToCompare
               );
+              if (!isRedirectActive) {
               localStorage.setItem('channelId', matchedTenant?.channelId);
               localStorage.setItem(
                 'frameworkname',
                 matchedTenant?.contentFramework
               );
+              }
               if (tenantIdToCompare === getOrgId()) {
                 performRedirect(response?.result?.access_token || '', router, '/home');
               } else {
