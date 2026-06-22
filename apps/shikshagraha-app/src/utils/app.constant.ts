@@ -254,3 +254,8 @@ export enum fieldKeys {
 }
 
 export const DEFAULT_TEMPLATE_CONTEXT = ['USER', 'OTP', 'CMS'];
+
+export const ALLOWED_AUTH_MODES = {
+  PASSWORD: 'password',
+  OTP: 'otp',
+};

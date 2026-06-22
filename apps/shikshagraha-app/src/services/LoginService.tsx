@@ -1,12 +1,14 @@
 import axios from 'axios';
 import { useRouter } from 'next/router';
-import { getBaseUrl, getEnvValue } from '../utils/API/APIEndpoints';
+import { getBaseUrl } from '../utils/API/APIEndpoints';
+import { getEnvValue } from '@shared-lib';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import { handleUnauthorizedError } from '../utils/Helper';
 
 interface LoginParams {
   username: string;
-  password: string;
+  password?: string;
+  otp?: string | number;
 }
 interface AuthParams {
   token: string;
@@ -23,14 +25,26 @@ interface AuthParamsProfile {
 export const signin = async ({
   username,
   password,
+  otp,
 }: LoginParams): Promise<any> => {
   const apiUrl: string = `${API_ENDPOINTS.accountLogin}`;
   const isMobile = /^[6-9]\d{9}$/.test(username);
-  const requestBody: any = {
-    identifier: username,
-    password,
-    ...(isMobile ? { phone_code: '+91' } : {}),
-  };
+  let requestBody: any = {};
+
+  if (otp !== undefined) {
+    const otpValue = typeof otp === 'string' ? Number(otp) : otp;
+    requestBody = {
+      identifier: username,
+      otp: otpValue,
+      ...(isMobile ? { phone_code: '+91' } : {}),
+    };
+  } else {
+    requestBody = {
+      identifier: username,
+      password,
+      ...(isMobile ? { phone_code: '+91' } : {}),
+    };
+  }
 
   try {
     const response = await axios.post(apiUrl, requestBody, {
@@ -207,6 +221,34 @@ export const schemaRead = async (): Promise<any> => {
   } catch (error: any) {
     handleUnauthorizedError(error);
     console.error('error in schemaRead', error);
+    return error;
+  }
+};
+
+export const loginSchemaRead = async (typeVal: string): Promise<any> => {
+  const apiUrl: string = `${API_ENDPOINTS.formRead}`;
+  const tenantId = localStorage.getItem('tenantCode') || '';
+  try {
+    const response = await axios.post(
+      apiUrl,
+      {
+        type: typeVal,
+        sub_type: 'login',
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          tenantId: tenantId,
+        },
+      }
+    );
+
+    handleUnauthorizedError(undefined, response);
+
+    return response?.data;
+  } catch (error: any) {
+    handleUnauthorizedError(error);
+    console.error('error in loginSchemaRead', error);
     return error;
   }
 };

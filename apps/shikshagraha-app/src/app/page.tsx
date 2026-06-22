@@ -14,6 +14,8 @@ import {
   InputAdornment,
   ButtonBase,
   Snackbar,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
@@ -24,13 +26,20 @@ import {
   fetchTenantData,
   signin,
   fetchBranding,
+  loginSchemaRead,
+  sendOtp,
 } from '../services/LoginService';
 import AppConst from '../utils/AppConst/AppConst';
 import { setAccessTokenCookie, performRedirect } from '../utils/Helper';
+import Form from '@rjsf/mui';
+import validator from '@rjsf/validator-ajv8';
+import CustomTextFieldWidget from '../Components/RJSFWidget/CustomTextFieldWidget';
+import OTPDialog from '../Components/OTPDialog';
+import { ALLOWED_AUTH_MODES } from '../utils/app.constant';
+import { generateRJSFSchema } from '../utils/generateSchemaFromAPI';
 export default function Login() {
-  const [formData, setFormData] = useState({ userName: '', password: '' });
-  const [error, setError] = useState({ userName: false, password: false });
-  const [showPassword, setShowPassword] = useState(false);
+  const [formData, setFormData] = useState<any>({});
+  const [error, setError] = useState<any>({});
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
@@ -46,8 +55,20 @@ export default function Login() {
   const [logoSrc, setLogoSrc] = useState<string>('');
   const TRANSPARENT_PX =
     'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==';
-  const passwordRegex =
-    /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+\-={}:";'<>?,./\\]).{8,}$/;
+
+  // Dynamic branding config states
+  const [availableAuthModes, setAvailableAuthModes] = useState<string[]>([]);
+  const [selectedAuthMode, setSelectedAuthMode] = useState<string>('');
+  const [formSchema, setFormSchema] = useState<any>(null);
+  const [uiSchema, setUiSchema] = useState<any>(null);
+  const [isAutoRegister, setIsAutoRegister] = useState(false);
+  const [brandingFetched, setBrandingFetched] = useState(false);
+
+  // OTPDialog states
+  const [openOtpDialog, setOpenOtpDialog] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState('');
+
   useEffect(() => {
     const redirectUrl = queryRouter.get('redirectUrl');
     if (redirectUrl) {
@@ -92,6 +113,9 @@ export default function Login() {
       let coreDomain = knownSuffixes.reduce((name, suffix) => {
         return name.endsWith(suffix) ? name.replace(suffix, '') : name;
       }, domainPart);
+      if (coreDomain === 'shikshagrah') {
+        coreDomain = 'shikshagraha';
+      }
       fetchBranding(coreDomain).then((brandingData) => {
         if (brandingData) {
           const tenantCode = brandingData?.result?.code;
@@ -101,18 +125,26 @@ export default function Login() {
             brandingData?.result?.branding?.logo;
           localStorage.setItem('tenantCode', tenantCode);
           setDisplayName(tenantCode);
-          // Determine logo dynamically; persist for next load
-          const normalized = (tenantCode || '').toLowerCase();
-          const TENANT_LOGOS: Record<string, string> = {
-            shikshalokam: '/assets/images/SG_Logo.png',
-            shikshagraha: '/assets/images/SG_Logo.jpg',
-          };
-          if (apiLogo && typeof apiLogo === 'string') {
-            setLogoSrc(apiLogo);
-            localStorage.setItem('brandingLogoUrl', apiLogo);
+            if (apiLogo && typeof apiLogo === 'string') {
+              setLogoSrc(apiLogo);
+              localStorage.setItem('brandingLogoUrl', apiLogo);
           }
-        }
-      });
+            const configurations = brandingData?.result?.configurations || brandingData?.result?.branding?.configurations || {};
+            const autoRegister = configurations.auto_register !== undefined ? configurations.auto_register : false;
+            const allowedAuthMode = configurations.allowed_auth_mode;
+ 
+            localStorage.setItem('auto_register', String(autoRegister));
+            if (allowedAuthMode && Array.isArray(allowedAuthMode) && allowedAuthMode.length > 0) {
+              localStorage.setItem('allowed_auth_mode', JSON.stringify([allowedAuthMode]));
+            } else {
+              localStorage.removeItem('allowed_auth_mode');
+            }
+          }
+        })
+        .catch((err) => {
+          console.error('Error fetching branding:', err);
+        })
+        .finally(() => {
       const displayName = localStorage.getItem('tenantCode');
       if (displayName) {
         setDisplayName(displayName);
@@ -125,24 +157,103 @@ export default function Login() {
           setLogoSrc((prev) => prev || TENANT_LOGOS[normalized]);
         }
       }
+
+          // Read configurations from localStorage for offline/fast-load fallback
+          const allowedAuthModeStr = localStorage.getItem('allowed_auth_mode');
+          const autoRegisterStr = localStorage.getItem('auto_register');
+
+          if (autoRegisterStr === 'true') {
+            setIsAutoRegister(true);
+          }
+
+          let modes = [];
+          if (allowedAuthModeStr) {
+            try {
+              const parsed = JSON.parse(allowedAuthModeStr);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                modes = parsed;
+              }
+            } catch (e) {
+              console.error(e);
+            }
+          }
+          setAvailableAuthModes(modes);
+          if (modes.length > 0) {
+            setSelectedAuthMode((prev) => prev || modes[0]);
+          }
+          setBrandingFetched(true);
+        });
     }
   }, []);
-  const handleChange =
-    (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setShowError(false);
-      const value = event.target.value;
-      setFormData({
-        ...formData,
-        [field]: value,
-      });
-      setError((prev) => ({
-        ...prev,
-        [field]:
-          field === 'password'
-            ? value !== value.trim() || !passwordRegex.test(value)
-            : value.trim() === '',
-      }));
+
+  // Fetch form schema from API dynamically
+  useEffect(() => {
+    const fetchSchema = async () => {
+      const modeToFetch = selectedAuthMode || ALLOWED_AUTH_MODES.PASSWORD;
+      setLoading(true);
+      try {
+        let fields = [];
+        const hasAllowedAuthMode = typeof window !== 'undefined' && !!localStorage.getItem('allowed_auth_mode');
+        if (hasAllowedAuthMode && selectedAuthMode) {
+          try {
+            const response = await loginSchemaRead(selectedAuthMode);
+            const rawFields = response?.result?.data?.fields;
+            fields = Array.isArray(rawFields) ? rawFields : (rawFields?.result ?? []);
+          } catch (apiError) {
+            console.error('Error fetching schema from API:', apiError);
+          }
+        }
+
+        // Fallback schema if API returns nothing or fails
+        if (fields.length === 0) {   
+            fields = [
+              {
+                hint: 'Enter your email address or phone number or username',
+                name: 'userName',
+                type: 'text',
+                label: 'Email / Phone Number / Username',
+                policyMsg:"Please enter a valid Username, Phone number or Email Id",
+                order: '1',
+                isRequired: true,
+                coreField: 1,
+                isEditable: true,
+                placeholder: 'ENTER_EMAIL_OR_PHONE_NUMBER_OR_USERNAME',
+              },
+              {
+                hint: 'Enter password',
+                name: 'password',
+                type: 'password',
+                label: 'Password',
+                order: '2',
+                isRequired: true,
+                coreField: 1,
+                isEditable: true,
+                placeholder: 'ENTER_PASSWORD',
+              },
+            ];
+        }
+
+        const { schema, uiSchema } = generateRJSFSchema(fields, '');
+        if (schema) {
+          if (schema.properties) {
+            Object.keys(schema.properties).forEach((key) => {
+              delete schema.properties[key].pattern;
+            });
+          }
+          schema.required = [];
+        }
+        setFormSchema(schema);
+        setUiSchema(uiSchema);
+      } catch (err) {
+        console.error('Error processing schema:', err);
+      } finally {
+        setLoading(false);
+      }
     };
+
+    fetchSchema();
+  }, [selectedAuthMode]);
+
   useEffect(() => {
     setIsAuthenticated(!!localStorage.getItem('accToken'));
   }, []);
@@ -150,27 +261,63 @@ export default function Login() {
     if (formSubmitted) return; // Prevent duplicate submissions
     setFormSubmitted(true);
     setShowError(false);
-    if (!formData.userName || !formData.password) {
-      setError({
-        userName: !formData.userName,
-        password: !formData.password,
-      });
-      setFormSubmitted(false);
-      loginClickedRef.current = false;
+
+    const userName = formData.userName || formData.username || formData.identifier || '';
+    const password = formData.password || '';
+
+    // If it's OTP mode, we send OTP instead of performing signin directly
+    if (selectedAuthMode === ALLOWED_AUTH_MODES.OTP) {
+      if (!userName) {
+        setShowError(true);
+        setErrorMessage('Identifier is required');
+        setFormSubmitted(false);
+        return;
+      }
+      setLoading(true);
+      try {
+        const isMobile = /^[6-9]\d{9}$/.test(userName);
+        const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(userName);
+        let otpPayload: any = {};
+        if (isMobile) {
+          otpPayload = {
+            phone: userName,
+            phone_code: '+91',
+          };
+        } else if (isEmail) {
+          otpPayload = {
+            email: userName
+          };
+        } else {
+          otpPayload = {
+            identifier: userName,
+          };
+        }
+        const response = await sendOtp(otpPayload);
+        if (response?.responseCode === 'OK') {
+          setOtpError('');
+          setOpenOtpDialog(true);
+        } else {
+          setShowError(true);
+          setErrorMessage(response?.message || 'Failed to send OTP. Please try again.');
+        }
+      } catch (err) {
+        setShowError(true);
+        setErrorMessage(err.message || 'Error sending OTP');
+      } finally {
+        setLoading(false);
+        setFormSubmitted(false);
+      }
       return;
     }
-    if (error.password) {
+    // Standard Password login flow
+    if (!userName || !password) {
       setShowError(true);
-      setErrorMessage(
-        'Password must be at least 8 characters long, include numerals, uppercase, lowercase, and special characters.'
-      );
+      setErrorMessage('Username and password are required');
       setFormSubmitted(false);
-      loginClickedRef.current = false;
       return;
     }
     setLoading(true);
     try {
-      const { userName, password } = formData;
       const isMobile = /^[6-9]\d{9}$/.test(userName);
       const payload = {
         username: userName,
@@ -188,9 +335,8 @@ export default function Login() {
         if (userStatus !== 'ACTIVE') {
           setShowError(true);
           setErrorMessage('The user is deactivated, please contact admin.');
-          setFormSubmitted(false);
-          loginClickedRef.current = false;
           setLoading(false);
+          setFormSubmitted(false);
           return;
         }
         const isRedirectActive = !!localStorage.getItem('redirectUrl');
@@ -198,20 +344,20 @@ export default function Login() {
         localStorage.setItem('accToken', accessToken);
         localStorage.setItem('refToken', refreshToken);
         localStorage.setItem('firstName', response?.result?.user?.name);
+          localStorage.setItem('userId', response?.result?.user?.id);
+          localStorage.setItem('name', response?.result?.user?.username);
         }
         let storedUserId = localStorage.getItem('userId');
-        let userId = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
-        if (userId !== response?.result?.user?.id) {
+        let userIdVal = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
+        if (userIdVal !== response?.result?.user?.id) {
           clearIndexedDB();
         }
         if (!isRedirectActive) {
-        localStorage.setItem('userId', response?.result?.user?.id);
-        localStorage.setItem('name', response?.result?.user?.username);
+          setAccessTokenCookie(accessToken);
+          document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
+          document.cookie = `userId=${userId}; path=/; max-age=86400; secure; SameSite=Lax`;
         }
-        setAccessTokenCookie(accessToken);
-        document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
-        document.cookie = `userId=${userId}; path=/; max-age=86400; secure; SameSite=Lax`;
-        performRedirect(accessToken, router);
+        performRedirect(accessToken, router, '/home', refreshToken);
         const organizations = response?.result?.user?.organizations || [];
         const orgId = organizations[0]?.id;
         const frameworkId = organizations[0]?.meta?.framework?.node_id;
@@ -237,8 +383,100 @@ export default function Login() {
     } finally {
       setLoading(false);
       setFormSubmitted(false);
-      loginClickedRef.current = false;
     }
+  };
+
+  const handleOtpSubmit = async (otpString: string) => {
+    setOtpLoading(true);
+    setOtpError('');
+    try {
+      const userName = formData.userName || formData.username || formData.identifier || '';
+      const payload = {
+        username: userName,
+        otp: otpString,
+      };
+      const response = await signin(payload);
+      const accessToken = response?.result?.access_token;
+      const refreshToken = response?.result?.refresh_token;
+      const userId = response?.result?.user?.id;
+      if (accessToken) {
+        setOpenOtpDialog(false);
+        const userStatus = response?.result?.user?.status;
+        localStorage.setItem('userStatus', userStatus);
+        document.cookie = `userStatus=${userStatus}; path=/; max-age=86400; secure; SameSite=Lax`;
+        if (userStatus !== 'ACTIVE') {
+          setOtpError('The user is deactivated, please contact admin.');
+          return;
+        }
+
+        const isRedirectActive = !!localStorage.getItem('redirectUrl');
+        if (!isRedirectActive) {
+          localStorage.setItem('accToken', accessToken);
+          localStorage.setItem('refToken', refreshToken);
+          localStorage.setItem('firstName', response?.result?.user?.name);
+          localStorage.setItem('userId', response?.result?.user?.id);
+          localStorage.setItem('name', response?.result?.user?.username);
+        }
+
+        let storedUserId = localStorage.getItem('userId');
+        let userIdVal = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
+        if (userIdVal !== response?.result?.user?.id) {
+          clearIndexedDB();
+        }
+
+        if (!isRedirectActive) {
+          setAccessTokenCookie(accessToken);
+          document.cookie = `accToken=${accessToken}; path=/; max-age=86400; secure; SameSite=Lax`;
+          document.cookie = `userId=${userId}; path=/; max-age=86400; secure; SameSite=Lax`;
+        }
+        performRedirect(accessToken, router, '/home', refreshToken);
+
+        const organizations = response?.result?.user?.organizations || [];
+        const orgId = organizations[0]?.id;
+        const frameworkId = organizations[0]?.meta?.framework?.node_id;
+        if (orgId && !isRedirectActive) {
+          localStorage.setItem(
+            'headers',
+            JSON.stringify({ 'org-id': orgId.toString() })
+          );
+        }
+        if (frameworkId) {
+          if (!isRedirectActive) {
+            localStorage.setItem('frameworkId', frameworkId);
+          }
+          document.cookie = `frameworkId=${frameworkId}; path=/; max-age=86400; secure; SameSite=Lax`;
+        }
+      } else {
+        setOtpError(response?.response?.data?.message || 'Verification failed. Invalid OTP.');
+      }
+    } catch (error) {
+      setOtpError(error?.message ?? 'Verification failed. Please try again.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    const userName = formData.userName || formData.username || formData.identifier || '';
+    if (!userName) return;
+    const isMobile = /^[6-9]\d{9}$/.test(userName);
+    const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(userName);
+    let otpPayload: any = {};
+    if (isMobile) {
+      otpPayload = {
+        phone: userName,
+        phone_code: '+91',
+      };
+    } else if (isEmail) {
+      otpPayload = {
+        email: userName,
+      };
+    } else {
+      otpPayload = {
+        identifier: userName,
+      };
+    }
+    await sendOtp(otpPayload);
   };
 
   function clearIndexedDB() {
@@ -283,6 +521,63 @@ export default function Login() {
   const remoteUnAuthToaster = () => {
     router.push('/');
   };
+
+  const showForgotPassword = !availableAuthModes.length || availableAuthModes.includes(ALLOWED_AUTH_MODES.PASSWORD);
+
+  const widgets = React.useMemo(
+    () => ({
+      password: (props: any) => (
+        <CustomTextFieldWidget
+          {...props}
+          formContext={{ isLogin: true }}
+        />
+      ),
+      CustomTextFieldWidget: (props: any) => (
+        <CustomTextFieldWidget
+          {...props}
+          formContext={{ isLogin: true }}
+        />
+      ),
+    }),
+    []
+  );
+
+  const transformErrors = React.useCallback((errors: any[]) => {
+    return errors.map((error) => {
+      if (error.name === 'pattern') {
+        const prop = error.property ? error.property.toLowerCase() : '';
+        if (
+          prop.includes('username') ||
+          prop.includes('identifier') ||
+          prop.includes('name') ||
+          prop.includes('email') ||
+          prop.includes('phone')
+        ) {
+          error.message = 'Please enter a valid Email or Phone Number';
+          error.stack = `${error.message}`;
+        }
+      }
+      return error;
+    });
+  }, []);
+
+  if (!brandingFetched) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          background: 'linear-gradient(135deg, #f5f5f5, #f5f5f5)',
+          minHeight: '100vh',
+          padding: 2,
+        }}
+      >
+        <CircularProgress size={50} color="primary" />
+      </Box>
+    );
+  }
+
   return (
     <Box
       sx={{
@@ -304,6 +599,7 @@ export default function Login() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
+            zIndex: 9999,
           }}
         >
           <CircularProgress size={50} color="primary" />
@@ -338,35 +634,7 @@ export default function Login() {
           },
         }}
       >
-        <form
-          autoComplete="off"
-          style={{ width: '100%' }}
-          onSubmit={(e) => {
-            e.preventDefault();
-            const isStandalone = window.matchMedia(
-              '(display-mode: standalone)'
-            ).matches;
-            if (isStandalone && !loginClickedRef.current) {
-              return;
-            }
-            if (loginClickedRef.current) {
-              loginClickedRef.current = false;
-              return;
-            }
-            handleButtonClick();
-          }}
-          onInput={(e) => {
-            // Catch autofill events in PWA
-            if (window.matchMedia('(display-mode: standalone)').matches) {
-              if (
-                e.target.name === 'userName' &&
-                e.nativeEvent.inputType === 'insertReplacementText'
-              ) {
-                e.preventDefault();
-              }
-            }
-          }}
-        >
+        <Box style={{ width: '100%' }}>
           {/* Hidden fields to trick Chrome's autofill */}
           <input
             type="text"
@@ -400,135 +668,126 @@ export default function Login() {
               }}
             />
           </Box>
-          <TextField
-            fullWidth
-            label="Email / Mobile / Username"
-            value={formData.userName}
-            onChange={handleChange('userName')}
-            onInput={(e) => {
-              // Prevent form submission on autofill
-              if (e.nativeEvent.inputType === 'insertReplacementText') {
-                e.preventDefault();
-              }
-            }}
-            error={error.userName}
-            helperText={error.userName ? 'Username is required' : ''}
-            sx={{ mb: 2 }}
-            autoComplete="off"
-            inputProps={{
-              autoComplete: 'off',
-              name: 'login-username',
-              readOnly: readOnly,
-              onFocus: () => setReadOnly(false),
-              'data-lpignore': 'true',
-              'data-1p-ignore': 'true',
-              'data-form-type': 'other',
-            }}
-          />
-          <TextField
-            fullWidth
-            label="Password"
-            value={formData.password}
-            onChange={handleChange('password')}
-            type={showPassword ? 'text' : 'password'}
-            error={error.password}
-            helperText={
-              error.password
-                ? 'Password must be at least 8 characters long, include numerals, uppercase, lowercase, and special characters.'
-                : ''
-            }
-            autoComplete="new-password"
-            inputProps={{
-              autoComplete: 'new-password',
-              name: 'login-password',
-              readOnly: readOnly,
-              onFocus: () => setReadOnly(false),
-              'data-lpignore': 'true',
-              'data-1p-ignore': 'true',
-              'data-form-type': 'other',
-            }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  {!showPassword ? (
-                    <VisibilityOffIcon
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  ) : (
-                    <VisibilityIcon
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  )}
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 1 }}
-          />
-          <Typography variant="body2" textAlign="center" mt={2} color="#6B6B6B">
-            <ButtonBase
-              onClick={handlePasswordClick}
+
+          {availableAuthModes.length > 1 && (
+            <Tabs
+              value={selectedAuthMode}
+              onChange={(e, newMode) => {
+                setSelectedAuthMode(newMode);
+                setFormData({});
+                setError({});
+                setShowError(false);
+              }}
+              centered
               sx={{
-                color: '#6750A4',
-                fontWeight: '600',
-                cursor: 'pointer',
-                fontSize: '15px',
-                marginTop: '-10px',
-                textDecoration: 'underline',
+                mb: 2,
+                '& .MuiTab-root': {
+                  textTransform: 'none',
+                  fontWeight: 'bold',
+                },
+                '& .MuiTabs-indicator': {
+                  backgroundColor: '#582E92',
+                },
+                '& .Mui-selected': {
+                  color: '#582E92 !important',
+                },
               }}
             >
-              Forgot Password?
-            </ButtonBase>
-          </Typography>
-          <Box
-            sx={{
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              width: '100%',
-            }}
-          >
-            <Button
-              type="submit"
-              sx={{
-                bgcolor: '#582E92',
-                color: '#FFFFFF',
-                borderRadius: '30px',
-                textTransform: 'none',
-                fontWeight: 'bold',
-                fontSize: '14px',
-                padding: '8px 16px',
-                '&:hover': {
-                  bgcolor: '#543E98',
-                },
-                width: { xs: '50%', sm: '50%' },
+              {availableAuthModes.map((mode) => (
+                <Tab
+                  key={mode}
+                  value={mode}
+                  label={mode === ALLOWED_AUTH_MODES.OTP ? 'OTP' : 'Password'}
+                />
+              ))}
+            </Tabs>
+          )}
+
+          {formSchema && (
+            <Form
+              schema={formSchema}
+              uiSchema={uiSchema}
+              validator={validator}
+              widgets={widgets}
+              transformErrors={transformErrors}
+              formData={formData}
+              onChange={({ formData }) => {
+                setFormData(formData);
+                setError({});
               }}
-              onClick={(e) => {
-                e.preventDefault();
-                loginClickedRef.current = true;
+              onSubmit={() => {
                 handleButtonClick();
               }}
+              showErrorList={false}
+              liveValidate={false}
             >
-              Login
-            </Button>
-          </Box>
-          <Typography variant="body2" textAlign="center" mt={2} color="#6B6B6B">
-            Don't have an account?{' '}
-            <ButtonBase
-              onClick={handleRegisterClick}
-              sx={{
-                color: '#6750A4',
-                fontWeight: 'bold',
-                cursor: 'pointer',
-                textDecoration: 'underline',
-                fontSize: '15px',
-              }}
-            >
-              Register
-            </ButtonBase>
-          </Typography>
-          <Grid container justifyContent="center" alignItems="center">
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  width: '100%',
+                  mt: 2,
+                }}
+              >
+                <Button
+                  type="submit"
+                  sx={{
+                    bgcolor: '#582E92',
+                    color: '#FFFFFF',
+                    borderRadius: '30px',
+                    textTransform: 'none',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    padding: '8px 16px',
+                    '&:hover': {
+                      bgcolor: '#543E98',
+                    },
+                    width: '50%',
+                  }}
+                >
+                  {selectedAuthMode === ALLOWED_AUTH_MODES.OTP ? 'Get OTP' : 'Login'}
+                </Button>
+              </Box>
+            </Form>
+          )}
+
+          {showForgotPassword && (
+            <Typography variant="body2" textAlign="center" mt={2} color="#6B6B6B">
+              <ButtonBase
+                onClick={handlePasswordClick}
+                sx={{
+                  color: '#6750A4',
+                  fontWeight: '600',
+                  cursor: 'pointer',
+                  fontSize: '15px',
+                  marginTop: '10px',
+                  textDecoration: 'underline',
+                }}
+              >
+                Forgot Password?
+              </ButtonBase>
+            </Typography>
+          )}
+
+          {!isAutoRegister && (
+            <Typography variant="body2" textAlign="center" mt={2} color="#6B6B6B">
+              Don't have an account?{' '}
+              <ButtonBase
+                onClick={handleRegisterClick}
+                sx={{
+                  color: '#6750A4',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  fontSize: '15px',
+                }}
+              >
+                Register
+              </ButtonBase>
+            </Typography>
+          )}
+          <Grid container justifyContent="center" alignItems="center" mt={2}>
             {showError && (
               <Alert severity="error">
                 {typeof errorMessage === 'object'
@@ -553,8 +812,20 @@ export default function Login() {
               </Snackbar>
             )}
           </Grid>
-        </form>
+        </Box>
       </Grid>
+      <OTPDialog
+        open={openOtpDialog}
+        onClose={() => {
+          setOpenOtpDialog(false);
+          setOtpError('');
+        }}
+        onSubmit={handleOtpSubmit}
+        onResendOtp={handleResendOtp}
+        loading={otpLoading}
+        error={otpError}
+        submitButtonText="Login"
+      />
     </Box>
   );
 }
