@@ -254,7 +254,7 @@ export default function Login() {
           };
         } else {
           otpPayload = {
-            identifier: userName,
+            username: userName,
           };
         }
         const response = await sendOtp(otpPayload);
