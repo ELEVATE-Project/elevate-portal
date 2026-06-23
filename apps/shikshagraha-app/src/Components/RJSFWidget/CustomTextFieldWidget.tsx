@@ -110,6 +110,23 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       return fieldPolicyMsg;
     }
 
+    // If it's login, and we don't have a policyMsg, we don't show any pattern error message
+    if (formContext?.isLogin) {
+      if (fieldKey === 'required') {
+        return defaultErrorMessages.requiredField;
+      }
+      const lowerKey = fieldKey.toLowerCase();
+      if (
+        lowerKey.includes('username') ||
+        lowerKey.includes('identifier') ||
+        lowerKey.includes('email') ||
+        lowerKey.includes('phone')
+      ) {
+        return 'Please enter a valid Email or Phone Number';
+      }
+      return '';
+    }
+
     // Fall back to default error messages based on field type
     const defaultErrorMessageMap: Record<string, string> = {
       'first name': defaultErrorMessages.name,
@@ -162,6 +179,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     errorMessage: string
   ): string | null => {
     if (val && !pattern.test(val)) {
+      if (formContext?.isLogin && !errorMessage) {
+        return null;
+      }
       return errorMessage;
     }
     return null;
@@ -493,9 +513,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         onBlur={handleBlur}
         onFocus={handleFocus}
         placeholder={placeholder}
-        error={displayErrors.length > 0 || !!localError}
+        error={!formContext?.isLogin && (displayErrors.length > 0 || !!localError)}
         helperText={
-          shouldShowHelperText()
+          !formContext?.isLogin && shouldShowHelperText()
             ? localError || (displayErrors.length > 0 ? displayErrors[0] : '')
             : ''
         }
@@ -526,6 +546,9 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
               ? 'login-password'
               : 'login-username',
           sx: {
+            height: '40px',
+            WebkitTapHighlightColor: 'transparent',
+            WebkitTouchCallout: 'none',
             '& .MuiInputBase-input': {
               padding: '10px 12px',
               fontSize: isIOS ? '16px !important' : '12px !important',
@@ -543,15 +566,11 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
             '& .MuiOutlinedInput-notchedOutline': {
               borderColor: readonly ? 'rgba(0, 0, 0, 0.23)' : undefined,
             },
-            '& .MuiInputBase-root': {
-              WebkitTapHighlightColor: 'transparent',
-              WebkitTouchCallout: 'none',
-            },
           },
           endAdornment: (isPasswordField || isConfirmPasswordField) && (
             <InputAdornment position="end">
-              <IconButton onClick={toggleShowPassword} edge="end" size="small">
-                {showPassword ? <Visibility /> : <VisibilityOff />}
+              <IconButton onClick={toggleShowPassword} edge="end" size="small" sx={{ p: '2px', mr: '-2px' }}>
+                {showPassword ? <Visibility sx={{ fontSize: '20px' }} /> : <VisibilityOff sx={{ fontSize: '20px' }} />}
               </IconButton>
             </InputAdornment>
           ),

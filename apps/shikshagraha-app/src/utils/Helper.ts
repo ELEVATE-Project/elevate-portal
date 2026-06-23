@@ -4,11 +4,13 @@ import {
   FormValues,
   InputTypes,
   Storage,
+  ALLOWED_AUTH_MODES,
 } from './app.constant';
 import { State } from './Interfaces';
 import axios from 'axios';
 import AppConst from './AppConst/AppConst';
 import { getEnvValue } from '@shared-lib';
+import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 interface Value {
   value: string;
   label: string;
@@ -743,34 +745,31 @@ export const setAccessTokenCookie = (accessToken: string) => {
 
 export const performRedirect = (
   accessToken: string,
-  router: any,
-  defaultRoute: string = '/home'
+  router: AppRouterInstance,
+  defaultRoute: string = '/home',
+  refreshToken?: string
 ) => {
   const redirectUrl = localStorage.getItem('redirectUrl');
   localStorage.removeItem('redirectUrl');
 
-  if (redirectUrl) {
-    try {
-      const urlObj = new URL(redirectUrl);
-      const domain = getParentDomain(urlObj.hostname);
-      const isSecure = window.location.protocol === 'https:';
-      const secureFlag = isSecure ? 'secure;' : '';
-      if (domain) {
-        document.cookie = `accToken=${accessToken}; domain=${domain}; path=/; max-age=86400; ${secureFlag} SameSite=Lax`;
-        document.cookie = `accessToken=${accessToken}; domain=${domain}; path=/; max-age=86400; ${secureFlag} SameSite=Lax`;
-      }
-    } catch (e) {
-      console.error('Error setting redirect cookie:', e);
-    }
+  const refTokenVal = refreshToken || (typeof window !== 'undefined' ? localStorage.getItem('refToken') : null);
 
+  if (redirectUrl) {
     let targetUrl = redirectUrl;
     try {
       const urlObj = new URL(redirectUrl);
       urlObj.searchParams.set('accToken', accessToken);
+      if (refTokenVal) {
+        urlObj.searchParams.set('refToken', refTokenVal);
+      }
       targetUrl = urlObj.toString();
     } catch (e) {
       const separator = targetUrl.includes('?') ? '&' : '?';
-      targetUrl = `${targetUrl}${separator}accToken=${encodeURIComponent(accessToken)}`;
+      let extraParams = `accToken=${encodeURIComponent(accessToken)}`;
+      if (refTokenVal) {
+        extraParams += `&refToken=${encodeURIComponent(refTokenVal)}`;
+      }
+      targetUrl = `${targetUrl}${separator}${extraParams}`;
     }
 
     if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
@@ -781,4 +780,25 @@ export const performRedirect = (
   } else {
     router.replace(defaultRoute);
   }
+};
+
+export const getAllowedAuthMode = (): string[] => {
+  const allowedAuthModeStr = localStorage.getItem('allowed_auth_mode');
+  if (allowedAuthModeStr) {
+    try {
+      const parsed = JSON.parse(allowedAuthModeStr);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    } catch (e) {
+      console.error('Error parsing allowed_auth_mode from localStorage:', e);
+    }
+  }
+  return [];
+};
+
+export const getAutoRegister = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const autoRegisterVal = localStorage.getItem('auto_register');
+  return autoRegisterVal === 'true';
 };

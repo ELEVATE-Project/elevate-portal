@@ -24,6 +24,7 @@ interface OTPDialogProps {
   otpLength?: number;
   resendCooldown?: number;
   expirationTime?: number;
+  submitButtonText?: string;
 }
 const OTPDialog: React.FC<OTPDialogProps> = ({
   open,
@@ -35,6 +36,7 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
   otpLength = 6,
   resendCooldown = 30,
   expirationTime = 600, // 10 minutes in seconds
+  submitButtonText = 'Verify',
 }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -45,6 +47,17 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const [isAutoFilling, setIsAutoFilling] = useState(false);
+  const [localError, setLocalError] = useState<string>(error);
+
+  // Sync prop error to local error state
+  useEffect(() => {
+    setLocalError(error);
+  }, [error]);
+
+  // Clear local error when OTP input changes (e.g. user erases/types)
+  useEffect(() => {
+    setLocalError('');
+  }, [otp]);
 
   // Handle resend timer
   useEffect(() => {
@@ -378,7 +391,7 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
             />
           ))}
         </Box>
-        {error && (
+        {localError && (
           <Typography
             id="otp-error"
             color="error.main"
@@ -386,7 +399,7 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
             variant="body2"
             mt={1}
           >
-            {error}
+            {localError}
           </Typography>
         )}
         <Box mt={3} textAlign="center">
@@ -435,7 +448,7 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
           ) : isExpired ? (
             'OTP Expired'
           ) : (
-            'Verify'
+            submitButtonText
           )}
         </Button>
         {expirationTimer > 0 && (
