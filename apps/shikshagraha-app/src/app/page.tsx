@@ -135,7 +135,8 @@ export default function Login() {
  
             localStorage.setItem('auto_register', String(autoRegister));
             if (allowedAuthMode && Array.isArray(allowedAuthMode) && allowedAuthMode.length > 0) {
-              localStorage.setItem('allowed_auth_mode', JSON.stringify([allowedAuthMode]));
+              const modesArray = Array.isArray(allowedAuthMode) ? allowedAuthMode : [allowedAuthMode];
+              localStorage.setItem('allowed_auth_mode', JSON.stringify(modesArray));
             } else {
               localStorage.removeItem('allowed_auth_mode');
             }
@@ -348,8 +349,8 @@ export default function Login() {
           localStorage.setItem('name', response?.result?.user?.username);
         }
         let storedUserId = localStorage.getItem('userId');
-        let userIdVal = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
-        if (userIdVal !== response?.result?.user?.id) {
+        let userId = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
+        if (userId !== response?.result?.user?.id) {
           clearIndexedDB();
         }
         if (!isRedirectActive) {
@@ -419,8 +420,8 @@ export default function Login() {
         }
 
         let storedUserId = localStorage.getItem('userId');
-        let userIdVal = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
-        if (userIdVal !== response?.result?.user?.id) {
+        let userId = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
+        if (userId !== response?.result?.user?.id) {
           clearIndexedDB();
         }
 
