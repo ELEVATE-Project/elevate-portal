@@ -30,12 +30,12 @@ import {
   sendOtp,
 } from '../services/LoginService';
 import AppConst from '../utils/AppConst/AppConst';
-import { setAccessTokenCookie, performRedirect } from '../utils/Helper';
+import { setAccessTokenCookie, performRedirect, getAutoRegister, getAllowedAuthMode } from '../utils/Helper';
 import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import CustomTextFieldWidget from '../Components/RJSFWidget/CustomTextFieldWidget';
 import OTPDialog from '../Components/OTPDialog';
-import { ALLOWED_AUTH_MODES } from '../utils/app.constant';
+import { ALLOWED_AUTH_MODES, DEFAULT_LOGIN_FIELDS } from '../utils/app.constant';
 import { generateRJSFSchema } from '../utils/generateSchemaFromAPI';
 export default function Login() {
   const [formData, setFormData] = useState<any>({});
@@ -113,10 +113,17 @@ export default function Login() {
       let coreDomain = knownSuffixes.reduce((name, suffix) => {
         return name.endsWith(suffix) ? name.replace(suffix, '') : name;
       }, domainPart);
-      if (coreDomain === 'shikshagrah') {
-        coreDomain = 'shikshagraha';
+
+      // Pre-populate states with cached configuration before branding API loads
+      const initialAutoRegister = getAutoRegister();
+      const initialAllowedAuthModes = getAllowedAuthMode();
+      setIsAutoRegister(initialAutoRegister);
+      setAvailableAuthModes(initialAllowedAuthModes);
+      if (initialAllowedAuthModes.length > 0) {
+        setSelectedAuthMode((prev) => prev || initialAllowedAuthModes[0]);
       }
-      fetchBranding(coreDomain).then((brandingData) => {
+      fetchBranding(coreDomain)
+        .then((brandingData) => {
         if (brandingData) {
           const tenantCode = brandingData?.result?.code;
           const apiLogo =
@@ -134,11 +141,16 @@ export default function Login() {
             const allowedAuthMode = configurations.allowed_auth_mode;
  
             localStorage.setItem('auto_register', String(autoRegister));
+            setIsAutoRegister(autoRegister);
+
             if (allowedAuthMode && Array.isArray(allowedAuthMode) && allowedAuthMode.length > 0) {
-              const modesArray = Array.isArray(allowedAuthMode) ? allowedAuthMode : [allowedAuthMode];
-              localStorage.setItem('allowed_auth_mode', JSON.stringify(modesArray));
+              localStorage.setItem('allowed_auth_mode', JSON.stringify(allowedAuthMode));
+              setAvailableAuthModes(allowedAuthMode);
+              setSelectedAuthMode((prev) => prev || allowedAuthMode[0]);
             } else {
               localStorage.removeItem('allowed_auth_mode');
+              setAvailableAuthModes([]);
+              setSelectedAuthMode(ALLOWED_AUTH_MODES.PASSWORD);
             }
           }
         })
@@ -158,30 +170,6 @@ export default function Login() {
           setLogoSrc((prev) => prev || TENANT_LOGOS[normalized]);
         }
       }
-
-          // Read configurations from localStorage for offline/fast-load fallback
-          const allowedAuthModeStr = localStorage.getItem('allowed_auth_mode');
-          const autoRegisterStr = localStorage.getItem('auto_register');
-
-          if (autoRegisterStr === 'true') {
-            setIsAutoRegister(true);
-          }
-
-          let modes = [];
-          if (allowedAuthModeStr) {
-            try {
-              const parsed = JSON.parse(allowedAuthModeStr);
-              if (Array.isArray(parsed) && parsed.length > 0) {
-                modes = parsed;
-              }
-            } catch (e) {
-              console.error(e);
-            }
-          }
-          setAvailableAuthModes(modes);
-          if (modes.length > 0) {
-            setSelectedAuthMode((prev) => prev || modes[0]);
-          }
           setBrandingFetched(true);
         });
     }
@@ -207,31 +195,7 @@ export default function Login() {
 
         // Fallback schema if API returns nothing or fails
         if (fields.length === 0) {   
-            fields = [
-              {
-                hint: 'Enter your email address or phone number or username',
-                name: 'userName',
-                type: 'text',
-                label: 'Email / Phone Number / Username',
-                policyMsg:"Please enter a valid Username, Phone number or Email Id",
-                order: '1',
-                isRequired: true,
-                coreField: 1,
-                isEditable: true,
-                placeholder: 'ENTER_EMAIL_OR_PHONE_NUMBER_OR_USERNAME',
-              },
-              {
-                hint: 'Enter password',
-                name: 'password',
-                type: 'password',
-                label: 'Password',
-                order: '2',
-                isRequired: true,
-                coreField: 1,
-                isEditable: true,
-                placeholder: 'ENTER_PASSWORD',
-              },
-            ];
+            fields = DEFAULT_LOGIN_FIELDS;
         }
 
         const { schema, uiSchema } = generateRJSFSchema(fields, '');
@@ -391,9 +355,9 @@ export default function Login() {
     setOtpLoading(true);
     setOtpError('');
     try {
-      const userName = formData.userName || formData.username || formData.identifier || '';
+      const identifier = formData.userName || formData.username || formData.identifier || '';
       const payload = {
-        username: userName,
+        identifier: identifier,
         otp: otpString,
       };
       const response = await signin(payload);
@@ -458,23 +422,23 @@ export default function Login() {
   };
 
   const handleResendOtp = async () => {
-    const userName = formData.userName || formData.username || formData.identifier || '';
-    if (!userName) return;
-    const isMobile = /^[6-9]\d{9}$/.test(userName);
-    const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(userName);
+    const identifier = formData.userName || formData.username || formData.identifier || '';
+    if (!identifier) return;
+    const isMobile = /^[6-9]\d{9}$/.test(identifier);
+    const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(identifier);
     let otpPayload: any = {};
     if (isMobile) {
       otpPayload = {
-        phone: userName,
+        phone: identifier,
         phone_code: '+91',
       };
     } else if (isEmail) {
       otpPayload = {
-        email: userName,
+        email: identifier,
       };
     } else {
       otpPayload = {
-        identifier: userName,
+        username: identifier,
       };
     }
     await sendOtp(otpPayload);

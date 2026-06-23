@@ -259,3 +259,29 @@ export const ALLOWED_AUTH_MODES = {
   PASSWORD: 'password',
   OTP: 'otp',
 };
+
+export const DEFAULT_LOGIN_FIELDS = [
+  {
+    hint: 'Enter your email address or phone number or username',
+    name: 'userName',
+    type: 'text',
+    label: 'Email / Phone Number / Username',
+    policyMsg: 'Please enter a valid Username, Phone number or Email Id',
+    order: '1',
+    isRequired: true,
+    coreField: 1,
+    isEditable: true,
+    placeholder: 'ENTER_EMAIL_OR_PHONE_NUMBER_OR_USERNAME',
+  },
+  {
+    hint: 'Enter password',
+    name: 'password',
+    type: 'password',
+    label: 'Password',
+    order: '2',
+    isRequired: true,
+    coreField: 1,
+    isEditable: true,
+    placeholder: 'ENTER_PASSWORD',
+  },
+];
