@@ -136,8 +136,8 @@ export default function Login() {
               setLogoSrc(apiLogo);
               localStorage.setItem('brandingLogoUrl', apiLogo);
           }
-            const configurations = brandingData?.result?.configurations || brandingData?.result?.branding?.configurations || {};
-            const autoRegister = configuration.auto_register !== undefined ? configurations.auto_register : false;
+            const configurations = brandingData?.result?.configuration || brandingData?.result?.branding?.configuration || {};
+            const autoRegister = configurations.auto_register !== undefined ? configurations.auto_register : false;
             const allowedAuthMode = configuration.allowed_auth_mode;
  
             localStorage.setItem('auto_register', String(autoRegister));
