@@ -355,7 +355,7 @@ export default function Login() {
     setOtpLoading(true);
     setOtpError('');
     try {
-      const identifier = formData.userName || formData.username || formData.identifier || '';
+      const identifier = formData.userName || formData.username || formData.identifier || formData.phone || formData.mobile || formData.email || '';
       const payload = {
         identifier: identifier,
         otp: otpString,
