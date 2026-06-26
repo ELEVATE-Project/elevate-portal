@@ -138,7 +138,7 @@ export default function Login() {
           }
             const configurations = brandingData?.result?.configuration || brandingData?.result?.branding?.configuration || {};
             const autoRegister = configurations.auto_register !== undefined ? configurations.auto_register : false;
-            const allowedAuthMode = configuration.allowed_auth_mode;
+            const allowedAuthMode = configurations.allowed_auth_mode;
  
             localStorage.setItem('auto_register', String(autoRegister));
             setIsAutoRegister(autoRegister);
