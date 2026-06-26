@@ -6,7 +6,8 @@ import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import { handleUnauthorizedError } from '../utils/Helper';
 
 interface LoginParams {
-  username: string;
+  username?: string;
+  identifier?: string;
   password?: string;
   otp?: string | number;
 }
@@ -24,23 +25,25 @@ interface AuthParamsProfile {
 }
 export const signin = async ({
   username,
+  identifier,
   password,
   otp,
 }: LoginParams): Promise<any> => {
+  const finalUsername = username || identifier || '';
   const apiUrl: string = `${API_ENDPOINTS.accountLogin}`;
-  const isMobile = /^[6-9]\d{9}$/.test(username);
+  const isMobile = /^[6-9]\d{9}$/.test(finalUsername);
   let requestBody: any = {};
 
   if (otp !== undefined) {
     const otpValue = typeof otp === 'string' ? Number(otp) : otp;
     requestBody = {
-      identifier: username,
+      identifier: finalUsername,
       otp: otpValue,
       ...(isMobile ? { phone_code: '+91' } : {}),
     };
   } else {
     requestBody = {
-      identifier: username,
+      identifier: finalUsername,
       password,
       ...(isMobile ? { phone_code: '+91' } : {}),
     };
