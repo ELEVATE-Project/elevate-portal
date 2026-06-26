@@ -227,7 +227,7 @@ export default function Login() {
     setFormSubmitted(true);
     setShowError(false);
 
-    const userName = formData.userName || formData.username || formData.identifier || '';
+    const userName = formData.userName || formData.username || formData.identifier || formData.phone || formData.mobile || formData.email || '';
     const password = formData.password || '';
 
     // If it's OTP mode, we send OTP instead of performing signin directly
@@ -422,7 +422,7 @@ export default function Login() {
   };
 
   const handleResendOtp = async () => {
-    const identifier = formData.userName || formData.username || formData.identifier || '';
+    const identifier = formData.userName || formData.username || formData.identifier || formData.phone || formData.mobile || formData.email || '';
     if (!identifier) return;
     const isMobile = /^[6-9]\d{9}$/.test(identifier);
     const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(identifier);
