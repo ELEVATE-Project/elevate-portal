@@ -472,6 +472,36 @@ export default function Login() {
       });
   }
 
+  const isOtpFormDisabled = () => {
+    if (selectedAuthMode !== ALLOWED_AUTH_MODES.OTP) {
+      return false;
+    }
+    const userName = (
+      formData.userName ||
+      formData.username ||
+      formData.identifier ||
+      formData.phone ||
+      formData.mobile ||
+      formData.email ||
+      ''
+    ).trim();
+
+    if (!userName) {
+      return true;
+    }
+
+    const isDigits = /^\+?\d+$/.test(userName);
+    if (isDigits) {
+      return !/^[6-9]\d{9}$/.test(userName);
+    }
+
+    if (userName.includes('@')) {
+      return !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(userName);
+    }
+
+    return false;
+  };
+
   const handleRegisterClick = () => {
     const redirectUrl = queryRouter.get('redirectUrl');
     if (redirectUrl) {
@@ -487,7 +517,9 @@ export default function Login() {
     router.push('/');
   };
 
-  const showForgotPassword = !availableAuthModes.length || availableAuthModes.includes(ALLOWED_AUTH_MODES.PASSWORD);
+  const showForgotPassword =
+    (!availableAuthModes.length || availableAuthModes.includes(ALLOWED_AUTH_MODES.PASSWORD)) &&
+    selectedAuthMode !== ALLOWED_AUTH_MODES.OTP;
 
   const widgets = React.useMemo(
     () => ({
@@ -526,7 +558,7 @@ export default function Login() {
     });
   }, []);
 
-  if (!brandingFetched) {
+  if (!brandingFetched || !formSchema) {
     return (
       <Box
         sx={{
@@ -628,7 +660,6 @@ export default function Login() {
               sx={{
                 width: '30%',
                 height: '30%',
-                borderRadius: '50%',
                 objectFit: 'cover',
               }}
             />
@@ -697,16 +728,17 @@ export default function Login() {
               >
                 <Button
                   type="submit"
+                  disabled={isOtpFormDisabled()}
                   sx={{
-                    bgcolor: '#582E92',
-                    color: '#FFFFFF',
+                    bgcolor: isOtpFormDisabled() ? '#cccccc' : '#582E92',
+                    color: isOtpFormDisabled() ? '#888888' : '#FFFFFF',
                     borderRadius: '30px',
                     textTransform: 'none',
                     fontWeight: 'bold',
                     fontSize: '14px',
                     padding: '8px 16px',
                     '&:hover': {
-                      bgcolor: '#543E98',
+                      bgcolor: isOtpFormDisabled() ? '#cccccc' : '#543E98',
                     },
                     width: '50%',
                   }}
