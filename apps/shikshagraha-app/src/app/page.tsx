@@ -630,6 +630,7 @@ export default function Login() {
             name="prevent_autofill_password"
             style={{ display: 'none' }}
           />
+          {logoSrc && (
           <Box
             sx={{
               display: 'flex',
@@ -651,6 +652,7 @@ export default function Login() {
               }}
             />
           </Box>
+          )}
 
           {availableAuthModes.length > 1 && (
             <Tabs
