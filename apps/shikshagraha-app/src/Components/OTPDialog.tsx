@@ -136,6 +136,12 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
       const prevInput = inputRefs.current[index - 1];
       prevInput?.focus();
     }
+    if (e.key === 'Enter') {
+      const complete = otp.every((digit) => digit !== '') && otp.length === otpLength;
+      if (complete && !loading && !isExpired) {
+        handleSubmit();
+      }
+    }
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {

@@ -87,6 +87,10 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       }
     }
 
+    if (formContext?.isLogin) {
+      return null;
+    }
+
     // Fall back to default patterns based on field type
     const defaultPatternMap: Record<string, RegExp> = {
       'first name': defaultPatterns.name,
@@ -179,10 +183,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     errorMessage: string
   ): string | null => {
     if (val && !pattern.test(val)) {
-      if (formContext?.isLogin && !errorMessage) {
-        return null;
-      }
-      return errorMessage;
+      return errorMessage || 'Invalid format';
     }
     return null;
   };
@@ -507,15 +508,15 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
             ? 'password'
             : 'text'
         }
-        required={required}
+        required={false}
         disabled={disabled || readonly}
         onChange={handleChange}
         onBlur={handleBlur}
         onFocus={handleFocus}
         placeholder={placeholder}
-        error={!formContext?.isLogin && (displayErrors.length > 0 || !!localError)}
+        error={displayErrors.length > 0 || !!localError}
         helperText={
-          !formContext?.isLogin && shouldShowHelperText()
+          shouldShowHelperText()
             ? localError || (displayErrors.length > 0 ? displayErrors[0] : '')
             : ''
         }

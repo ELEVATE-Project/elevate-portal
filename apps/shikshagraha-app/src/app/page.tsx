@@ -200,12 +200,15 @@ export default function Login() {
 
         const { schema, uiSchema } = generateRJSFSchema(fields, '');
         if (schema) {
+          schema.required = [];
           if (schema.properties) {
             Object.keys(schema.properties).forEach((key) => {
-              delete schema.properties[key].pattern;
+              const fieldSchema = schema.properties[key];
+              if (fieldSchema.isRequired) {
+                schema.required.push(key);
+              }
             });
           }
-          schema.required = [];
         }
         setFormSchema(schema);
         setUiSchema(uiSchema);
@@ -473,33 +476,17 @@ export default function Login() {
   }
 
   const isOtpFormDisabled = () => {
+    if (!formSchema) return true;
     if (selectedAuthMode !== ALLOWED_AUTH_MODES.OTP) {
       return false;
     }
-    const userName = (
-      formData.userName ||
-      formData.username ||
-      formData.identifier ||
-      formData.phone ||
-      formData.mobile ||
-      formData.email ||
-      ''
-    ).trim();
-
-    if (!userName) {
-      return true;
-    }
-
-    const isDigits = /^\+?\d+$/.test(userName);
-    if (isDigits) {
-      return !/^[6-9]\d{9}$/.test(userName);
-    }
-
-    if (userName.includes('@')) {
-      return !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(userName);
-    }
-
-    return false;
+    const { errors } = validator.validateFormData(
+      formData,
+      formSchema,
+      undefined,
+      transformErrors
+    );
+    return errors.length > 0;
   };
 
   const handleRegisterClick = () => {
