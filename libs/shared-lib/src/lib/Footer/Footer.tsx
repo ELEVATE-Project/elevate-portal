@@ -8,7 +8,7 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import { useRouter, usePathname } from 'next/navigation';
-import { getEnvValue } from '../../utils/env';
+import { getEnvValue, isRouteDisabled } from '../../utils/env';
 
 const isMobile = () => {
   return /iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent);
@@ -17,10 +17,12 @@ const isMobile = () => {
 export const Footer: React.FC = () => {
   const [value, setValue] = useState(0);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
+    setMounted(true);
     setIsMobileDevice(isMobile());
   }, []);
   const downloadsUrl =
@@ -178,7 +180,9 @@ export const Footer: React.FC = () => {
           },
         }}
       >
-        <BottomNavigationAction
+        {mounted && !isRouteDisabled('HOME') && (
+          <BottomNavigationAction
+            value={0}
           label="Home"
           icon={
             <HomeIcon
@@ -191,8 +195,10 @@ export const Footer: React.FC = () => {
             />
           }
         />
+        )}
         {isMobileDevice && <Box sx={{ width: 54 }} />}
         <BottomNavigationAction
+          value={2}
           label="Downloads"
           icon={
             <ArrowDownwardIcon

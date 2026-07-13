@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 //@ts-nocheck
 'use client';
-import { Layout, DynamicCard } from '@shared-lib';
+import { Layout, DynamicCard, getEnvValue, isRouteDisabled } from '@shared-lib';
 import { useRouter } from 'next/navigation';
 import { readHomeListForm } from '../../services/LoginService';
 import { useEffect, useState } from 'react';
@@ -34,9 +34,11 @@ export default function Home() {
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cardData, setCardData] = useState([]);
+  const [mounted, setMounted] = useState(false);
 
   // Effects
   useEffect(() => {
+    setMounted(true);
     initializeHomePage();
   }, [router]);
 
@@ -323,7 +325,11 @@ export default function Home() {
     </>
   );
 
-  const renderProfileIcon = () => (
+  const renderProfileIcon = () => {
+    if (!mounted || isRouteDisabled('PROFILE')) {
+      return null;
+    }
+    return (
     <Box
       sx={{
         position: 'fixed',
@@ -344,6 +350,7 @@ export default function Home() {
       />
     </Box>
   );
+  };
 
   // ==================== MAIN RENDER ====================
 

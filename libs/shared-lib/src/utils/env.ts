@@ -22,6 +22,8 @@ export const getEnvValue = (key: string): string | undefined => {
     NEXT_PUBLIC_BASE_URL: process.env.NEXT_PUBLIC_BASE_URL,
     NEXT_PUBLIC_SSUNBIRD_BASE_URL: process.env.NEXT_PUBLIC_SSUNBIRD_BASE_URL,
     NEXT_PUBLIC_ORGID: process.env.NEXT_PUBLIC_ORGID,
+    NEXT_PUBLIC_DISABLED_ROUTES: process.env.NEXT_PUBLIC_DISABLED_ROUTES,
+    NEXT_PUBLIC_MFE_REDIRECT_URL: process.env.NEXT_PUBLIC_MFE_REDIRECT_URL,
   };
 
   if (publicVars[key] !== undefined && publicVars[key] !== '') {
@@ -29,6 +31,27 @@ export const getEnvValue = (key: string): string | undefined => {
   }
 
   return process.env[key];
+};
+
+export const getDisabledRouteKeys = (): string[] => {
+  const raw = (getEnvValue('NEXT_PUBLIC_DISABLED_ROUTES') ?? '').trim();
+  if (!raw) return [];
+  let keys: string[] = [];
+  if (raw.startsWith('[')) {
+    try {
+      const parsed = JSON.parse(raw);
+      keys = Array.isArray(parsed) ? parsed.map(String) : [];
+    } catch {
+      keys = [];
+    }
+  } else {
+    keys = raw.split(',');
+  }
+  return keys.map((key) => key.trim().toUpperCase());
+};
+
+export const isRouteDisabled = (routeKey: string): boolean => {
+  return getDisabledRouteKeys().includes(routeKey.trim().toUpperCase());
 };
 
 export const getBaseUrl = () => '/api/proxy';
