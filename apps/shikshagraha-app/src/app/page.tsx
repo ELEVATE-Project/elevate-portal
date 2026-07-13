@@ -35,7 +35,7 @@ import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import CustomTextFieldWidget from '../Components/RJSFWidget/CustomTextFieldWidget';
 import OTPDialog from '../Components/OTPDialog';
-import { ALLOWED_AUTH_MODES, DEFAULT_LOGIN_FIELDS } from '../utils/app.constant';
+import { ALLOWED_AUTH_MODES } from '../utils/app.constant';
 import { generateRJSFSchema } from '../utils/generateSchemaFromAPI';
 export default function Login() {
   const [formData, setFormData] = useState<any>({});
@@ -63,6 +63,7 @@ export default function Login() {
   const [uiSchema, setUiSchema] = useState<any>(null);
   const [isAutoRegister, setIsAutoRegister] = useState(false);
   const [brandingFetched, setBrandingFetched] = useState(false);
+  const [schemaFields, setSchemaFields] = useState<any[]>([]);
 
   // OTPDialog states
   const [openOtpDialog, setOpenOtpDialog] = useState(false);
@@ -177,6 +178,7 @@ export default function Login() {
 
   // Fetch form schema from API dynamically
   useEffect(() => {
+    if (!brandingFetched) return;
     const fetchSchema = async () => {
       const modeToFetch = selectedAuthMode || ALLOWED_AUTH_MODES.PASSWORD;
       setLoading(true);
@@ -193,10 +195,11 @@ export default function Login() {
           }
         }
 
-        // Fallback schema if API returns nothing or fails
-        if (fields.length === 0) {   
-            fields = DEFAULT_LOGIN_FIELDS;
+        if (fields.length === 0) {
+          return;
         }
+
+        setSchemaFields(fields);
 
         const { schema, uiSchema } = generateRJSFSchema(fields, '');
         if (schema) {
@@ -220,11 +223,63 @@ export default function Login() {
     };
 
     fetchSchema();
-  }, [selectedAuthMode]);
+  }, [selectedAuthMode, brandingFetched]);
 
   useEffect(() => {
     setIsAuthenticated(!!localStorage.getItem('accToken'));
   }, []);
+  const getIdentifierType = (val: string): 'mobile' | 'email' | 'username' => {
+    if (!val) return 'username';
+    let isMobile = false;
+    let isEmail = false;
+
+    if (schemaFields && schemaFields.length > 0) {
+      schemaFields.forEach((field: any) => {
+        const fieldVal = formData[field.name];
+        if (fieldVal === val) {
+          const labelLower = (field.label || '').toLowerCase();
+          const hintLower = (field.hint || '').toLowerCase();
+          const nameLower = (field.name || '').toLowerCase();
+
+          const isPhoneField = labelLower.includes('phone') || labelLower.includes('mobile') || labelLower.includes('contact') ||
+                               hintLower.includes('phone') || hintLower.includes('mobile') || hintLower.includes('contact') ||
+                               nameLower.includes('phone') || nameLower.includes('mobile') || nameLower.includes('contact');
+
+          const isEmailField = labelLower.includes('email') || hintLower.includes('email') || nameLower.includes('email');
+
+          if (isPhoneField) {
+            isMobile = true;
+          } else if (isEmailField) {
+            isEmail = true;
+          } else {
+            const pattern = field.pattern;
+            if (pattern) {
+              try {
+                const regex = new RegExp(pattern);
+                if (regex.test(fieldVal)) {
+                  isMobile = true;
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }
+          }
+        }
+      });
+    }
+
+    if (isMobile) return 'mobile';
+    if (isEmail) return 'email';
+
+    if (/^\+?[0-9]+$/.test(val)) {
+      return 'mobile';
+    }
+    if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(val)) {
+      return 'email';
+    }
+    return 'username';
+  };
+
   const handleButtonClick = async () => {
     if (formSubmitted) return; // Prevent duplicate submissions
     setFormSubmitted(true);
@@ -243,15 +298,14 @@ export default function Login() {
       }
       setLoading(true);
       try {
-        const isMobile = /^[6-9]\d{9}$/.test(userName);
-        const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(userName);
+        const identifierType = getIdentifierType(userName);
         let otpPayload: any = {};
-        if (isMobile) {
+        if (identifierType === 'mobile') {
           otpPayload = {
             phone: userName,
             phone_code: '+91',
           };
-        } else if (isEmail) {
+        } else if (identifierType === 'email') {
           otpPayload = {
             email: userName
           };
@@ -286,7 +340,7 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const isMobile = /^[6-9]\d{9}$/.test(userName);
+      const isMobile = getIdentifierType(userName) === 'mobile';
       const payload = {
         username: userName,
         password,
@@ -427,15 +481,14 @@ export default function Login() {
   const handleResendOtp = async () => {
     const identifier = formData.userName || formData.username || formData.identifier || formData.phone || formData.mobile || formData.email || '';
     if (!identifier) return;
-    const isMobile = /^[6-9]\d{9}$/.test(identifier);
-    const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(identifier);
+    const identifierType = getIdentifierType(identifier);
     let otpPayload: any = {};
-    if (isMobile) {
+    if (identifierType === 'mobile') {
       otpPayload = {
         phone: identifier,
         phone_code: '+91',
       };
-    } else if (isEmail) {
+    } else if (identifierType === 'email') {
       otpPayload = {
         email: identifier,
       };
