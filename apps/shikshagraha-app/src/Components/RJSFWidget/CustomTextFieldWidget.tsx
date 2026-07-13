@@ -99,8 +99,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       'registration code': defaultPatterns.registrationCode,
       password: defaultPatterns.password,
       email: defaultPatterns.email,
-      'contact number': defaultPatterns.contact,
-      mobile: defaultPatterns.contact,
       udise: defaultPatterns.udise,
     };
 
@@ -165,15 +163,18 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
 
   const getMobileMaxLength = (): number => {
     const pattern = fieldPatternString
+    if (pattern) {
     const match = pattern.match(/\{(\d+)\}/);
     if (match && match[1]) {
       return Number(match[1]);
+    }
     }
     const defaultMatch = defaultPatterns.contact.source.match(/\{(\d+)\}/);
     if (defaultMatch && defaultMatch[1]) {
       return Number(defaultMatch[1]);
     }
-    return Number(defaultPatterns.contact.source.match(/\{(\d+)\}/)?.[1]);
+    const fallbackMatch = defaultPatterns.contact.source.match(/\{(\d+)\}/);
+    return fallbackMatch && fallbackMatch[1] ? Number(fallbackMatch[1]) : 10;
   };
 
   // Helpers
@@ -369,6 +370,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     const val = event.target.value;
 
     if (isMobileField) {
+      if (fieldPatternString) {
       const maxLength = getMobileMaxLength();
       const numericValue = val.replace(/\D/g, '');
       const limitedValue = numericValue.slice(0, maxLength);
@@ -386,6 +388,13 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
       setLocalError(error);
       onChange(undefined);
       return;
+      } else {
+        const error = validateField(label ?? '', val);
+        setLocalError(error);
+        onChange(val === '' ? undefined : val);
+        props.onClearError?.('email');
+        return;
+      }
     }
 
     if (isEmailField) {

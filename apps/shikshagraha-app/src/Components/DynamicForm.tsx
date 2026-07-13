@@ -154,7 +154,16 @@ const DynamicForm = ({
   };
 
   const isValidMobile = (mobile: string) => {
-    return /^[6-9]\d{9}$/.test(mobile);
+    const mobileField = formSchema?.properties?.mobile || formSchema?.properties?.['contact number'] || formSchema?.properties?.['Mobile'] || formSchema?.properties?.['Contact Number'];
+    if (mobileField?.pattern) {
+      try {
+        const regex = new RegExp(mobileField.pattern);
+        return regex.test(mobile);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return !!mobile && mobile.trim().length > 0;
   };
 
   const isValidUsername = (username: string) => {
@@ -1636,7 +1645,6 @@ const DynamicForm = ({
 
     let otpPayload;
     const hasMobile = !!formData.mobile?.trim();
-    const isValidMobile = /^[6-9]\d{9}$/.test(formData.mobile?.trim() ?? '');
 
     otpPayload = {
       name: `${formData.firstName}${

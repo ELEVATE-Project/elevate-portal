@@ -58,7 +58,7 @@ const PasswordReset = ({ name }: { name: string }) => {
   const usernameRegex =
     /^(?:[a-z0-9_-]{3,40}|[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,})$/;
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  const mobileRegex = /^[6-9]\d{9}$/;
+  const mobileRegex = /^\+?[0-9]+$/;
   const passwordRegex =
     /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\-={}"';<>?,./\\])(?!.*\s).{8,}$/;
   const [timer, setTimer] = useState(0);
@@ -122,44 +122,18 @@ const PasswordReset = ({ name }: { name: string }) => {
     if (name === 'identifier') {
       let newValue = value;
 
-      // Check if input starts with 0-5 (invalid mobile prefix)
-      if (/^[0-5]/.test(newValue)) {
-        setFormErrors((prev) => ({
-          ...prev,
-          [name]: 'Mobile number must start with 6, 7, 8, or 9',
-        }));
-        // Don't update the value if it starts with invalid digits
-        return;
-      }
-
-      // If input starts with 6-9, treat as mobile
-      const isPotentialMobile = /^[6-9]/.test(newValue);
+      // If input starts with a digit or '+', treat as potential mobile
+      const isPotentialMobile = /^[0-9+]/.test(newValue);
 
       if (isPotentialMobile) {
-        // Remove non-digit characters
-        newValue = newValue.replace(/\D/g, '');
-
-        // Limit to 10 digits
-        if (newValue.length > 10) {
-          newValue = newValue.slice(0, 10);
-        }
+        // Remove non-digit characters except '+'
+        newValue = newValue.replace(/[^\d+]/g, '');
 
         // Validate mobile number format
-        if (newValue.length > 0 && newValue.length < 10) {
+        if (newValue.length > 0 && newValue.length < 5) {
           setFormErrors((prev) => ({
             ...prev,
-            [name]: 'Mobile number must be exactly 10 digits',
-          }));
-        } else if (newValue.length === 10 && !mobileRegex.test(newValue)) {
-          setFormErrors((prev) => ({
-            ...prev,
-            [name]:
-              'Please enter a valid 10-digit mobile number starting with 6, 7, 8, or 9',
-          }));
-        } else if (newValue.length === 10 && mobileRegex.test(newValue)) {
-          setFormErrors((prev) => ({
-            ...prev,
-            [name]: '',
+            [name]: 'Please enter a valid mobile number',
           }));
         } else {
           setFormErrors((prev) => ({
@@ -740,25 +714,17 @@ const PasswordReset = ({ name }: { name: string }) => {
   const handlePasteIdentifier = (e: React.ClipboardEvent<HTMLInputElement>) => {
     const pasteData = e.clipboardData.getData('text');
 
-    // If the current identifier starts with 6-9, treat as mobile
-    if (/^[6-9]/.test(formData.identifier)) {
-      // Only allow digits for mobile numbers
-      if (!/^\d+$/.test(pasteData)) {
-        e.preventDefault();
-        return;
-      }
-
-      // Limit to 10 digits total
-      const currentLength = formData.identifier.length;
-      const remainingSpace = 10 - currentLength;
-      if (pasteData.length > remainingSpace) {
+    // If the current identifier starts with a digit or '+', treat as mobile
+    if (/^[0-9+]/.test(formData.identifier)) {
+      // Only allow digits/plus for mobile numbers
+      if (!/^[\d+]+$/.test(pasteData)) {
         e.preventDefault();
         return;
       }
     }
 
     // For email or username, validate against the appropriate regex
-    if (!/^[6-9]/.test(formData.identifier)) {
+    if (!/^[0-9+]/.test(formData.identifier)) {
       // If current value or paste data contains @, treat as email
       if (formData.identifier.includes('@') || pasteData.includes('@')) {
         // Allow paste - will be validated in handleInputChange
@@ -777,15 +743,11 @@ const PasswordReset = ({ name }: { name: string }) => {
     const target = e.target as HTMLInputElement;
     const value = target.value;
 
-    // If the current identifier starts with 6-9, treat as mobile
-    if (/^[6-9]/.test(value)) {
-      // Remove any non-digit characters
-      const cleanedValue = value.replace(/\D/g, '');
-
-      // Limit to 10 digits
-      if (cleanedValue.length > 10) {
-        target.value = cleanedValue.slice(0, 10);
-      }
+    // If the current identifier starts with a digit or '+', treat as mobile
+    if (/^[0-9+]/.test(value)) {
+      // Remove any non-digit characters except '+'
+      const cleanedValue = value.replace(/[^\d+]/g, '');
+      target.value = cleanedValue;
     } else if (value.includes('@')) {
       // For email, allow full input - validation happens in handleInputChange
       return;

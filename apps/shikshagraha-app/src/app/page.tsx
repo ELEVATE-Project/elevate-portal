@@ -35,7 +35,7 @@ import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import CustomTextFieldWidget from '../Components/RJSFWidget/CustomTextFieldWidget';
 import OTPDialog from '../Components/OTPDialog';
-import { ALLOWED_AUTH_MODES, DEFAULT_LOGIN_FIELDS } from '../utils/app.constant';
+import { ALLOWED_AUTH_MODES } from '../utils/app.constant';
 import { generateRJSFSchema } from '../utils/generateSchemaFromAPI';
 export default function Login() {
   const [formData, setFormData] = useState<any>({});
@@ -193,10 +193,7 @@ export default function Login() {
           }
         }
 
-        // Fallback schema if API returns nothing or fails
-        if (fields.length === 0) {   
-            fields = DEFAULT_LOGIN_FIELDS;
-        }
+
 
         const { schema, uiSchema } = generateRJSFSchema(fields, '');
         if (schema) {
@@ -243,7 +240,7 @@ export default function Login() {
       }
       setLoading(true);
       try {
-        const isMobile = /^[6-9]\d{9}$/.test(userName);
+        const isMobile = /^\+?[0-9]+$/.test(userName);
         const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(userName);
         let otpPayload: any = {};
         if (isMobile) {
@@ -286,7 +283,7 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const isMobile = /^[6-9]\d{9}$/.test(userName);
+      const isMobile = /^\+?[0-9]+$/.test(userName);
       const payload = {
         username: userName,
         password,
@@ -427,7 +424,7 @@ export default function Login() {
   const handleResendOtp = async () => {
     const identifier = formData.userName || formData.username || formData.identifier || formData.phone || formData.mobile || formData.email || '';
     if (!identifier) return;
-    const isMobile = /^[6-9]\d{9}$/.test(identifier);
+    const isMobile = /^\+?[0-9]+$/.test(identifier);
     const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(identifier);
     let otpPayload: any = {};
     if (isMobile) {
