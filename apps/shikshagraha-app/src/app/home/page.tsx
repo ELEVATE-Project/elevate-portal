@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 //@ts-nocheck
 'use client';
-import { Layout, DynamicCard, getEnvValue, isRouteDisabled } from '@shared-lib';
+import { Layout, DynamicCard, isRouteDisabled } from '@shared-lib';
 import { useRouter } from 'next/navigation';
 import { readHomeListForm } from '../../services/LoginService';
 import { useEffect, useState } from 'react';
