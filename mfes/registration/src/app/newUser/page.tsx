@@ -90,7 +90,7 @@ const NewUserWithStepper: React.FC = () => {
 
   // Email/Password regex
   const emailRegex = /^[a-zA-Z0-9._]+@[a-zA-Z0-9]+\.[a-zA-Z]{2,}$/;
-  const phoneRegex = /^.+$/;
+  const phoneRegex = /^[0-9]{10}$/;
   const passwordRegex =
     /^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\-={}:":;'<>?,./\\]).{8,}$/;
   const [showPassword, setShowPassword] = useState(false);

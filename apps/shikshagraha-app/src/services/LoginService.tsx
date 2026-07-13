@@ -31,7 +31,7 @@ export const signin = async ({
 }: LoginParams): Promise<any> => {
   const finalUsername = username || identifier || '';
   const apiUrl: string = `${API_ENDPOINTS.accountLogin}`;
-  const isMobile = /^\+?[0-9]+$/.test(finalUsername);
+  const isMobile = /^[6-9]\d{9}$/.test(finalUsername);
   let requestBody: any = {};
 
   if (otp !== undefined) {
