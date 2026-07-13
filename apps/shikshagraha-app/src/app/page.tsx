@@ -35,7 +35,7 @@ import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import CustomTextFieldWidget from '../Components/RJSFWidget/CustomTextFieldWidget';
 import OTPDialog from '../Components/OTPDialog';
-import { ALLOWED_AUTH_MODES } from '../utils/app.constant';
+import { ALLOWED_AUTH_MODES, IDENTIFIER_TYPE } from '../utils/app.constant';
 import { generateRJSFSchema } from '../utils/generateSchemaFromAPI';
 export default function Login() {
   const [formData, setFormData] = useState<any>({});
@@ -228,8 +228,8 @@ export default function Login() {
   useEffect(() => {
     setIsAuthenticated(!!localStorage.getItem('accToken'));
   }, []);
-  const getIdentifierType = (val: string): 'mobile' | 'email' | 'username' => {
-    if (!val) return 'username';
+  const getIdentifierType = (val: string): string => {
+    if (!val) return IDENTIFIER_TYPE.USERNAME;
     let isMobile = false;
     let isEmail = false;
 
@@ -241,11 +241,11 @@ export default function Login() {
           const hintLower = (field.hint || '').toLowerCase();
           const nameLower = (field.name || '').toLowerCase();
 
-          const isPhoneField = labelLower.includes('phone') || labelLower.includes('mobile') || labelLower.includes('contact') ||
-                               hintLower.includes('phone') || hintLower.includes('mobile') || hintLower.includes('contact') ||
-                               nameLower.includes('phone') || nameLower.includes('mobile') || nameLower.includes('contact');
+          const isPhoneField = labelLower.includes(IDENTIFIER_TYPE.PHONE) || labelLower.includes(IDENTIFIER_TYPE.MOBILE) || labelLower.includes('contact') ||
+                               hintLower.includes(IDENTIFIER_TYPE.PHONE) || hintLower.includes(IDENTIFIER_TYPE.MOBILE) || hintLower.includes('contact') ||
+                               nameLower.includes(IDENTIFIER_TYPE.PHONE) || nameLower.includes(IDENTIFIER_TYPE.MOBILE) || nameLower.includes('contact');
 
-          const isEmailField = labelLower.includes('email') || hintLower.includes('email') || nameLower.includes('email');
+          const isEmailField = labelLower.includes(IDENTIFIER_TYPE.EMAIL) || hintLower.includes(IDENTIFIER_TYPE.EMAIL) || nameLower.includes(IDENTIFIER_TYPE.EMAIL);
 
           if (isPhoneField) {
             isMobile = true;
@@ -268,16 +268,16 @@ export default function Login() {
       });
     }
 
-    if (isMobile) return 'mobile';
-    if (isEmail) return 'email';
+    if (isMobile) return IDENTIFIER_TYPE.MOBILE;
+    if (isEmail) return IDENTIFIER_TYPE.EMAIL;
 
     if (/^\+?[0-9]+$/.test(val)) {
-      return 'mobile';
+      return IDENTIFIER_TYPE.MOBILE;
     }
     if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(val)) {
-      return 'email';
+      return IDENTIFIER_TYPE.EMAIL;
     }
-    return 'username';
+    return IDENTIFIER_TYPE.USERNAME;
   };
 
   const handleButtonClick = async () => {
@@ -300,18 +300,18 @@ export default function Login() {
       try {
         const identifierType = getIdentifierType(userName);
         let otpPayload: any = {};
-        if (identifierType === 'mobile') {
+        if (identifierType === IDENTIFIER_TYPE.MOBILE) {
           otpPayload = {
-            phone: userName,
+            [IDENTIFIER_TYPE.PHONE]: userName,
             phone_code: '+91',
           };
-        } else if (identifierType === 'email') {
+        } else if (identifierType === IDENTIFIER_TYPE.EMAIL) {
           otpPayload = {
-            email: userName
+            [IDENTIFIER_TYPE.EMAIL]: userName
           };
         } else {
           otpPayload = {
-            username: userName,
+            [IDENTIFIER_TYPE.USERNAME]: userName,
           };
         }
         const response = await sendOtp(otpPayload);
@@ -340,9 +340,9 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const isMobile = getIdentifierType(userName) === 'mobile';
+      const isMobile = getIdentifierType(userName) === IDENTIFIER_TYPE.MOBILE;
       const payload = {
-        username: userName,
+        [IDENTIFIER_TYPE.USERNAME]: userName,
         password,
         ...(isMobile ? { phone_code: '+91' } : {}),
       };
@@ -483,18 +483,18 @@ export default function Login() {
     if (!identifier) return;
     const identifierType = getIdentifierType(identifier);
     let otpPayload: any = {};
-    if (identifierType === 'mobile') {
+    if (identifierType === IDENTIFIER_TYPE.MOBILE) {
       otpPayload = {
-        phone: identifier,
+        [IDENTIFIER_TYPE.PHONE]: identifier,
         phone_code: '+91',
       };
-    } else if (identifierType === 'email') {
+    } else if (identifierType === IDENTIFIER_TYPE.EMAIL) {
       otpPayload = {
-        email: identifier,
+        [IDENTIFIER_TYPE.EMAIL]: identifier,
       };
     } else {
       otpPayload = {
-        username: identifier,
+        [IDENTIFIER_TYPE.USERNAME]: identifier,
       };
     }
     await sendOtp(otpPayload);
@@ -584,11 +584,11 @@ export default function Login() {
       if (error.name === 'pattern') {
         const prop = error.property ? error.property.toLowerCase() : '';
         if (
-          prop.includes('username') ||
+          prop.includes(IDENTIFIER_TYPE.USERNAME) ||
           prop.includes('identifier') ||
-          prop.includes('name') ||
-          prop.includes('email') ||
-          prop.includes('phone')
+          prop.includes(IDENTIFIER_TYPE.NAME) ||
+          prop.includes(IDENTIFIER_TYPE.EMAIL) ||
+          prop.includes(IDENTIFIER_TYPE.PHONE)
         ) {
           error.message = 'Please enter a valid Email or Phone Number';
           error.stack = `${error.message}`;
