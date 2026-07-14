@@ -241,9 +241,9 @@ export default function Login() {
           const hintLower = (field.hint || '').toLowerCase();
           const nameLower = (field.name || '').toLowerCase();
 
-          const isPhoneField = labelLower.includes(IDENTIFIER_TYPE.PHONE) || labelLower.includes(IDENTIFIER_TYPE.MOBILE) || labelLower.includes('contact') ||
-                               hintLower.includes(IDENTIFIER_TYPE.PHONE) || hintLower.includes(IDENTIFIER_TYPE.MOBILE) || hintLower.includes('contact') ||
-                               nameLower.includes(IDENTIFIER_TYPE.PHONE) || nameLower.includes(IDENTIFIER_TYPE.MOBILE) || nameLower.includes('contact');
+          const isPhoneField = labelLower.includes(IDENTIFIER_TYPE.PHONE) || labelLower.includes(IDENTIFIER_TYPE.MOBILE) || labelLower.includes(IDENTIFIER_TYPE.CONTACT) ||
+                               hintLower.includes(IDENTIFIER_TYPE.PHONE) || hintLower.includes(IDENTIFIER_TYPE.MOBILE) || hintLower.includes(IDENTIFIER_TYPE.CONTACT) ||
+                               nameLower.includes(IDENTIFIER_TYPE.PHONE) || nameLower.includes(IDENTIFIER_TYPE.MOBILE) || nameLower.includes(IDENTIFIER_TYPE.CONTACT);
 
           const isEmailField = labelLower.includes(IDENTIFIER_TYPE.EMAIL) || hintLower.includes(IDENTIFIER_TYPE.EMAIL) || nameLower.includes(IDENTIFIER_TYPE.EMAIL);
 
@@ -585,10 +585,11 @@ export default function Login() {
         const prop = error.property ? error.property.toLowerCase() : '';
         if (
           prop.includes(IDENTIFIER_TYPE.USERNAME) ||
-          prop.includes('identifier') ||
+          prop.includes(IDENTIFIER_TYPE.IDENTIFIER) ||
           prop.includes(IDENTIFIER_TYPE.NAME) ||
           prop.includes(IDENTIFIER_TYPE.EMAIL) ||
-          prop.includes(IDENTIFIER_TYPE.PHONE)
+          prop.includes(IDENTIFIER_TYPE.PHONE) ||
+          prop.includes(IDENTIFIER_TYPE.CONTACT)
         ) {
           error.message = 'Please enter a valid Email or Phone Number';
           error.stack = `${error.message}`;

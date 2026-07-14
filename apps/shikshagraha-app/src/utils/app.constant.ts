@@ -266,6 +266,8 @@ export const IDENTIFIER_TYPE = {
   USERNAME: 'username',
   NAME: 'name',
   MOBILE: 'mobile',
+  CONTACT: 'contact',
+  IDENTIFIER: 'identifier',
 };
 
 export const DEFAULT_LOGIN_FIELDS = [
