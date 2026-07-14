@@ -260,6 +260,16 @@ export const ALLOWED_AUTH_MODES = {
   OTP: 'otp',
 };
 
+export const IDENTIFIER_TYPE = {
+  PHONE: 'phone',
+  EMAIL: 'email',
+  USERNAME: 'username',
+  NAME: 'name',
+  MOBILE: 'mobile',
+  CONTACT: 'contact',
+  IDENTIFIER: 'identifier',
+};
+
 export const DEFAULT_LOGIN_FIELDS = [
   {
     hint: 'Enter your email address or phone number or username',
@@ -285,3 +295,4 @@ export const DEFAULT_LOGIN_FIELDS = [
     placeholder: 'ENTER_PASSWORD',
   },
 ];
+

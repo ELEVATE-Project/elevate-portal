@@ -35,7 +35,7 @@ import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import CustomTextFieldWidget from '../Components/RJSFWidget/CustomTextFieldWidget';
 import OTPDialog from '../Components/OTPDialog';
-import { ALLOWED_AUTH_MODES, DEFAULT_LOGIN_FIELDS } from '../utils/app.constant';
+import { ALLOWED_AUTH_MODES, IDENTIFIER_TYPE } from '../utils/app.constant';
 import { generateRJSFSchema } from '../utils/generateSchemaFromAPI';
 export default function Login() {
   const [formData, setFormData] = useState<any>({});
@@ -63,6 +63,7 @@ export default function Login() {
   const [uiSchema, setUiSchema] = useState<any>(null);
   const [isAutoRegister, setIsAutoRegister] = useState(false);
   const [brandingFetched, setBrandingFetched] = useState(false);
+  const [schemaFields, setSchemaFields] = useState<any[]>([]);
 
   // OTPDialog states
   const [openOtpDialog, setOpenOtpDialog] = useState(false);
@@ -177,6 +178,7 @@ export default function Login() {
 
   // Fetch form schema from API dynamically
   useEffect(() => {
+    if (!brandingFetched) return;
     const fetchSchema = async () => {
       const modeToFetch = selectedAuthMode || ALLOWED_AUTH_MODES.PASSWORD;
       setLoading(true);
@@ -193,10 +195,11 @@ export default function Login() {
           }
         }
 
-        // Fallback schema if API returns nothing or fails
-        if (fields.length === 0) {   
-            fields = DEFAULT_LOGIN_FIELDS;
+        if (fields.length === 0) {
+          return;
         }
+
+        setSchemaFields(fields);
 
         const { schema, uiSchema } = generateRJSFSchema(fields, '');
         if (schema) {
@@ -220,11 +223,63 @@ export default function Login() {
     };
 
     fetchSchema();
-  }, [selectedAuthMode]);
+  }, [selectedAuthMode, brandingFetched]);
 
   useEffect(() => {
     setIsAuthenticated(!!localStorage.getItem('accToken'));
   }, []);
+  const getIdentifierType = (val: string): string => {
+    if (!val) return IDENTIFIER_TYPE.USERNAME;
+    let isMobile = false;
+    let isEmail = false;
+
+    if (schemaFields && schemaFields.length > 0) {
+      schemaFields.forEach((field: any) => {
+        const fieldVal = formData[field.name];
+        if (fieldVal === val) {
+          const labelLower = (field.label || '').toLowerCase();
+          const hintLower = (field.hint || '').toLowerCase();
+          const nameLower = (field.name || '').toLowerCase();
+
+          const isPhoneField = labelLower.includes(IDENTIFIER_TYPE.PHONE) || labelLower.includes(IDENTIFIER_TYPE.MOBILE) || labelLower.includes(IDENTIFIER_TYPE.CONTACT) ||
+                               hintLower.includes(IDENTIFIER_TYPE.PHONE) || hintLower.includes(IDENTIFIER_TYPE.MOBILE) || hintLower.includes(IDENTIFIER_TYPE.CONTACT) ||
+                               nameLower.includes(IDENTIFIER_TYPE.PHONE) || nameLower.includes(IDENTIFIER_TYPE.MOBILE) || nameLower.includes(IDENTIFIER_TYPE.CONTACT);
+
+          const isEmailField = labelLower.includes(IDENTIFIER_TYPE.EMAIL) || hintLower.includes(IDENTIFIER_TYPE.EMAIL) || nameLower.includes(IDENTIFIER_TYPE.EMAIL);
+
+          if (isPhoneField) {
+            isMobile = true;
+          } else if (isEmailField) {
+            isEmail = true;
+          } else {
+            const pattern = field.pattern;
+            if (pattern) {
+              try {
+                const regex = new RegExp(pattern);
+                if (regex.test(fieldVal)) {
+                  isMobile = true;
+                }
+              } catch (e) {
+                console.error(e);
+              }
+            }
+          }
+        }
+      });
+    }
+
+    if (isMobile) return IDENTIFIER_TYPE.MOBILE;
+    if (isEmail) return IDENTIFIER_TYPE.EMAIL;
+
+    if (/^\+?[0-9]+$/.test(val)) {
+      return IDENTIFIER_TYPE.MOBILE;
+    }
+    if (/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(val)) {
+      return IDENTIFIER_TYPE.EMAIL;
+    }
+    return IDENTIFIER_TYPE.USERNAME;
+  };
+
   const handleButtonClick = async () => {
     if (formSubmitted) return; // Prevent duplicate submissions
     setFormSubmitted(true);
@@ -243,21 +298,20 @@ export default function Login() {
       }
       setLoading(true);
       try {
-        const isMobile = /^[6-9]\d{9}$/.test(userName);
-        const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(userName);
+        const identifierType = getIdentifierType(userName);
         let otpPayload: any = {};
-        if (isMobile) {
+        if (identifierType === IDENTIFIER_TYPE.MOBILE) {
           otpPayload = {
-            phone: userName,
+            [IDENTIFIER_TYPE.PHONE]: userName,
             phone_code: '+91',
           };
-        } else if (isEmail) {
+        } else if (identifierType === IDENTIFIER_TYPE.EMAIL) {
           otpPayload = {
-            email: userName
+            [IDENTIFIER_TYPE.EMAIL]: userName
           };
         } else {
           otpPayload = {
-            username: userName,
+            [IDENTIFIER_TYPE.USERNAME]: userName,
           };
         }
         const response = await sendOtp(otpPayload);
@@ -286,9 +340,9 @@ export default function Login() {
     }
     setLoading(true);
     try {
-      const isMobile = /^[6-9]\d{9}$/.test(userName);
+      const isMobile = getIdentifierType(userName) === IDENTIFIER_TYPE.MOBILE;
       const payload = {
-        username: userName,
+        [IDENTIFIER_TYPE.USERNAME]: userName,
         password,
         ...(isMobile ? { phone_code: '+91' } : {}),
       };
@@ -427,21 +481,20 @@ export default function Login() {
   const handleResendOtp = async () => {
     const identifier = formData.userName || formData.username || formData.identifier || formData.phone || formData.mobile || formData.email || '';
     if (!identifier) return;
-    const isMobile = /^[6-9]\d{9}$/.test(identifier);
-    const isEmail = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/.test(identifier);
+    const identifierType = getIdentifierType(identifier);
     let otpPayload: any = {};
-    if (isMobile) {
+    if (identifierType === IDENTIFIER_TYPE.MOBILE) {
       otpPayload = {
-        phone: identifier,
+        [IDENTIFIER_TYPE.PHONE]: identifier,
         phone_code: '+91',
       };
-    } else if (isEmail) {
+    } else if (identifierType === IDENTIFIER_TYPE.EMAIL) {
       otpPayload = {
-        email: identifier,
+        [IDENTIFIER_TYPE.EMAIL]: identifier,
       };
     } else {
       otpPayload = {
-        username: identifier,
+        [IDENTIFIER_TYPE.USERNAME]: identifier,
       };
     }
     await sendOtp(otpPayload);
@@ -531,11 +584,12 @@ export default function Login() {
       if (error.name === 'pattern') {
         const prop = error.property ? error.property.toLowerCase() : '';
         if (
-          prop.includes('username') ||
-          prop.includes('identifier') ||
-          prop.includes('name') ||
-          prop.includes('email') ||
-          prop.includes('phone')
+          prop.includes(IDENTIFIER_TYPE.USERNAME) ||
+          prop.includes(IDENTIFIER_TYPE.IDENTIFIER) ||
+          prop.includes(IDENTIFIER_TYPE.NAME) ||
+          prop.includes(IDENTIFIER_TYPE.EMAIL) ||
+          prop.includes(IDENTIFIER_TYPE.PHONE) ||
+          prop.includes(IDENTIFIER_TYPE.CONTACT)
         ) {
           error.message = 'Please enter a valid Email or Phone Number';
           error.stack = `${error.message}`;
