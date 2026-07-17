@@ -54,7 +54,7 @@ export function middleware(request: NextRequest) {
 
 
   if (disabledPaths.size > 0 && isDisabled(pathname, disabledPaths)) {
-    if (!accToken) {
+    if (!accToken && pathname !== ROUTES.LOGIN) {
       return NextResponse.redirect(new URL(ROUTES.LOGIN, request.url));
     }
 
