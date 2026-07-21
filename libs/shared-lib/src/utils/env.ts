@@ -34,18 +34,18 @@ export const getEnvValue = (key: string): string | undefined => {
 };
 
 export const getDisabledRouteKeys = (): string[] => {
-  const raw = (getEnvValue('NEXT_PUBLIC_DISABLED_ROUTES') ?? '').trim();
-  if (!raw) return [];
+  const route = (getEnvValue('NEXT_PUBLIC_DISABLED_ROUTES') ?? '').trim();
+  if (!route) return [];
   let keys: string[] = [];
-  if (raw.startsWith('[')) {
+  if (route.startsWith('[')) {
     try {
-      const parsed = JSON.parse(raw);
+      const parsed = JSON.parse(route);
       keys = Array.isArray(parsed) ? parsed.map(String) : [];
     } catch {
       keys = [];
     }
   } else {
-    keys = raw.split(',');
+    keys = route.split(',');
   }
   return keys.map((key) => key.trim().toUpperCase());
 };
