@@ -50,6 +50,13 @@ import { getOrgId } from '@shared-lib';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import { Close } from '@mui/icons-material';
 import IconButton from '@mui/material/IconButton';
+import { useTranslation } from 'react-i18next';
+import {
+  extractReferenceValues,
+  extractReferenceSubmissionValue,
+  extractReferenceId,
+  isReferenceObject,
+} from '../utils/referenceFieldUtils';
 
 const SubmitButton: React.FC<SubmitButtonProps> = (props) => {
   const { uiSchema } = props;
@@ -71,7 +78,24 @@ const DynamicForm = ({
   hideSubmit,
   onChange,
   fieldIdMapping,
+  isUpdate = false,
+  submitButtonText,
+  primaryColor,
+  secondaryColor,
 }: any) => {
+  const { t } = useTranslation();
+  const activePrimary =
+    primaryColor ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('primaryColor')
+      : null) ||
+    '#572E91';
+  const activeSecondary =
+    secondaryColor ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('secondaryColor')
+      : null) ||
+    '#FF9911';
   const [submitted, setSubmitted] = useState(false);
   const formRef = useRef(null);
   const [formSchema, setFormSchema] = useState(schema);
@@ -315,48 +339,43 @@ const DynamicForm = ({
     return errors;
   };
   const hasValidationErrors = () => {
-    const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
-    const hasFormErrors = Object.keys(formErrors).length > 0;
-    const hasValidUsernameFormat = formData.Username
-      ? isValidEmail(formData.Username) ||
-        isValidMobile(formData.Username) ||
-        isValidUsername(formData.Username)
-      : false;
-    const hasValidContact =
-      (formData.email && isValidEmail(formData.email)) ||
-      (formData.mobile && isValidMobile(formData.mobile));
-    const hasAllRequiredFields = () => {
-      if (!formSchema?.properties || !formData) return false;
-      return Object.keys(formSchema.properties).every((fieldName) => {
-        const fieldSchema = formSchema.properties[fieldName];
-        const isRequired = fieldSchema?.isRequired === true;
-        if (!isRequired) return true;
-        const fieldValue = formData[fieldName];
-        if (Array.isArray(fieldValue)) {
-          return fieldValue.length > 0;
-        }
-        if (typeof fieldValue === 'object' && fieldValue !== null) {
-          const hasValue = Object.values(fieldValue).some(
-            (val) => val !== undefined && val !== null && val !== ''
-          );
-          return hasValue;
-        }
-        if (fieldValue === undefined || fieldValue === null) {
-          return false;
-        }
-        const stringValue = String(fieldValue).trim();
-        return stringValue.length > 0;
-      });
+    if (!formSchema?.properties) return true;
+
+    const isDisabled = (fieldName) => {
+      const fieldUiSchema = formUiSchema?.[fieldName];
+      return (
+        fieldUiSchema?.['ui:disabled'] === true ||
+        fieldUiSchema?.['ui:widget'] === 'hidden'
+      );
     };
-    return (
-      hasFieldErrors ||
-      hasFormErrors ||
-      !hasValidContact ||
-      !hasValidUsernameFormat ||
-      !formData.Username ||
-      !hasAllRequiredFields() ||
-      !!firstNameUsernameError
+    const hasValue = (value) => {
+      if (Array.isArray(value)) return value.length > 0;
+      if (typeof value === 'object' && value !== null) {
+        return Object.values(value).some(
+          (item) => item !== undefined && item !== null && item !== ''
+        );
+      }
+      return value !== undefined && value !== null && String(value).trim() !== '';
+    };
+
+    const enabledFieldNames = Object.keys(formSchema.properties).filter(
+      (fieldName) => !isDisabled(fieldName)
     );
+    const hasFieldErrors = enabledFieldNames.some(
+      (fieldName) => Boolean(fieldErrors[fieldName])
+    );
+    const hasFormErrors = enabledFieldNames.some(
+      (fieldName) => Boolean(formErrors[fieldName])
+    );
+    const hasMissingRequiredField = enabledFieldNames.some((fieldName) => {
+      const fieldSchema = formSchema.properties[fieldName];
+      const isRequired =
+        fieldSchema?.isRequired === true ||
+        formSchema.required?.includes(fieldName) === true;
+      return isRequired && !hasValue(formData?.[fieldName]);
+    });
+
+    return hasFieldErrors || hasFormErrors || hasMissingRequiredField;
   };
   const getRegistrationCode = (formData) => {
     const regConfig = schema.meta?.registrationCodeConfig;
@@ -575,6 +594,65 @@ const DynamicForm = ({
       renderPrefilledForm();
     }
   }, [isInitialCompleted]);
+
+  useEffect(() => {
+    if (prefilledFormData && Object.keys(prefilledFormData).length > 0) {
+      setFormData((prev: any) => ({
+        ...prev,
+        ...prefilledFormData,
+      }));
+
+      if (isUpdate) {
+        const userEmail = (
+          prefilledFormData.email ||
+          prefilledFormData.Email ||
+          ''
+        ).trim();
+        const userPhone = (
+          prefilledFormData.mobile ||
+          prefilledFormData.Mobile ||
+          prefilledFormData.phone ||
+          prefilledFormData.Phone ||
+          ''
+        ).trim();
+
+        setFormUiSchema((prev: any) => {
+          if (!prev) return prev;
+          const updated = { ...prev };
+          Object.keys(updated).forEach((key) => {
+            const lower = key.toLowerCase();
+            if (lower === 'username') {
+              updated[key] = {
+                ...updated[key],
+                'ui:readonly': true,
+                'ui:disabled': true,
+              };
+            }
+            if (userEmail && lower.includes('email')) {
+              updated[key] = {
+                ...updated[key],
+                'ui:readonly': true,
+                'ui:disabled': true,
+              };
+            }
+            if (
+              userPhone &&
+              (lower.includes('mobile') ||
+                lower.includes('phone') ||
+                lower.includes('contact'))
+            ) {
+              updated[key] = {
+                ...updated[key],
+                'ui:readonly': true,
+                'ui:disabled': true,
+              };
+            }
+          });
+          return updated;
+        });
+      }
+    }
+  }, [prefilledFormData, isUpdate]);
 
   useEffect(() => {
     if (isCallSubmitInHandle) {
@@ -1172,6 +1250,7 @@ const DynamicForm = ({
 
   const checkUsernameAvailability = useCallback(
     _.debounce(async (username) => {
+      if (isUpdate) return;
       if (!username) {
         setUsernameError('');
         setIsUsernameValid(false);
@@ -1277,6 +1356,7 @@ const DynamicForm = ({
       const currentFirstName = (formData.firstName || '').trim().toLowerCase();
       const currentUsername = (formData.Username || '').trim().toLowerCase();
       if (
+        !isUpdate &&
         currentFirstName &&
         currentUsername &&
         currentFirstName === currentUsername
@@ -1328,7 +1408,7 @@ const DynamicForm = ({
         }
       }
       setIsUsernameValid(false);
-      if (formData.Username) {
+      if (!isUpdate && formData.Username) {
         checkUsernameAvailability(formData.Username);
       }
       if (newFormData.email && newFormData.mobile) {
@@ -1412,7 +1492,9 @@ const DynamicForm = ({
     }
 
     if (!isCallSubmitInHandle) {
-      FormSubmitFunction(cleanedData, transformedFormData);
+      const finalCleanedData = extractReferenceValues(cleanedData);
+      const finalTransformedFormData = extractReferenceValues(transformedFormData);
+      FormSubmitFunction(finalCleanedData, finalTransformedFormData);
     }
     setSubmitted(true);
     setTimeout(() => {
@@ -1435,20 +1517,25 @@ const DynamicForm = ({
         }
         delete errors[key];
       } else if (field.pattern) {
-        const patternRegex = new RegExp(field.pattern);
-        if (!patternRegex.test(value)) {
-          const errorMessage =
-            patternErrorMessages?.[field.pattern] ||
-            `Invalid format for ${field.title || key}.`;
-          if (!errors[key].__errors) {
-            errors[key].__errors = [];
+        const testVal = isReferenceObject(value)
+          ? extractReferenceId(value)
+          : value;
+        if (typeof testVal === 'string') {
+          const patternRegex = new RegExp(field.pattern);
+          if (!patternRegex.test(testVal)) {
+            const errorMessage =
+              patternErrorMessages?.[field.pattern] ||
+              `Invalid format for ${field.title || key}.`;
+            if (!errors[key].__errors) {
+              errors[key].__errors = [];
+            }
+            errors[key].__errors = [errorMessage];
+          } else {
+            if (errors[key]?.__errors) {
+              errors[key].__errors = [];
+            }
+            delete errors[key];
           }
-          errors[key].__errors = [errorMessage];
-        } else {
-          if (errors[key]?.__errors) {
-            errors[key].__errors = [];
-          }
-          delete errors[key];
         }
       }
     });
@@ -1457,13 +1544,26 @@ const DynamicForm = ({
   };
 
   const transformErrors = (errors) => {
-    let updatedError = errors;
-
     if (!submitted) {
       return [];
     }
 
-    return updatedError;
+    return (errors || []).filter((error) => {
+      const propertyName = error.property
+        ? error.property.replace(/^\./, '')
+        : '';
+      const val = formData?.[propertyName];
+      if (
+        val !== undefined &&
+        (isReferenceObject(val) ||
+          (Array.isArray(val) && val.some(isReferenceObject)))
+      ) {
+        if (error.name === 'type' || error.name === 'enum') {
+          return false;
+        }
+      }
+      return true;
+    });
   };
 
   useEffect(() => {
@@ -1472,40 +1572,6 @@ const DynamicForm = ({
       setFormData((prev) => ({ ...prev, 'Sub-Role': [] }));
     }
   }, [formData.Role]);
-
-  useEffect(() => {
-    setFormSchema((prevSchema) => {
-      const updatedProperties = { ...prevSchema.properties };
-
-      if (updatedProperties.email) {
-        updatedProperties.email.readOnly = false;
-        updatedProperties.email.required = false;
-      }
-
-      if (updatedProperties.mobile) {
-        updatedProperties.mobile.readOnly = false;
-        updatedProperties.mobile.required = false;
-      }
-
-      return { ...prevSchema, properties: updatedProperties };
-    });
-
-    setFormUiSchema((prevUiSchema) => {
-      const updatedUiSchema = { ...prevUiSchema };
-
-      if (updatedUiSchema.email) {
-        updatedUiSchema.email['ui:disabled'] = false;
-        updatedUiSchema.email['ui:readonly'] = false;
-      }
-
-      if (updatedUiSchema.mobile) {
-        updatedUiSchema.mobile['ui:disabled'] = false;
-        updatedUiSchema.mobile['ui:readonly'] = false;
-      }
-
-      return updatedUiSchema;
-    });
-  }, []);
 
   const handleFetchData = React.useCallback((response: any) => {
     setFormData((prev) => ({
@@ -1592,6 +1658,150 @@ const DynamicForm = ({
     const isValid = !!(formData.email || formData.mobile);
     setShowEmailMobileError(!isValid);
     return isValid;
+  };
+
+  const handleUpdateProfile = async () => {
+    const token = localStorage.getItem('accToken') || '';
+    if (!token) {
+      setShowError(true);
+      setAlertSeverity('error');
+      setErrorMessage('Authentication token missing. Please log in again.');
+      return;
+    }
+
+    try {
+      const getSubRoleExternalIds = () => {
+        if (!formData['Sub-Role'] || formData['Sub-Role'].length === 0) return [];
+        const subRoleOptions =
+          uiSchema?.['Sub-Role']?.['ui:options']?.enumOptions ?? [];
+        return formData['Sub-Role'].map((selectedItem: any) => {
+          const selectedId = isReferenceObject(selectedItem)
+            ? extractReferenceId(selectedItem)
+            : selectedItem;
+          const foundOption = subRoleOptions.find(
+            (option: any) => option.value === selectedId
+          );
+          return foundOption?._originalData?._id ?? selectedId;
+        });
+      };
+
+      const fullName = `${formData.firstName || ''}${
+        formData.lastName ? ` ${formData.lastName}` : ''
+      }`.trim() || formData.name;
+
+      const updatePayload: any = {};
+      if (fullName) updatePayload.name = fullName;
+      const hasExistingEmail = Boolean(
+        (prefilledFormData?.email || prefilledFormData?.Email || '').trim()
+      );
+      const hasExistingPhone = Boolean(
+        (
+          prefilledFormData?.mobile ||
+          prefilledFormData?.Mobile ||
+          prefilledFormData?.phone ||
+          prefilledFormData?.Phone ||
+          ''
+        ).trim()
+      );
+
+      // If user has email, do NOT send it for update API
+      if (!hasExistingEmail && formData.email) {
+        updatePayload.email = formData.email;
+      }
+
+      // If user has phone number, do NOT send it for update API
+      if (!hasExistingPhone) {
+        if (formData.mobile) {
+          updatePayload.phone = formData.mobile;
+          updatePayload.phone_code = '+91';
+        } else if (formData.phone) {
+          updatePayload.phone = formData.phone;
+          updatePayload.phone_code = '+91';
+        }
+      }
+      // Generic extraction of location reference fields (checking both lowercase and uppercase keys)
+      const locationKeys = ['state', 'district', 'block', 'cluster', 'school'];
+      locationKeys.forEach((loc) => {
+        const capitalLoc = loc.charAt(0).toUpperCase() + loc.slice(1);
+        const val =
+          formData[loc] !== undefined ? formData[loc] : formData[capitalLoc];
+        if (val !== undefined && val !== null && val !== '') {
+          updatePayload[loc] = extractReferenceSubmissionValue(val);
+        }
+      });
+
+      // Generic extraction of all other fields from formData
+      Object.keys(formData).forEach((key) => {
+        const lowerKey = key.toLowerCase();
+        if (
+          [
+            'firstname',
+            'lastname',
+            'password',
+            'confirm_password',
+            'confirm password',
+            'email',
+            'mobile',
+            'phone',
+            'username',
+            'role',
+            'sub-role',
+            'state',
+            'district',
+            'block',
+            'cluster',
+            'school',
+          ].includes(lowerKey)
+        ) {
+          return;
+        }
+
+        const val = formData[key];
+        if (val !== undefined && val !== null && val !== '') {
+          updatePayload[key] = val;
+        }
+      });
+
+      const role = localStorage.getItem('role') || formData.Role;
+      if (role) updatePayload.professional_role = role;
+      const subRoles = getSubRoleExternalIds();
+      if (subRoles && subRoles.length > 0) {
+        updatePayload.professional_subroles = subRoles;
+      }
+
+      const cleanedUpdatePayload = extractReferenceValues(updatePayload);
+
+      const response = await fetch(API_ENDPOINTS.userProfileUpdate, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-auth-token': token,
+        },
+        body: JSON.stringify(cleanedUpdatePayload),
+      });
+
+      const data = await response.json();
+      if (response.ok && (data.responseCode === 'OK' || data.result)) {
+        setDialogConfig({
+          open: true,
+          type: 'profileUpdated',
+          title: t('profileUpdatedSuccessfully') || 'Profile Updated Successfully',
+          message: data.message || 'Your account details have been updated.',
+          buttonText: t('continue') || 'Continue',
+          route: null,
+          showCloseIcon: false,
+          accessToken: token,
+        });
+      } else {
+        setShowError(true);
+        setAlertSeverity('error');
+        setErrorMessage(data?.message || 'Failed to update profile. Please try again.');
+      }
+    } catch (err: any) {
+      setShowError(true);
+      setAlertSeverity('error');
+      setErrorMessage(err?.message || 'An error occurred while updating profile.');
+    }
   };
 
   const handleSendOtp = async () => {
@@ -1737,7 +1947,10 @@ const DynamicForm = ({
       const subRoleOptions =
         uiSchema['Sub-Role']?.['ui:options']?.enumOptions ?? [];
 
-      return formData['Sub-Role'].map((selectedId) => {
+      return formData['Sub-Role'].map((selectedItem) => {
+        const selectedId = isReferenceObject(selectedItem)
+          ? extractReferenceId(selectedItem)
+          : selectedItem;
         const foundOption = subRoleOptions.find(
           (option) => option.value === selectedId
         );
@@ -1756,20 +1969,64 @@ const DynamicForm = ({
       email: formData.email,
       ...(isMobile && { phone: formData.mobile }),
       ...(isMobile && { phone_code: '+91' }),
-      state: formData.State?._id ?? '',
-      district: formData.District?._id ?? '',
-      block: formData.Block?._id ?? '',
-      cluster: formData.Cluster?._id ?? '',
-      school: formData.School?._id ?? '',
+      state:
+        extractReferenceSubmissionValue(formData.State ?? formData.state) ?? '',
+      district:
+        extractReferenceSubmissionValue(
+          formData.District ?? formData.district
+        ) ?? '',
+      block:
+        extractReferenceSubmissionValue(formData.Block ?? formData.block) ?? '',
+      cluster:
+        extractReferenceSubmissionValue(
+          formData.Cluster ?? formData.cluster
+        ) ?? '',
+      school:
+        extractReferenceSubmissionValue(formData.School ?? formData.school) ??
+        '',
       registration_code: registrationCode ?? '',
       professional_role: localStorage.getItem('role'),
       professional_subroles: getSubRoleExternalIds(),
       otp: Number(otp),
     };
 
-    setRegisterData(payload);
+    // Generic extraction of all other fields from formData
+    Object.keys(formData).forEach((key) => {
+      const lowerKey = key.toLowerCase();
+      if (
+        [
+          'firstname',
+          'lastname',
+          'password',
+          'confirm_password',
+          'confirm password',
+          'email',
+          'mobile',
+          'phone',
+          'username',
+          'role',
+          'sub-role',
+          'state',
+          'district',
+          'block',
+          'cluster',
+          'school',
+        ].includes(lowerKey)
+      ) {
+        return;
+      }
 
-    const registrationResponse = await registerUserService(payload);
+      const val = formData[key];
+      if (val !== undefined && val !== null && val !== '') {
+        (payload as any)[key] = val;
+      }
+    });
+
+    const cleanedPayload = extractReferenceValues(payload);
+
+    setRegisterData(cleanedPayload);
+
+    const registrationResponse = await registerUserService(cleanedPayload);
     if (registrationResponse?.responseCode === 'OK') {
       setRequestData({
         usercreate: {
@@ -1837,6 +2094,19 @@ const DynamicForm = ({
 
   const handleDialogAction = async () => {
     setDialogConfig((prev) => ({ ...prev, open: false }));
+
+    if (dialogConfig.type === 'profileUpdated') {
+      const accessToken =
+        dialogConfig.accessToken || localStorage.getItem('accToken') || '';
+      const redirectUrl = localStorage.getItem('redirectUrl');
+
+      if (redirectUrl && accessToken) {
+        await performRedirect(accessToken, router);
+      } else {
+        window.history.back();
+      }
+      return;
+    }
 
     if (dialogConfig.route) {
       const accessToken = dialogConfig.accessToken || localStorage.getItem('accToken');
@@ -1956,62 +2226,75 @@ const DynamicForm = ({
         </Box>
       )}
       {!isCallSubmitInHandle ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Form
-            ref={formRef}
-            schema={formSchema}
-            uiSchema={formUiSchema}
-            formData={formData}
-            formContext={{ formData }}
-            onChange={handleChange}
-            onSubmit={({ formData }) => {
-              handleSubmit({ formData });
-            }}
-            validator={validator}
-            showErrorList={false}
-            liveValidate
-            transformErrors={transformErrors}
-            widgets={widgets}
-            id="dynamic-form-id"
-          />
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%', maxWidth: '560px', mx: 'auto' }}>
+            <Form
+              ref={formRef}
+              schema={formSchema}
+              uiSchema={formUiSchema}
+              formData={formData}
+              formContext={{ formData }}
+              onChange={handleChange}
+              onSubmit={({ formData }) => {
+                handleSubmit({ formData });
+              }}
+              validator={validator}
+              showErrorList={false}
+              liveValidate
+              transformErrors={transformErrors}
+              widgets={widgets}
+              id="dynamic-form-id"
+            />
+          </Box>
           <Box
             sx={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               width: '100%',
-              marginTop: '5px !important',
-              mt: 2,
+              maxWidth: '560px',
+              mx: 'auto',
+              marginTop: '26px !important',
             }}
           >
             <Button
-              onClick={handleSendOtp}
+              onClick={isUpdate ? handleUpdateProfile : handleSendOtp}
               disabled={
                 isRateLimited ||
                 errorButton ||
-                hasValidationErrors() ||
-                !formData?.password ||
-                formData.password !== formData.confirm_password
+                hasValidationErrors()
               }
               sx={{
                 whiteSpace: 'nowrap',
-                bgcolor: '#582E92',
+                bgcolor: activePrimary,
                 color: '#FFFFFF',
-                borderRadius: '30px',
+                borderRadius: '10px',
                 textTransform: 'none',
                 fontWeight: 'bold',
-                fontSize: '14px',
+                fontSize: '15px',
+                py: 1.3,
                 '&:hover': {
-                  bgcolor: '#543E98',
+                  bgcolor: activePrimary,
+                  filter: 'brightness(0.92)',
                 },
                 '&.Mui-disabled': {
-                  bgcolor: '#BDBDBD',
+                  bgcolor: `${activePrimary}66`,
                   color: '#FFFFFF',
                 },
-                width: '50%',
+                width: '100%',
               }}
             >
-              Send OTP
+              {submitButtonText ||
+                (isUpdate
+                  ? t('update') || 'Update'
+                  : t('saveAndContinue') || 'Save & Continue')}
             </Button>
             {isRateLimited && rateLimitExpiry && (
               <Typography

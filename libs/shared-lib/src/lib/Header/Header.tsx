@@ -11,6 +11,8 @@ interface HeaderProps {
   title?: string;
   titleFontSize?: string | number;
   titleFontWeight?: string | number;
+  languageSelector?: React.ReactNode;
+  rightAction?: React.ReactNode;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,6 +23,8 @@ export const Header: React.FC<HeaderProps> = ({
   title = 'Title',
   titleFontSize = '22px',
   titleFontWeight = 500,
+  languageSelector,
+  rightAction,
 }) => {
   return (
     <Box
@@ -29,6 +33,7 @@ export const Header: React.FC<HeaderProps> = ({
         alignItems: 'center',
         padding: '12px',
         gap: '6px',
+        overflow: 'visible',
       }}
     >
       {showBack && (
@@ -48,10 +53,26 @@ export const Header: React.FC<HeaderProps> = ({
             fontSize: titleFontSize,
             fontWeight: titleFontWeight,
             marginLeft: showBack ? '8px' : 0,
+            flexGrow: 1,
           }}
         >
           {title}
         </Typography>
+      )}
+      {(languageSelector || rightAction) && (
+        <Box
+          sx={{
+            ml: 'auto',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
+            overflow: 'visible',
+            flexShrink: 0,
+          }}
+        >
+          {languageSelector}
+          {rightAction}
+        </Box>
       )}
     </Box>
   );

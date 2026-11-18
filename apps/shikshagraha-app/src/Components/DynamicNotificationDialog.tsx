@@ -17,7 +17,7 @@ interface DynamicNotificationDialogProps {
   onClose: () => void;
   onAction?: () => void;
   title: string;
-  type: 'success' | 'userExists' | 'error' | '';
+  type: 'success' | 'profileUpdated' | 'userExists' | 'error' | '';
   message?: string;
   userName?: string;
   buttonText: string;
@@ -86,7 +86,7 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
             <GppMaybe sx={{ fontSize: 45, color: '#582E92' }} />
           </Box>
         )}
-        {type === 'success' && (
+        {(type === 'success' || type === 'profileUpdated') && (
           <CheckCircle sx={{ fontSize: 75, color: '#4CAF50' }} />
         )}
       </Box>

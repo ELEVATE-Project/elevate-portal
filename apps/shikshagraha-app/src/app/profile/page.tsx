@@ -54,10 +54,12 @@ import {
   Link,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import OTPDialog from '../../Components/OTPDialog';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 
 export default function Profile({ params }: { params: { id: string } }) {
+  const { t } = useTranslation();
   const [profileData, setProfileData] = useState(null);
   const [userData, setUserData] = useState(null);
   const [locationDetails, setLocationDetails] = useState([]);
@@ -518,12 +520,12 @@ export default function Profile({ params }: { params: { id: string } }) {
     return (
       <Layout
         showTopAppBar={{
-          title: 'Profile',
+          title: t('profile'),
           showMenuIcon: true,
           profileIcon: [
             {
               icon: <LogoutIcon />,
-              ariaLabel: 'Account',
+              ariaLabel: t('logout'),
               onLogoutClick: handleAccountClick,
             },
           ],
@@ -613,7 +615,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                       }}
                     >
                       <Box component="span" sx={{ color: '#582E92' }}>
-                        Username:
+                        {t('username')}:
                       </Box>
                       <Box
                         component="span"
@@ -645,7 +647,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                       }}
                     >
                       <Box component="span" sx={{ color: '#582E92' }}>
-                        Email:
+                        {t('email')}:
                       </Box>
                       <Box
                         component="span"
@@ -677,7 +679,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                       }}
                     >
                       <Box component="span" sx={{ color: '#582E92' }}>
-                        Phone:
+                        {t('phone')}:
                       </Box>
                       <Box
                         component="span"
@@ -713,7 +715,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                     tabIndex={0}
                     onKeyDown={(e) => e.key === 'Enter' && handleClick()}
                   >
-                    Reset Password
+                    {t('resetPassword')}
                   </Typography>
                 </Grid>
               </Grid>
@@ -823,7 +825,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                                   color: '#582E92',
                                 }}
                               >
-                                {isExpanded ? 'Show Less' : 'Show More'}
+                                {isExpanded ? t('showLess') : t('showMore')}
                               </Button>
                             )}
                           </Box>
@@ -869,7 +871,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                 gutterBottom
                 color="black"
               >
-                📘 My Courses
+                📘 {t('myCourses')}
               </Typography>
               <Divider sx={{ mb: 3 }} />
               {courseDetails?.data?.length > 0 ? (
@@ -878,12 +880,14 @@ export default function Profile({ params }: { params: { id: string } }) {
                     <TableHead>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 'bold' }}>
-                          Course ID
+                          {t('courseId')}
                         </TableCell>
                         <TableCell sx={{ fontWeight: 'bold' }}>
-                          Status
+                          {t('status')}
                         </TableCell>
-                        <TableCell sx={{ fontWeight: 'bold' }}>View</TableCell>
+                        <TableCell sx={{ fontWeight: 'bold' }}>
+                          {t('viewCertificate')}
+                        </TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -911,7 +915,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                                   handleViewTest(course.certificateId)
                                 }
                               >
-                                View Certificate
+                                {t('viewCertificate')}
                               </Link>
                             </TableCell>
                           </TableRow>
@@ -921,7 +925,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                 </TableContainer>
               ) : (
                 <Typography variant="body2" color="text.secondary">
-                  No course data found.
+                  {t('noCourseData')}
                 </Typography>
               )}
             </Box>
@@ -937,7 +941,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                   ':hover': { bgcolor: '#461B73' },
                 }}
               >
-                Delete Account
+                {t('deleteAccount')}
               </Button>
             </Box>
           </Box>
@@ -948,11 +952,10 @@ export default function Profile({ params }: { params: { id: string } }) {
           open={openDeleteDialog}
           onClose={() => setOpenDeleteDialog(false)}
         >
-          <DialogTitle>Confirm Account Deletion</DialogTitle>
+          <DialogTitle>{t('confirmAccountDeletion')}</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Are you sure you want to delete your account? This action cannot
-              be undone.
+              {t('deleteAccountWarning')}
             </DialogContentText>
           </DialogContent>
           <DialogActions>
@@ -960,10 +963,10 @@ export default function Profile({ params }: { params: { id: string } }) {
               onClick={() => setOpenDeleteDialog(false)}
               sx={{ color: '#582E92' }}
             >
-              Cancel
+              {t('cancel')}
             </Button>
             <Button onClick={handleDeleteConfirmation} color="error">
-              Delete Account
+              {t('deleteAccount')}
             </Button>
           </DialogActions>
         </Dialog>
@@ -981,29 +984,29 @@ export default function Profile({ params }: { params: { id: string } }) {
           onClose={() => setOpenConfirmDeleteDialog(false)}
         >
           <DialogTitle>
-            Your account has been successfully deleted!!
+            {t('accountDeletedSuccess')}
           </DialogTitle>
           <DialogContent></DialogContent>
           <DialogActions>
             <Button onClick={confirm} sx={{ color: '#582E92' }}>
-              OK
+              {t('ok')}
             </Button>
           </DialogActions>
         </Dialog>
 
         <Dialog open={showLogoutModal} onClose={handleLogoutCancel}>
-          <DialogTitle>Confirm Logout</DialogTitle>
+          <DialogTitle>{t('confirmLogout')}</DialogTitle>
           <DialogContent>
             <DialogContentText>
-              Are you sure you want to log out?
+              {t('logoutWarning')}
             </DialogContentText>
           </DialogContent>
           <DialogActions>
             <Button onClick={handleLogoutCancel} sx={{ color: '#582E92' }}>
-              No
+              {t('no')}
             </Button>
             <Button onClick={handleLogoutConfirm} color="error">
-              Yes, Logout
+              {t('yesLogout')}
             </Button>
           </DialogActions>
         </Dialog>
@@ -1061,7 +1064,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                   component="div"
                   sx={{ fontWeight: 600 }}
                 >
-                  Reset Password
+                  {t('resetPassword')}
                 </Typography>
               </DialogTitle>
 
@@ -1070,7 +1073,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                   margin="normal"
                   fullWidth
                   name="oldPassword"
-                  label="Old Password"
+                  label={t('oldPassword')}
                   type={showOldPassword ? 'text' : 'password'}
                   value={passwords.oldPassword}
                   onChange={handlePasswordChange}
@@ -1100,7 +1103,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                   margin="normal"
                   fullWidth
                   name="newPassword"
-                  label="New Password"
+                  label={t('newPassword')}
                   type={showNewPassword ? 'text' : 'password'}
                   value={passwords.newPassword}
                   onChange={handlePasswordChange}
@@ -1130,7 +1133,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                   margin="normal"
                   fullWidth
                   name="confirmPassword"
-                  label="Confirm Password"
+                  label={t('confirmNewPassword')}
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={passwords.confirmPassword}
                   onChange={handlePasswordChange}
@@ -1177,7 +1180,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                     },
                   }}
                 >
-                  Cancel
+                  {t('cancel')}
                 </Button>
                 <Button
                   onClick={handleSubmit}
@@ -1197,7 +1200,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                     width: { xs: '50%', sm: '50%' },
                   }}
                 >
-                  Reset Password
+                  {t('resetPassword')}
                 </Button>
               </DialogActions>
             </Grid>
@@ -1205,9 +1208,9 @@ export default function Profile({ params }: { params: { id: string } }) {
         </Dialog>
 
         <Dialog open={showSuccessDialog} onClose={() => {}}>
-          <DialogTitle>Password Reset</DialogTitle>
+          <DialogTitle>{t('passwordResetSuccessful')}</DialogTitle>
           <DialogContent>
-            Your password has been reset successfully.
+            {t('passwordResetSuccessMessage')}
           </DialogContent>
           <DialogActions>
             <Button
@@ -1218,7 +1221,7 @@ export default function Profile({ params }: { params: { id: string } }) {
                 handleLogoutConfirm();
               }}
             >
-              OK
+              {t('ok')}
             </Button>
           </DialogActions>
         </Dialog>

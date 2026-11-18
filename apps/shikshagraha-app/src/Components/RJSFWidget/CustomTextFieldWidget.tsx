@@ -8,6 +8,10 @@ import {
 } from '@mui/material';
 import { WidgetProps } from '@rjsf/utils';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import {
+  extractReferenceLabel,
+  isReferenceObject,
+} from '../../utils/referenceFieldUtils';
 
 const CustomTextFieldWidget = (props: WidgetProps) => {
   const {
@@ -31,14 +35,13 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const formData = formContext?.formData || {};
-  const isPasswordField = label?.toLowerCase() === 'password';
-  const isConfirmPasswordField = label
-    ?.toLowerCase()
-    .includes('confirm password');
-  const isEmailField = label?.toLowerCase() === 'email';
+  // Labels from dynamic forms are not guaranteed to be strings.
+  const lowerLabel = typeof label === 'string' ? label.toLowerCase() : '';
+  const isPasswordField = lowerLabel === 'password';
+  const isConfirmPasswordField = lowerLabel.includes('confirm password');
+  const isEmailField = lowerLabel === 'email';
   const isMobileField =
-    label?.toLowerCase() === 'mobile' ||
-    label?.toLowerCase() === 'contact number';
+    lowerLabel === 'mobile' || lowerLabel === 'contact number';
 
   // Default regex patterns (fallback when no pattern is provided in schema)
   const defaultPatterns = {
@@ -69,7 +72,6 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     eitherRequired: 'Either email or contact number is required',
   };
 
-  const lowerLabel = label?.toLowerCase();
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   // Helper function to get the appropriate pattern for a field
@@ -501,7 +503,11 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
         id={id}
         label={renderLabel()}
         value={
-          typeof value === 'object' && value !== null ? value.name : value ?? ''
+          isReferenceObject(value)
+            ? extractReferenceLabel(value)
+            : typeof value === 'object' && value !== null
+            ? value.name || value.label || value.value || ''
+            : value ?? ''
         }
         type={
           (isPasswordField || isConfirmPasswordField) && !showPassword

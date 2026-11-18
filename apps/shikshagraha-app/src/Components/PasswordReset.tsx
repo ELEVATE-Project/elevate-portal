@@ -27,7 +27,10 @@ import {
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
+
 const PasswordReset = ({ name }: { name: string }) => {
+  const { t } = useTranslation();
   const router = useRouter();
   const [step, setStep] = useState<'reset' | 'otp' | 'input'>('reset');
   const [formData, setFormData] = useState({
@@ -805,6 +808,7 @@ const PasswordReset = ({ name }: { name: string }) => {
         background: 'linear-gradient(135deg, #f5f5f5, #f5f5f5)',
         minHeight: '100vh',
         padding: 2,
+        position: 'relative',
       }}
     >
       <Grid
@@ -852,7 +856,7 @@ const PasswordReset = ({ name }: { name: string }) => {
             }}
           >
             <ArrowBackIcon sx={{ marginRight: '4px' }} />
-            Back
+            {t('back')}
           </Button>
         </Grid>
         {step === 'otp' && (
@@ -865,7 +869,7 @@ const PasswordReset = ({ name }: { name: string }) => {
             >
               <Box sx={{ width: '100%' }}>
                 <Typography variant="body1" gutterBottom>
-                  Enter the OTP sent to {formData.identifier}
+                  {t('enterOtpSentTo', { identifier: formData.identifier })}
                 </Typography>
               </Box>
 
@@ -905,7 +909,7 @@ const PasswordReset = ({ name }: { name: string }) => {
                 mt={1}
               >
                 <Typography variant="body2" color="textSecondary">
-                  Didn’t receive the code?
+                  {t('didntReceiveCode')}
                 </Typography>
                 <Button
                   onClick={handleResendOtp}
@@ -922,10 +926,14 @@ const PasswordReset = ({ name }: { name: string }) => {
                   }}
                 >
                   {isRateLimited
-                    ? `Try again in ${formatRateLimitTime(rateLimitTimer)}`
+                    ? t('tryAgainIn', {
+                        time: formatRateLimitTime(rateLimitTimer),
+                      })
                     : remainingResendTime > 0
-                    ? `Resend OTP in ${formatTime(remainingResendTime)}`
-                    : 'Resend OTP'}
+                    ? t('resendOtpIn', {
+                        time: formatTime(remainingResendTime),
+                      })
+                    : t('resendOtp')}
                 </Button>
 
                 {isRateLimited && (
@@ -944,8 +952,9 @@ const PasswordReset = ({ name }: { name: string }) => {
               </Box>
 
               <Typography variant="body2" color="textSecondary">
-                Note: OTP will expire in 10 minutes ({formatTime(secondsLeft)}{' '}
-                left).
+                {t('otpExpiryNote', {
+                  time: formatTime(secondsLeft),
+                })}
               </Typography>
 
               {/* ✅ This ensures it appears on a new line */}
@@ -967,7 +976,7 @@ const PasswordReset = ({ name }: { name: string }) => {
                     },
                   }}
                 >
-                  {loading ? <CircularProgress size={24} /> : 'Verify OTP'}
+                  {loading ? <CircularProgress size={24} /> : t('verifyOtp')}
                 </Button>
               </Box>
             </Box>
@@ -978,12 +987,12 @@ const PasswordReset = ({ name }: { name: string }) => {
           <>
             <Box sx={{ width: '100%' }}>
               <Typography variant="h5" gutterBottom>
-                Forgot Password
+                {t('forgotPasswordTitle')}
               </Typography>
             </Box>
             <TextField
               fullWidth
-              label="Email/Mobile/Username"
+              label={t('identifierLabel')}
               name="identifier"
               value={formData.identifier}
               onChange={handleInputChange}
@@ -1066,7 +1075,7 @@ const PasswordReset = ({ name }: { name: string }) => {
               fullWidth
               type={showNewPassword ? 'text' : 'password'} // ✅ toggle based on state
               name="password"
-              label="New Password"
+              label={t('newPassword')}
               value={formData.password}
               onChange={handleChangePassword}
               onKeyDown={(e) => {
@@ -1119,7 +1128,7 @@ const PasswordReset = ({ name }: { name: string }) => {
             <TextField
               fullWidth
               type={showConfirmPassword ? 'text' : 'password'}
-              label="Confirm New Password"
+              label={t('confirmNewPassword')}
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChangePassword}
@@ -1204,9 +1213,11 @@ const PasswordReset = ({ name }: { name: string }) => {
               {loading ? (
                 <CircularProgress size={24} />
               ) : isRateLimited ? (
-                `Try again in ${formatRateLimitTime(rateLimitTimer)}`
+                t('tryAgainIn', {
+                  time: formatRateLimitTime(rateLimitTimer),
+                })
               ) : (
-                'Send OTP'
+                t('sendOtp')
               )}
             </Button>
 
@@ -1230,7 +1241,7 @@ const PasswordReset = ({ name }: { name: string }) => {
                     mt: 0.5,
                   }}
                 >
-                  Please wait before requesting another OTP
+                  {t('waitBeforeOtp')}
                 </Typography>
               </Box>
             )}
@@ -1255,9 +1266,9 @@ const PasswordReset = ({ name }: { name: string }) => {
         )}
 
         <Dialog open={showSuccess} onClose={() => setShowSuccess(false)}>
-          <DialogTitle>Password Reset Successful</DialogTitle>
+          <DialogTitle>{t('passwordResetSuccessful')}</DialogTitle>
           <DialogContent>
-            <Typography>Your password has been reset successfully.</Typography>
+            <Typography>{t('passwordResetSuccessMessage')}</Typography>
           </DialogContent>
           <DialogActions>
             <Button
@@ -1276,7 +1287,7 @@ const PasswordReset = ({ name }: { name: string }) => {
               }}
               onClick={() => router.push('/')}
             >
-              OK
+              {t('ok')}
             </Button>
           </DialogActions>
         </Dialog>

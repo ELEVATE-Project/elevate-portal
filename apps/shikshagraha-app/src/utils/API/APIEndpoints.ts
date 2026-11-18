@@ -20,6 +20,7 @@ export const API_ENDPOINTS = {
   get accountLogin() { return `${getBaseUrl()}/user/v1/account/login`; },
   get sendOtp() { return `${getBaseUrl()}/user/v1/account/registrationOtp`; },
   get userProfileRead() { return `${getBaseUrl()}/user/v1/user/read`; },
+  get userProfileUpdate() { return `${getBaseUrl()}/user/v1/user/update`; },
   get resetPassword() { return `${getBaseUrl()}/user/v1/account/changePassword`; },
   get formRead() { return `${getBaseUrl()}/user/v1/form/read`; },
   get ForgotPassword() { return `${getBaseUrl()}/user/v1/account/resetPassword`; },

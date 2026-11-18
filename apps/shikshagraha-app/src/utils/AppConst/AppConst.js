@@ -45,6 +45,12 @@ const AppConst = {
       FRESH_PAGE: 800,
     },
   },
+
+  FORM: {
+    DEFAULT_TYPE: 'user',
+    DEFAULT_SUB_TYPE: 'registration',
+    FLOW_TYPE: 'registration',
+  },
 };
 
 export default AppConst;

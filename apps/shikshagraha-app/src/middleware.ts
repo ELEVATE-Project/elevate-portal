@@ -5,7 +5,7 @@ import { getEnvValue, getDisabledRouteKeys } from '@shared-lib';
 
 /**
  * Parse NEXT_PUBLIC_DISABLED_ROUTES (comma-separated RouteKey names, e.g.
- * "HOME,REGISTER") into a Set of actual path strings.
+ * "HOME,REGISTER" or "HOME,ACCOUNT") into a Set of actual path strings.
  * Returns an empty Set when the variable is absent or blank.
  */
 function getDisabledPaths(): Set<string> {

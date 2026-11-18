@@ -8,22 +8,46 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import QrCodeScannerIcon from '@mui/icons-material/QrCodeScanner';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
 import { getEnvValue, isRouteDisabled } from '../../utils/env';
 
 const isMobile = () => {
   return /iPhone|iPad|iPod|Android/i.test(window.navigator.userAgent);
 };
 
-export const Footer: React.FC = () => {
+export interface FooterProps {
+  buttonLabel?: string;
+  buttonHeight?: string;
+  buttonBorderRadius?: string;
+  buttonBackgroundColor?: string;
+  buttonColor?: string;
+  buttonFontSize?: string;
+  buttonFontWeight?: number;
+  buttonSupportingText?: string;
+  bottompx?: number;
+  onButtonClick?: () => void;
+  [key: string]: any;
+}
+
+export const Footer: React.FC<FooterProps> = () => {
+  const { t } = useTranslation();
   const [value, setValue] = useState(0);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [primaryColor, setPrimaryColor] = useState('#572E91');
+  const [secondaryColor, setSecondaryColor] = useState('#FF9911');
   const router = useRouter();
   const pathname = usePathname();
 
   useEffect(() => {
     setMounted(true);
     setIsMobileDevice(isMobile());
+    if (typeof window !== 'undefined') {
+      const p = localStorage.getItem('primaryColor');
+      const s = localStorage.getItem('secondaryColor');
+      if (p) setPrimaryColor(p);
+      if (s) setSecondaryColor(s);
+    }
   }, []);
   const downloadsUrl =
     getEnvValue('NEXT_PUBLIC_DOWNLOADS_URL') || '/observations/downloads';
@@ -138,21 +162,22 @@ export const Footer: React.FC = () => {
       {isMobileDevice && (
         <Fab
           color="primary"
-          aria-label="scanner"
+          aria-label={t('scanner')}
           onClick={() => handleNavigation('/qr-scanner')}
           sx={{
             position: 'fixed',
             bottom: 25,
             left: '50%',
             transform: 'translateX(-50%)',
-            backgroundColor: '#582E92',
+            backgroundColor: primaryColor,
             color: '#fff',
             zIndex: 20,
             width: 64,
             height: 64,
             boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.3)',
             '&:hover': {
-              backgroundColor: '#6b3ab6',
+              backgroundColor: primaryColor,
+              filter: 'brightness(1.1)',
             },
           }}
         >
@@ -171,7 +196,7 @@ export const Footer: React.FC = () => {
           backgroundColor: '#FFF7E6',
           borderRadius: '25px 25px 0 0',
           '& .Mui-selected': {
-            color: '#FF9911',
+            color: secondaryColor,
           },
           '& .MuiBottomNavigationAction-root': {
             color: 'black',
@@ -183,30 +208,30 @@ export const Footer: React.FC = () => {
         {mounted && !isRouteDisabled('HOME') && (
           <BottomNavigationAction
             value={0}
-          label="Home"
-          icon={
-            <HomeIcon
-              sx={{
-                fontSize: value === 0 ? '2rem' : '1.5rem',
-                transition: 'transform 0.3s ease, color 0.3s ease',
-                transform: value === 0 ? 'scale(1.2)' : 'scale(1)',
-                color: value === 0 ? '#582E92' : 'inherit',
-              }}
-            />
-          }
-        />
+            label={t('home')}
+            icon={
+              <HomeIcon
+                sx={{
+                  fontSize: value === 0 ? '2rem' : '1.5rem',
+                  transition: 'transform 0.3s ease, color 0.3s ease',
+                  transform: value === 0 ? 'scale(1.2)' : 'scale(1)',
+                  color: value === 0 ? primaryColor : 'inherit',
+                }}
+              />
+            }
+          />
         )}
         {isMobileDevice && <Box sx={{ width: 54 }} />}
         <BottomNavigationAction
           value={2}
-          label="Downloads"
+          label={t('downloads')}
           icon={
             <ArrowDownwardIcon
               sx={{
                 fontSize: value === 2 ? '2rem' : '1.5rem',
                 transition: 'transform 0.3s ease, color 0.3s ease',
                 transform: value === 2 ? 'scale(1.2)' : 'scale(1)',
-                color: value === 2 ? '#582E92' : 'inherit',
+                color: value === 2 ? primaryColor : 'inherit',
               }}
             />
           }

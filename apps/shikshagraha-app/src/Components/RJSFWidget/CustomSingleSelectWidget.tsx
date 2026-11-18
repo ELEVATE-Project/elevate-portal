@@ -7,6 +7,10 @@ import FormControl from '@mui/material/FormControl';
 import { useTranslation } from 'react-i18next';
 import { FormHelperText } from '@mui/material';
 import { getSubroles } from '../../services/LoginService';
+import {
+  normalizeSingleReference,
+  isReferenceObject,
+} from '../../utils/referenceFieldUtils';
 
 interface EnumOption {
   value: string;
@@ -58,7 +62,30 @@ const CustomSingleSelectWidget = ({
     return [];
   }, [uiSchema, options, schema]);
 
-  console.log('enumOptions', enumOptions);
+  // Normalize reference object or primitive ID
+  const { id: selectedId, label: selectedLabel } = React.useMemo(
+    () => normalizeSingleReference(value),
+    [value]
+  );
+
+  // Synthesize missing prefilled options if options load asynchronously
+  const effectiveEnumOptions: EnumOption[] = React.useMemo(() => {
+    if (
+      selectedId &&
+      !enumOptions.some((opt) => String(opt.value) === String(selectedId))
+    ) {
+      return [
+        {
+          value: selectedId,
+          label: selectedLabel || selectedId,
+          _originalData: isReferenceObject(value) ? value : null,
+        },
+        ...enumOptions,
+      ];
+    }
+    return enumOptions;
+  }, [enumOptions, selectedId, selectedLabel, value]);
+
   const { t } = useTranslation();
   const [subRolesVisible, setSubRolesVisible] = useState(false);
   const [subRoles, setSubRoles] = useState<any[]>([]);
@@ -77,19 +104,29 @@ const CustomSingleSelectWidget = ({
 
   const handleChange = async (event: any) => {
     const selected = event.target.value;
-    const selectedOption = enumOptions.find(
-      (option: EnumOption) => option.value === selected
+    const selectedOption = effectiveEnumOptions.find(
+      (option: EnumOption) => String(option.value) === String(selected)
     );
 
-    // Always use externalId for the value
-    const valueToSend = selectedOption?._originalData?._id ?? selected;
+    // Preserve reference object so label and externalId presence are maintained for submission
+    const valueToPass = (selectedOption as any)?._originalData
+      ? (selectedOption as any)._originalData
+      : selectedOption && selectedOption.label !== selectedOption.value
+      ? {
+          value: selectedOption.value,
+          label: selectedOption.label,
+          ...((selectedOption as any).externalId
+            ? { externalId: (selectedOption as any).externalId }
+            : {}),
+        }
+      : selected;
 
-    onChange(selected);
+    onChange(valueToPass);
 
     if (isRoleField && selected) {
       try {
         const roleIdToFetch = selectedOption?._originalData?._id;
-        localStorage.setItem('role', roleIdToFetch); //
+        localStorage.setItem('role', roleIdToFetch);
 
         if (roleIdToFetch) {
           const subrolesResponse = await getSubroles(roleIdToFetch);
@@ -128,12 +165,12 @@ const CustomSingleSelectWidget = ({
     }
 
     // Show helper text for role field when no value is selected
-    if (isRoleField && !value) {
+    if (isRoleField && !selectedId) {
       return helperText;
     }
 
     // Show required field message for other fields when no value is selected
-    if (required && !value) {
+    if (required && !selectedId) {
       return `${label} is required`;
     }
 
@@ -144,7 +181,7 @@ const CustomSingleSelectWidget = ({
     return getHelperText() !== '';
   };
 
-  const shouldShrinkLabel = open || Boolean(value);
+  const shouldShrinkLabel = open || Boolean(selectedId);
   const labelId = `${id}-label`;
 
   return (
@@ -201,12 +238,25 @@ const CustomSingleSelectWidget = ({
       <Select
         id={id}
         labelId={labelId}
-        value={value ?? ''}
+        value={selectedId ?? ''}
         onChange={handleChange}
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
         displayEmpty
         label={label}
+        renderValue={(selected) => {
+          if (!selected) {
+            return isEmptyOptionIncluded ? <em>{t('FORM.Select')}</em> : '';
+          }
+          const found = effectiveEnumOptions.find(
+            (opt: EnumOption) => String(opt.value) === String(selected)
+          );
+          if (found) {
+            return t(`FORM.${found.label}`, { defaultValue: found.label });
+          }
+          if (selectedLabel) return selectedLabel;
+          return String(selected);
+        }}
         MenuProps={{
           PaperProps: {
             style: {
@@ -245,14 +295,14 @@ const CustomSingleSelectWidget = ({
           </MenuItem>
         )}
 
-        {enumOptions.length > 0 ? (
-          enumOptions.map((option: EnumOption) => (
+        {effectiveEnumOptions.length > 0 ? (
+          effectiveEnumOptions.map((option: EnumOption) => (
             <MenuItem
               key={option.value}
               value={option.value}
               disabled={option.disabled}
             >
-              {option.label}
+              {t(`FORM.${option.label}`, { defaultValue: option.label })}
             </MenuItem>
           ))
         ) : (

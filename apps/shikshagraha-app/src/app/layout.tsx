@@ -1,4 +1,5 @@
 import { getBranding } from '../utils/branding';
+import I18nProvider from '../Components/I18nProvider';
 
 export async function generateMetadata() {
   const { appName, logo } = await getBranding();
@@ -28,12 +29,30 @@ export default function RootLayout({
         <meta name="format-detection" content="telephone=no" />
         <link rel="manifest" href="/manifest.webmanifest" />
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300..800;1,300..800&family=Inter:wght@400;500;600;700&display=swap"
+          rel="stylesheet"
+        />
         <script src="/env-config.js" defer></script>
          <style
           dangerouslySetInnerHTML={{
             __html: `
-						/* Base resets */
-						body, html { margin: 0; padding: 0; box-sizing: border-box; }
+						/* Base resets & typography */
+						body, html {
+							margin: 0;
+							padding: 0;
+							box-sizing: border-box;
+							font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+						}
+						button, input, select, textarea {
+							font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+						}
 						*, *:before, *:after { box-sizing: inherit; }
 
 						/* Prevent viewport resizing quirks on iOS */
@@ -109,7 +128,9 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        <I18nProvider>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

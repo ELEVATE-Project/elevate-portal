@@ -20,8 +20,11 @@ import {
   fetchBranding,
 } from '../../services/LoginService';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useTranslation } from 'react-i18next';
+import { translatePipe } from '../../utils/translatePipe';
 
 export default function Register() {
+  const { i18n } = useTranslation();
   const [formSchema, setFormSchema] = useState<any>();
   const [uiSchema, setUiSchema] = useState<any>();
   const [loading, setLoading] = useState(true);
@@ -149,7 +152,13 @@ export default function Register() {
         }
 
         const { schema, uiSchema, fieldNameToFieldIdMapping } =
-          generateRJSFSchema(fields, selectedRoleObj, rolesData, subrolesData);
+          generateRJSFSchema(
+            fields,
+            selectedRoleObj,
+            rolesData,
+            subrolesData,
+            i18n.language
+          );
         if (subrolesData?.length === 0) {
           delete schema.properties?.['Sub-Role'];
           delete uiSchema?.['Sub-Role'];
@@ -175,19 +184,14 @@ export default function Register() {
 
     fetchSchema();
     setIsAuthenticated(!!localStorage.getItem('accToken'));
-  }, [tenantConfigured]);
+  }, [tenantConfigured, i18n.language]);
 
   const handleSubmit = ({ formData }: any) => {
     setFormData(formData);
   };
 
   const handleBack = () => {
-    const redirectUrl = queryRouter.get('redirectUrl');
-    if (redirectUrl) {
-      router.push(`/?redirectUrl=${encodeURIComponent(redirectUrl)}`);
-    } else {
-      router.push('/');
-    }
+    router.push('/');
   };
 
   const StaticHeader = () => (
@@ -223,7 +227,7 @@ export default function Register() {
             <ArrowBackIcon
               sx={{ marginRight: '4px', fontSize: { xs: '18px', sm: '20px' } }}
             />
-            Back
+            {translatePipe('back', i18n.language, 'Back')}
           </Button>
         </Grid>
         <Grid
@@ -319,10 +323,12 @@ export default function Register() {
               mr: 'auto',
               width: {
                 xs: '90vw',
-                md: '50vw',
+                md: '100%',
               },
+              maxWidth: '560px',
               display: 'flex',
               flexDirection: 'column',
+              alignItems: 'center',
               // bgcolor: '#fff',
               p: {
                 xs: '20px',
@@ -357,7 +363,11 @@ export default function Register() {
                     },
                   }}
                 >
-                  Welcome to {displayName}
+                  {translatePipe(
+                    'welcomeTo',
+                    i18n.language,
+                    'Welcome to {{name}}'
+                  ).replace('{{name}}', displayName)}
                 </Typography>
                 <DynamicForm
                   schema={formSchema}

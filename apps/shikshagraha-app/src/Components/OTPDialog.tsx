@@ -14,6 +14,7 @@ import {
   useMediaQuery,
 } from '@mui/material';
 import { Close, Refresh } from '@mui/icons-material';
+import { useTranslation } from 'react-i18next';
 interface OTPDialogProps {
   open: boolean;
   onClose: () => void;
@@ -36,8 +37,9 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
   otpLength = 6,
   resendCooldown = 30,
   expirationTime = 600, // 10 minutes in seconds
-  submitButtonText = 'Verify',
+  submitButtonText,
 }) => {
+  const { t } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [otp, setOtp] = useState<string[]>(Array(otpLength).fill(''));
@@ -292,10 +294,10 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
       </Box>
       <DialogTitle sx={{ textAlign: 'center', pt: 4, pb: 2 }}>
         <Typography variant="h6" fontWeight="bold" color="text.primary">
-          Enter Verification Code
+          {t('enterVerificationCode')}
         </Typography>
         <Typography variant="body2" color="text.secondary" mt={1}>
-          We've sent a {otpLength}-digit code to your registered contact
+          {t('otpSentMessage', { otpLength })}
         </Typography>
       </DialogTitle>
       <DialogContent sx={{ py: 0 }}>
@@ -410,7 +412,7 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
         )}
         <Box mt={3} textAlign="center">
           <Typography variant="body2" color="text.secondary">
-            Didn't receive the code?
+            {t('didntReceiveCode')}
           </Typography>
           <Button
             onClick={handleResend}
@@ -425,7 +427,9 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
               },
             }}
           >
-            {resendTimer > 0 ? `Resend in ${resendTimer}s` : 'Resend OTP'}
+            {resendTimer > 0
+              ? t('resendIn', { seconds: resendTimer })
+              : t('resendOtp')}
           </Button>
         </Box>
       </DialogContent>
@@ -452,14 +456,16 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
           {loading ? (
             <CircularProgress size={24} color="inherit" />
           ) : isExpired ? (
-            'OTP Expired'
+            t('otpExpired')
           ) : (
-            submitButtonText
+            submitButtonText || t('verify')
           )}
         </Button>
         {expirationTimer > 0 && (
           <Typography variant="caption" color="text.secondary" mt={2}>
-            Code expires in {formatTime(expirationTimer)}
+            {t('codeExpiresIn', {
+              time: formatTime(expirationTimer),
+            })}
           </Typography>
         )}
       </DialogActions>

@@ -13,7 +13,8 @@ export const generateRJSFSchema = (
   fields: any[],
   rolesValue: string,
   rolesData?: any[],
-  subrolesData?: SubroleData
+  subrolesData?: SubroleData,
+  language = 'en'
 ) => {
   const schema: any = {
     type: 'object',
@@ -23,6 +24,8 @@ export const generateRJSFSchema = (
 
   const uiSchema: any = {};
   const fieldNameToFieldIdMapping: Record<string, string> = {};
+  const translate = (value: any, fallback: string = '') =>
+    translatePipe(value, language, fallback);
 
   if (!Array.isArray(fields)) {
     console.error('Expected fields to be an array, got:', fields);
@@ -47,10 +50,11 @@ export const generateRJSFSchema = (
         isEditable,
         validation,
       } = field;
+      const isFieldDisabled = isEditable === false;
 
       const fieldSchema: any = {
-        title: label || name,
-        type: isMultiSelect ? 'array' : 'string',
+        title: translate(label, name),
+        type: isMultiSelect ? 'array' : ['string', 'object'],
       };
       // Handle Role field
       if (name === 'Role') {
@@ -76,14 +80,16 @@ export const generateRJSFSchema = (
             typeof validation === 'object' &&
             validation.isRequired === true);
         fieldSchema.isRequired = fieldIsRequired;
+        if (fieldIsRequired) schema.required.push(name);
         schema.properties[name] = fieldSchema;
 
         uiSchema[name] = {
           'ui:widget': 'CustomSingleSelectWidget',
+          'ui:disabled': isFieldDisabled,
           'ui:options': {
             enumOptions: validRoles.map((role) => ({
               value: role.externalId,
-              label: role.name,
+              label: translate(role.name, String(role.externalId)),
               _originalData: role,
             })),
           },
@@ -97,7 +103,7 @@ export const generateRJSFSchema = (
         // Make it an array type for multiselect
         fieldSchema.type = 'array';
         fieldSchema.items = {
-          type: 'string',
+          type: ['string', 'object'],
         };
         fieldSchema.uniqueItems = true;
 
@@ -105,11 +111,15 @@ export const generateRJSFSchema = (
         if (rolesValue) {
           uiSchema[name] = {
             'ui:widget': 'CustomMultiSelectWidget',
+            'ui:disabled': isFieldDisabled,
             'ui:options': {
               enumOptions:
                 subrolesData?.data?.map((subrole: any) => ({
                   value: subrole._id ?? subrole.externalId,
-                  label: subrole.name,
+                  label: translate(
+                    subrole.name,
+                    String(subrole._id ?? subrole.externalId)
+                  ),
                   _originalData: subrole, // Keep original data if needed
                 })) ?? [],
             },
@@ -117,6 +127,7 @@ export const generateRJSFSchema = (
         } else {
           uiSchema[name] = {
             'ui:widget': 'hidden',
+            'ui:disabled': isFieldDisabled,
           };
         }
         const fieldIsRequired =
@@ -125,6 +136,7 @@ export const generateRJSFSchema = (
             typeof validation === 'object' &&
             validation.isRequired === true);
         fieldSchema.isRequired = fieldIsRequired;
+        if (fieldIsRequired) schema.required.push(name);
         schema.properties[name] = fieldSchema;
         return;
       }
@@ -155,7 +167,7 @@ export const generateRJSFSchema = (
         fieldSchema.pattern = pattern;
       }
       if (policyMsg) {
-        fieldSchema.policyMsg = policyMsg;
+        fieldSchema.policyMsg = translate(policyMsg);
       }
       const fieldIsRequired =
         isRequired ||
@@ -163,11 +175,13 @@ export const generateRJSFSchema = (
           typeof validation === 'object' &&
           validation.isRequired === true);
       fieldSchema.isRequired = fieldIsRequired;
+      if (fieldIsRequired) schema.required.push(name);
       schema.properties[name] = fieldSchema;
 
       // Configure UI widget
       uiSchema[name] = {
-        'ui:disabled': isEditable === false,
+        'ui:disabled': isFieldDisabled,
+        'ui:placeholder': translate(placeholder),
         'ui:readonly': [
           'School',
           'Cluster',
@@ -191,10 +205,6 @@ export const generateRJSFSchema = (
         fieldNameToFieldIdMapping[name] = fieldId;
       }
 
-      // Required fields
-      // if (isRequired) {
-      //   schema.required.push(name);
-      // }
     });
 
   uiSchema['ui:options'] = {
@@ -205,3 +215,4 @@ export const generateRJSFSchema = (
 
   return { schema, uiSchema, fieldNameToFieldIdMapping };
 };
+import { translatePipe } from './translatePipe';

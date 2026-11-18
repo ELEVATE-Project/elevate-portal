@@ -8,6 +8,8 @@ export const ROUTES = {
   LOGIN: '/',
   HOME: '/home',
   REGISTER: '/register',
+  ACCOUNT: '/account',
+  TERMS: '/terms',
   PROFILE: '/profile',
   PROFILE_EDIT: '/profile-edit',
   QR_SCANNER: '/qr-scanner',

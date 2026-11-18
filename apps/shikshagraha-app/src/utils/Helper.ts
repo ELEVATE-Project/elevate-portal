@@ -11,6 +11,7 @@ import axios from 'axios';
 import AppConst from './AppConst/AppConst';
 import { getEnvValue } from '@shared-lib';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
+import { API_ENDPOINTS } from './API/APIEndpoints';
 interface Value {
   value: string;
   label: string;
@@ -743,34 +744,505 @@ export const setAccessTokenCookie = (accessToken: string) => {
   }
 };
 
-export const performRedirect = (
+export const checkUserAcceptedTerms = async (
+  token: string
+): Promise<boolean> => {
+  if (!token) return false;
+  try {
+    const response = await fetch(API_ENDPOINTS.userProfileRead, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-auth-token': token,
+      },
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+    const profile = data?.result?.response || data?.result;
+    return profile?.has_accepted_terms_and_conditions === true;
+  } catch (error) {
+    console.error('Error checking user accepted terms:', error);
+    return false;
+  }
+};
+
+export const updateUserAcceptedTerms = async (
+  token: string
+): Promise<boolean> => {
+  if (!token) return false;
+  try {
+    const response = await fetch(API_ENDPOINTS.userProfileUpdate, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-auth-token': token,
+      },
+      body: JSON.stringify({
+        has_accepted_terms_and_conditions: true,
+      }),
+    });
+
+    if (!response.ok) {
+      console.error(
+        'Failed to update terms acceptance on server:',
+        response.status
+      );
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error updating terms acceptance:', error);
+    return false;
+  }
+};
+
+/**
+ * Helper to extract a parameter value from a URL string, handling single or double encoding,
+ * query strings with '?' or malformed query strings with '&' or '%26', and URL hash.
+ */
+export const extractParamFromUrlString = (
+  urlStr: string,
+  paramNames: string[]
+): string | null => {
+  if (!urlStr) return null;
+  let decoded = urlStr;
+  for (let i = 0; i < 3; i++) {
+    if (decoded.includes('%')) {
+      try {
+        decoded = decodeURIComponent(decoded);
+      } catch {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  for (const name of paramNames) {
+    const regex = new RegExp(`(?:[?&]|%26|%3F)${name}(?:=|%3D)([^&#%]*)`, 'i');
+    const match = decoded.match(regex);
+    if (match && match[1]) {
+      try {
+        return decodeURIComponent(match[1]);
+      } catch {
+        return match[1];
+      }
+    }
+
+    try {
+      let parseable = decoded;
+      if (!parseable.includes('?') && parseable.includes('&')) {
+        parseable = parseable.replace('&', '?');
+      }
+      const parsed = new URL(parseable);
+      const val = parsed.searchParams.get(name);
+      if (val) return val;
+    } catch {
+      // ignore
+    }
+  }
+
+  return null;
+};
+
+/**
+ * Removes specified query parameters from a URL string (including malformed '%26param%3Dvalue' or '&param=value').
+ */
+export const cleanParamsFromUrlString = (
+  urlStr: string,
+  paramNames: string[]
+): string => {
+  if (!urlStr) return urlStr;
+  let result = urlStr;
+  for (let i = 0; i < 3; i++) {
+    if (result.includes('%')) {
+      try {
+        result = decodeURIComponent(result);
+      } catch {
+        break;
+      }
+    } else {
+      break;
+    }
+  }
+
+  paramNames.forEach((param) => {
+    const regex = new RegExp(
+      `(?:[?&]|%26|%3F)${param}(?:=|%3D)[^&#%]*`,
+      'gi'
+    );
+    result = result.replace(regex, '');
+  });
+
+  if (result.includes('&') && !result.includes('?')) {
+    result = result.replace('&', '?');
+  }
+  result = result.replace(/\?&+/g, '?');
+  result = result.replace(/&&+/g, '&');
+  result = result.replace(/[?&]$/, '');
+  return result;
+};
+
+/**
+ * Reads query params (flow, accToken, redirectUrl, preferred_language) from the current URL
+ * or from an encoded redirectUrl (including %26flow%3D... or &flow=...), saves them into localStorage,
+ * and cleans sensitive/temporary params (accToken, flow) from the visible browser URL bar without reloading.
+ */
+export const extractAndStoreUrlParams = () => {
+  if (typeof window === 'undefined')
+    return { flow: null, accToken: null, redirectUrl: null };
+
+  try {
+    const url = new URL(window.location.href);
+    const searchParams = url.searchParams;
+
+    // 1. Raw redirectUrl from search params or localStorage
+    const rawRedirectUrl = searchParams.get('redirectUrl');
+    const storedRedirectUrl = localStorage.getItem('redirectUrl');
+    let redirectCandidate = rawRedirectUrl || storedRedirectUrl;
+    if (redirectCandidate) {
+      for (let i = 0; i < 3; i++) {
+        if (redirectCandidate.includes('%')) {
+          try {
+            redirectCandidate = decodeURIComponent(redirectCandidate);
+          } catch {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+    }
+
+    // 2. Extract flow: check direct query params first, then check inside redirectCandidate, then window.location.href, then localStorage
+    let flow = searchParams.get('flow');
+    if (!flow && redirectCandidate) {
+      flow = extractParamFromUrlString(redirectCandidate, ['flow']);
+    }
+    if (!flow && typeof window !== 'undefined') {
+      flow = extractParamFromUrlString(window.location.href, ['flow']);
+    }
+    if (!flow && typeof window !== 'undefined') {
+      flow = localStorage.getItem('flow');
+    }
+    if (flow) {
+      localStorage.setItem('flow', flow);
+    }
+
+    // 3. Extract accToken: check direct query params first, then check inside redirectCandidate
+    let accToken =
+      searchParams.get('accToken') ||
+      searchParams.get('accessToken') ||
+      searchParams.get('token');
+    if (!accToken && redirectCandidate) {
+      accToken = extractParamFromUrlString(redirectCandidate, [
+        'accToken',
+        'accessToken',
+        'token',
+      ]);
+    }
+    if (accToken) {
+      localStorage.setItem('accToken', accToken);
+      const isSecure = window.location.protocol === 'https:';
+      const secureFlag = isSecure ? '; secure' : '';
+      document.cookie = `accToken=${accToken}; path=/; max-age=86400${secureFlag}; SameSite=Lax`;
+    }
+
+    // 4. Extract refToken: check direct query params first, then check inside redirectCandidate
+    let refToken =
+      searchParams.get('refToken') ||
+      searchParams.get('refreshToken');
+    if (!refToken && redirectCandidate) {
+      refToken = extractParamFromUrlString(redirectCandidate, [
+        'refToken',
+        'refreshToken',
+      ]);
+    }
+    if (refToken) {
+      localStorage.setItem('refToken', refToken);
+    }
+
+    // 5. Extract preferred_language
+    let queryLang =
+      searchParams.get('preferred_language') ||
+      searchParams.get('preferredLanguage') ||
+      searchParams.get('lang');
+    if (!queryLang && redirectCandidate) {
+      queryLang = extractParamFromUrlString(redirectCandidate, [
+        'preferred_language',
+        'preferredLanguage',
+        'lang',
+      ]);
+    }
+    if (queryLang) {
+      const normalized = queryLang.trim().toLowerCase();
+      localStorage.setItem('preferred_language', normalized);
+      localStorage.setItem('preferredLanguage', normalized);
+      localStorage.setItem('lang', normalized);
+    }
+
+    // 6. Only store redirectUrl in localStorage when sent through params
+    if (rawRedirectUrl) {
+      localStorage.setItem('redirectUrl', rawRedirectUrl);
+    }
+    const finalRedirectUrl = rawRedirectUrl || storedRedirectUrl;
+
+    // 7. Clean direct standalone query parameters (accToken, flow, redirectUrl, etc.) from visible URL bar without reloading
+    let urlChanged = false;
+    [
+      'accToken',
+      'accessToken',
+      'token',
+      'flow',
+      'refToken',
+      'refreshToken',
+      'redirectUrl',
+    ].forEach((param) => {
+      if (searchParams.has(param)) {
+        searchParams.delete(param);
+        urlChanged = true;
+      }
+    });
+
+    if (urlChanged && window.history && window.history.replaceState) {
+      const cleanUrl =
+        url.pathname + (url.search ? url.search : '') + url.hash;
+      window.history.replaceState(null, '', cleanUrl);
+    }
+
+    return { flow, accToken, redirectUrl: finalRedirectUrl, refToken };
+  } catch (e) {
+    console.error('Error in extractAndStoreUrlParams:', e);
+    return { flow: null, accToken: null, redirectUrl: null };
+  }
+};
+
+/**
+ * Clears all localStorage, sessionStorage, cookies, and IndexedDB across all domains and paths.
+ */
+export const clearAllStorageAndCookies = () => {
+  if (typeof window === 'undefined') return;
+
+  // 1. Clear LocalStorage
+  try {
+    localStorage.clear();
+  } catch {
+    // ignore
+  }
+
+  // 2. Clear SessionStorage
+  try {
+    sessionStorage.clear();
+  } catch {
+    // ignore
+  }
+
+  // 3. Clear all Cookies across all paths and domain combinations
+  try {
+    const hostname = window.location.hostname;
+    const parentDomain = getParentDomain();
+
+    const domains: (string | undefined)[] = [undefined, '', hostname, `.${hostname}`];
+    if (parentDomain) {
+      domains.push(parentDomain);
+      if (!parentDomain.startsWith('.')) {
+        domains.push(`.${parentDomain}`);
+      }
+    }
+    const hostParts = hostname.split('.');
+    for (let i = 0; i < hostParts.length - 1; i++) {
+      const d = '.' + hostParts.slice(i).join('.');
+      if (!domains.includes(d)) {
+        domains.push(d);
+      }
+    }
+
+    const paths = ['/', window.location.pathname, ''];
+
+    const cookieNames = new Set<string>();
+    if (document.cookie) {
+      document.cookie.split(';').forEach((cookie) => {
+        const parts = cookie.split('=');
+        const name = parts[0]?.trim();
+        if (name) {
+          cookieNames.add(name);
+        }
+      });
+    }
+
+    const commonCookieNames = [
+      'accToken',
+      'accessToken',
+      'refToken',
+      'refreshToken',
+      'userId',
+      'userStatus',
+      'frameworkId',
+      'token',
+      'authToken',
+      'auth-token',
+      'X-auth-token',
+      'preferred_language',
+      'preferredLanguage',
+      'lang',
+    ];
+    commonCookieNames.forEach((name) => cookieNames.add(name));
+
+    cookieNames.forEach((name) => {
+      paths.forEach((path) => {
+        domains.forEach((domain) => {
+          const domainStr = domain ? `domain=${domain}; ` : '';
+          const pathStr = path ? `path=${path}; ` : '';
+          document.cookie = `${name}=; ${domainStr}${pathStr}expires=Thu, 01 Jan 1970 00:00:00 UTC; max-age=0;`;
+          document.cookie = `${name}=; ${domainStr}${pathStr}expires=Thu, 01 Jan 1970 00:00:00 UTC; max-age=0; secure; SameSite=Lax;`;
+          document.cookie = `${name}=; ${domainStr}${pathStr}expires=Thu, 01 Jan 1970 00:00:00 UTC; max-age=0; secure; SameSite=None;`;
+        });
+      });
+    });
+  } catch {
+    // ignore
+  }
+
+  // 4. Clear IndexedDB if supported
+  try {
+    if (window.indexedDB && typeof window.indexedDB.databases === 'function') {
+      window.indexedDB.databases().then((databases) => {
+        databases.forEach((database) => {
+          if (database.name) {
+            window.indexedDB.deleteDatabase(database.name);
+          }
+        });
+      }).catch(() => {
+        // ignore
+      });
+    }
+  } catch {
+    // ignore
+  }
+};
+
+export const performRedirect = async (
   accessToken: string,
   router: AppRouterInstance,
-  defaultRoute: string = '/home',
+  defaultRoute = '/home',
   refreshToken?: string
 ) => {
-  const redirectUrl = localStorage.getItem('redirectUrl');
-  localStorage.removeItem('redirectUrl');
+  const hasTnC =
+    typeof window !== 'undefined' &&
+    localStorage.getItem('has_terms_and_conditions') === 'true';
+  let tcAccepted =
+    typeof window !== 'undefined' &&
+    localStorage.getItem('has_accepted_terms_and_conditions') === 'true';
 
-  const refTokenVal = refreshToken || (typeof window !== 'undefined' ? localStorage.getItem('refToken') : null);
+  // Check if existing user has already accepted terms in profile
+  if (hasTnC && !tcAccepted && accessToken) {
+    const alreadyAccepted = await checkUserAcceptedTerms(accessToken);
+    if (alreadyAccepted) {
+      tcAccepted = true;
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('has_accepted_terms_and_conditions', 'true');
+      }
+    }
+  }
+
+  if (hasTnC && !tcAccepted) {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('accToken', accessToken);
+      if (refreshToken) {
+        localStorage.setItem('refToken', refreshToken);
+      }
+      const isSecure = window.location.protocol === 'https:';
+      const secureFlag = isSecure ? '; secure' : '';
+      document.cookie = `accToken=${accessToken}; path=/; max-age=86400${secureFlag}; SameSite=Lax`;
+    }
+    router.replace('/terms');
+    return;
+  }
+
+  const redirectUrl =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('redirectUrl')
+      : null;
+
+  const flowVal =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('flow')
+      : null;
+
+  const langVal =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('preferred_language') ||
+        localStorage.getItem('preferredLanguage') ||
+        localStorage.getItem('lang')
+      : null;
+
+  const refTokenVal =
+    refreshToken ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('refToken')
+      : null);
 
   if (redirectUrl) {
     let targetUrl = redirectUrl;
     try {
-      const urlObj = new URL(redirectUrl);
+      let parseableUrl = redirectUrl;
+      for (let i = 0; i < 3; i++) {
+        if (parseableUrl.includes('%')) {
+          try {
+            parseableUrl = decodeURIComponent(parseableUrl);
+          } catch {
+            break;
+          }
+        } else {
+          break;
+        }
+      }
+      if (parseableUrl.includes('&') && !parseableUrl.includes('?')) {
+        parseableUrl = parseableUrl.replace('&', '?');
+      }
+      const urlObj = new URL(parseableUrl);
+      if (flowVal && !urlObj.searchParams.has('flow')) {
+        urlObj.searchParams.set('flow', flowVal);
+      }
       urlObj.searchParams.set('accToken', accessToken);
       if (refTokenVal) {
         urlObj.searchParams.set('refToken', refTokenVal);
       }
-      targetUrl = urlObj.toString();
-    } catch (e) {
-      const separator = targetUrl.includes('?') ? '&' : '?';
-      let extraParams = `accToken=${encodeURIComponent(accessToken)}`;
-      if (refTokenVal) {
-        extraParams += `&refToken=${encodeURIComponent(refTokenVal)}`;
+      if (langVal) {
+        if (urlObj.searchParams.has('preferredLanguage')) {
+          urlObj.searchParams.set('preferredLanguage', langVal);
+        } else {
+          urlObj.searchParams.set('preferred_language', langVal);
+        }
       }
-      targetUrl = `${targetUrl}${separator}${extraParams}`;
+      targetUrl = urlObj.toString();
+    } catch {
+      const separator = targetUrl.includes('?') ? '&' : '?';
+      const paramsList: string[] = [];
+      if (flowVal && !targetUrl.includes('flow=')) {
+        paramsList.push(`flow=${encodeURIComponent(flowVal)}`);
+      }
+      paramsList.push(`accToken=${encodeURIComponent(accessToken)}`);
+      if (refTokenVal) {
+        paramsList.push(`refToken=${encodeURIComponent(refTokenVal)}`);
+      }
+      if (
+        langVal &&
+        !targetUrl.includes('preferred_language=') &&
+        !targetUrl.includes('preferredLanguage=')
+      ) {
+        paramsList.push(`preferred_language=${encodeURIComponent(langVal)}`);
+      }
+      targetUrl = `${targetUrl}${separator}${paramsList.join('&')}`;
     }
+
+    // Clear all localStorage, sessionStorage, cookies, and IndexedDB before redirecting back!
+    clearAllStorageAndCookies();
 
     if (targetUrl.startsWith('http://') || targetUrl.startsWith('https://')) {
       window.location.replace(targetUrl);
@@ -778,6 +1250,9 @@ export const performRedirect = (
       router.replace(targetUrl);
     }
   } else {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('redirectUrl');
+    }
     router.replace(defaultRoute);
   }
 };
