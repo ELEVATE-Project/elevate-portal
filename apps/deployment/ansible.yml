@@ -12,7 +12,7 @@
         src: "/opt/backend/deployment/.token"
       register: slurpfile
     - name: Run vault credentials
-      shell: "curl --location --request GET '{{ vaultAddress }}{{ vault_env_path }}' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data' > '{{root_path}}/data2.json'"
+      shell: "curl --silent --insecure --location --request GET '{{ vaultAddress }}{{ vault_env_path }}' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data' > '{{root_path}}/data2.json'"
       register: vaultCurl
     - name: Change directory
       shell: cd {{project_path}}
@@ -45,7 +45,7 @@
     - name: Change directory
       shell: chdir {{project_path}}
     - name: Fetch pm2 config file
-      shell: "curl --location --request GET '{{ vaultAddress }}{{ vault_pm2_config_path }}' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data.data' > '{{ project_path }}/pm2.config.json'"
+      shell: "curl --silent --insecure --location --request GET '{{ vaultAddress }}{{ vault_pm2_config_path }}' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data.data' > '{{ project_path }}/pm2.config.json'"
       register: pm2
     - name: Change directory
       shell: cd {{project_path}}
