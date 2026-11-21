@@ -21,7 +21,7 @@ export const getBranding = async () => {
     (name, suf) => (name.endsWith(suf) ? name.slice(0, -suf.length) : name),
     domainPart
   );
-  if (core === 'shikshagrah' || core.startsWith('localhost') || core === '127.0.0.1' || core === 'default') core = 'shikshagraha';
+  if (core === 'shikshagrah') core = 'shikshagraha';
 
   let logo = '/icons/icon-192x192.png';
   let appName = core;
