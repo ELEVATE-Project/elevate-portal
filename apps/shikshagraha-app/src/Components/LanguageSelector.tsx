@@ -78,6 +78,8 @@ export default function LanguageSelector({
   }, [currentLanguage, i18n?.language]);
 
   const handleLanguageChange = (event: SelectChangeEvent<string>) => {
+    // Persist both legacy and current keys because redirecting applications
+    // may use either key before returning to this app.
     const newLang = event.target.value.toLowerCase();
     setSelectedLang(newLang);
 

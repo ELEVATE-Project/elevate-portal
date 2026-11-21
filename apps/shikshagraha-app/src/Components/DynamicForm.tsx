@@ -1756,7 +1756,8 @@ const DynamicForm = ({
           updatePayload.phone_code = '+91';
         }
       }
-      // Generic extraction of location reference fields (checking both lowercase and uppercase keys)
+      // Location widgets hold display objects, but the update API accepts their
+      // reference submission values. Handle them before generic custom fields.
       const locationKeys = ['state', 'district', 'block', 'cluster', 'school'];
       locationKeys.forEach((loc) => {
         const capitalLoc = loc.charAt(0).toUpperCase() + loc.slice(1);
@@ -1766,8 +1767,8 @@ const DynamicForm = ({
           updatePayload[loc] = extractReferenceSubmissionValue(val);
         }
       });
-
-      // Generic extraction of all other fields from formData
+      // Omit fields already transformed above, immutable identity fields, and
+      // credentials. The remaining entries are tenant-defined custom fields.
       Object.keys(formData).forEach((key) => {
         const lowerKey = key.toLowerCase();
         if (

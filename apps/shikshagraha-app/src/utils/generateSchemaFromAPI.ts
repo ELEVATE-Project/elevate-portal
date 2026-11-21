@@ -16,6 +16,8 @@ export const generateRJSFSchema = (
   subrolesData?: SubroleData,
   language = 'en'
 ) => {
+  // Convert backend field definitions into RJSF schema/UI schema pairs while
+  // retaining translation, required-field, and server editability rules.
   const schema: any = {
     type: 'object',
     properties: {},

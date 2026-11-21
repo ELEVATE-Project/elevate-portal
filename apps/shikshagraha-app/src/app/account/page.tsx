@@ -295,7 +295,8 @@ export default function Register() {
     setIsAuthenticated(!!localStorage.getItem('accToken'));
   }, [tenantConfigured, isUpdate, i18n.language]);
 
-  // Third useEffect: If in update mode, load user profile to prefill the form
+  // In update mode, read the saved profile after the schema is available so
+  // DynamicForm can preserve immutable fields and submit only valid changes.
   useEffect(() => {
     if (!isUpdate || formReadFields.length === 0) return;
     const token = localStorage.getItem('accToken');

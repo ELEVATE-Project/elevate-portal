@@ -171,7 +171,8 @@ function TermsAndConditionsContent() {
     }
   }, [initialLang]);
 
-  // Load tenant & execute route guards
+  // Block direct access unless the authenticated tenant requires terms and the
+  // user has not already accepted them; this prevents duplicate acceptance.
   useEffect(() => {
     if (typeof window === 'undefined') return;
 

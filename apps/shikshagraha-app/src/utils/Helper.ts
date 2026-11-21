@@ -1134,6 +1134,8 @@ export const performRedirect = async (
   defaultRoute = '/home',
   refreshToken?: string
 ) => {
+  // Rebuild the caller URL with current tokens, flow, and language, then clear
+  // local auth state so the embedded application cannot leak session data.
   const hasTnC =
     typeof window !== 'undefined' &&
     localStorage.getItem('has_terms_and_conditions') === 'true';

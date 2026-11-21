@@ -233,6 +233,8 @@ export const schemaRead = async (
 };
 
 export const loginSchemaRead = async (typeVal: string): Promise<any> => {
+  // Fetch the login-specific schema so tenants can configure authentication
+  // fields independently from the registration form.
   const apiUrl: string = `${API_ENDPOINTS.formRead}`;
   const tenantId = localStorage.getItem('tenantCode') || '';
   try {

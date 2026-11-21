@@ -10,6 +10,8 @@ interface I18nProviderProps {
 }
 
 export default function I18nProvider({ children }: I18nProviderProps) {
+  // Prefer an incoming language parameter, then saved preferences, so every
+  // route renders in the language selected before authentication or redirect.
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
