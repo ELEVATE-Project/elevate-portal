@@ -1,5 +1,13 @@
 import enTranslations from '../../public/assets/locales/en.json';
 import hiTranslations from '../../public/assets/locales/hi.json';
+import mrTranslations from '../../public/assets/locales/mr.json';
+import taTranslations from '../../public/assets/locales/ta.json';
+import teTranslations from '../../public/assets/locales/te.json';
+import guTranslations from '../../public/assets/locales/gu.json';
+import bnTranslations from '../../public/assets/locales/bn.json';
+import orTranslations from '../../public/assets/locales/or.json';
+import paTranslations from '../../public/assets/locales/pa.json';
+import knTranslations  from "../../public/assets/locales/kn.json";
 
 /**
  * Language options and static i18n dictionaries for Shikshagraha App
@@ -21,6 +29,7 @@ export const SUPPORTED_LANGUAGES: LanguageOption[] = [
   { code: 'gu', label: 'Gujarati', nativeLabel: 'ગુજરાતી' },
   { code: 'bn', label: 'Bengali', nativeLabel: 'বাংলা' },
   { code: 'or', label: 'Odia', nativeLabel: 'ଓଡ଼ିଆ' },
+  { code: 'pa', label: 'Punjabi', nativeLabel: 'ਪੰਜਾਬੀ' },
 ];
 
 export const DEFAULT_LANGUAGES: LanguageOption[] = [
@@ -38,6 +47,7 @@ export const LANGUAGE_LABELS: Record<string, string> = {
   gu: 'Gujarati',
   bn: 'Bengali',
   or: 'Odia',
+  pa: 'Punjabi',
 };
 
 export type TranslationKey = keyof typeof enTranslations;
@@ -45,6 +55,13 @@ export type TranslationKey = keyof typeof enTranslations;
 export const LOCALES: Record<string, Record<string, string>> = {
   en: enTranslations,
   hi: hiTranslations,
+  mr: mrTranslations,
+  ta: taTranslations,
+  te: teTranslations,
+  gu: guTranslations,
+  bn: bnTranslations,
+  or: orTranslations,
+  pa: paTranslations,
 };
 
 /**

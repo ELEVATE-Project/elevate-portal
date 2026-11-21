@@ -480,46 +480,29 @@ export default function Register() {
             display: 'flex',
             flexDirection: 'column',
             overflowY: 'auto',
+            overflowX: 'hidden',
+            maxWidth: '100vw',
           }}
         >
-          {/* Mobile Header Bar */}
-          <Box
-            sx={{
-              display: { xs: 'flex', md: 'none' },
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              px: 2.5,
-              py: 1.8,
-              bgcolor: '#FFFFFF',
-              borderBottom: '1px solid #E2E8F0',
-              position: 'sticky',
-              top: 0,
-              zIndex: 10,
-            }}
-          >
-            <Box
-              component="img"
-              src="/assets/images/SG_Logo.png"
-              alt="Shikshagraha"
-              sx={{ height: '36px', width: 'auto', objectFit: 'contain' }}
-            />
-          </Box>
-
           {/* Form Content Area */}
           <Box
             sx={{
               maxWidth: '560px',
               width: '100%',
+              minWidth: 0,
               mx: 'auto',
-              p: { xs: '24px 20px', sm: '36px', md: '48px 40px' },
+              p: { xs: '20px 16px', sm: '36px', md: '48px 40px' },
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              justifyContent: { xs: 'flex-start', md: 'center' },
+              flex: 1,
             }}
           >
-            {/* Desktop Header Row: Back Button + Title */}
+            {/* Account Header: Back Button + Title */}
             <Box
               sx={{
+                width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
@@ -549,7 +532,7 @@ export default function Register() {
                     letterSpacing: '-0.02em',
                   }}
                 >
-                  {translatePipe('yourDetails', i18n.language, "Your's details")}
+                  {translatePipe('yourDetails', i18n.language)}
                 </Typography>
               </Box>
             </Box>
@@ -571,7 +554,11 @@ export default function Register() {
               <Box
                 sx={{
                   width: '100%',
+                  minWidth: 0,
                   mx: 'auto',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  flex: { xs: 1, md: '0 0 auto' },
                   '& .MuiGrid-root.MuiGrid-item, & .MuiGrid-item': {
                     pt: '3px !important',
                     pb: '3px !important',
@@ -607,6 +594,10 @@ export default function Register() {
                   '& .MuiSelect-select': {
                     borderRadius: '10px',
                   },
+                  '& .rjsf, & form, & fieldset, & .MuiGrid-root': {
+                    minWidth: 0,
+                    maxWidth: '100%',
+                  },
                 }}
               >
                 <DynamicForm
@@ -620,19 +611,11 @@ export default function Register() {
                   fieldIdMapping={fieldNameToFieldIdMapping}
                   isUpdate={isUpdate}
                   prefilledFormData={prefilledFormData}
-                  submitButtonText={
-                    isUpdate
-                      ? translatePipe(
-                          'updateProfile',
-                          i18n.language,
-                          'Update Profile'
-                        )
-                      : translatePipe(
-                          'saveAndContinue',
-                          i18n.language,
-                          'Save & Continue'
-                        )
-                  }
+                  submitButtonText={translatePipe(
+                    'saveAndContinue',
+                    i18n.language,
+                    'Save & Continue'
+                  )}
                 />
               </Box>
             )}

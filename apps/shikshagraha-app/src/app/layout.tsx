@@ -53,6 +53,40 @@ export default function RootLayout({
 						button, input, select, textarea {
 							font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 						}
+						/* MUI components declare a font of their own, which otherwise
+						 * prevents them from inheriting the application font. Keep the
+						 * typography consistent across every route and dialog. */
+						.MuiTypography-root,
+						.MuiButton-root,
+						.MuiInputBase-input,
+						.MuiInputLabel-root,
+						.MuiFormHelperText-root,
+						.MuiMenuItem-root,
+						.MuiSelect-select,
+						.MuiChip-label {
+							font-family: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+						}
+						/* Dynamic RJSF widgets are shared by login, registration and
+						 * account. Their desktop defaults are deliberately compact; make
+						 * their tap targets and text readable on phones. */
+						@media (max-width: 599.95px) {
+							.MuiInputBase-root.MuiOutlinedInput-root,
+							.MuiSelect-root.MuiOutlinedInput-root {
+								min-height: 48px !important;
+							}
+							.MuiInputBase-input,
+							.MuiSelect-select {
+								font-size: 16px !important;
+								padding-top: 12px !important;
+								padding-bottom: 12px !important;
+							}
+							.MuiInputLabel-root {
+								font-size: 14px !important;
+							}
+							.MuiFormHelperText-root {
+								font-size: 12px !important;
+							}
+						}
 						*, *:before, *:after { box-sizing: inherit; }
 
 						/* Prevent viewport resizing quirks on iOS */
@@ -82,15 +116,6 @@ export default function RootLayout({
 						html.is-ios input,
 						html.is-ios select,
 						html.is-ios textarea { font-size: 16px !important; }
-
-						/* Visually scale MUI field wrappers back to ~14px without triggering zoom */
-						html.is-ios .MuiFormControl-root,
-						html.is-ios .MuiInputBase-root {
-							transform: scale(0.875);
-							transform-origin: top left;
-							width: calc(100% / 0.875);
-							will-change: transform;
-						}
 
 						/* Keep outlines/underlines stable and behind label */
 						.MuiInput-underline:before, .MuiInput-underline:after { transform: none; }

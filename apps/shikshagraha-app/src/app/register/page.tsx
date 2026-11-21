@@ -22,6 +22,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { translatePipe } from '../../utils/translatePipe';
+import { extractAndStoreUrlParams } from '../../utils/Helper';
 
 export default function Register() {
   const { i18n } = useTranslation();
@@ -32,10 +33,7 @@ export default function Register() {
   const queryRouter = useSearchParams();
 
   useEffect(() => {
-    const redirectUrl = queryRouter.get('redirectUrl');
-    if (redirectUrl) {
-      localStorage.setItem('redirectUrl', decodeURIComponent(redirectUrl));
-    }
+    extractAndStoreUrlParams();
   }, [queryRouter]);
   const [formData, setFormData] = useState();
   const [fieldNameToFieldIdMapping, setFieldNameToFieldIdMapping] = useState(

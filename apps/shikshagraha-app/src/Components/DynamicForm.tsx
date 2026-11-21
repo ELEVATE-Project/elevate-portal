@@ -4,7 +4,7 @@ import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import axios from 'axios';
 import Grid from '@mui/material/Grid';
-import { Box, Button } from '@mui/material';
+import { Box, Button, Snackbar } from '@mui/material';
 import {
   TextField,
   Container,
@@ -102,6 +102,9 @@ const DynamicForm = ({
   const [formUiSchemaOriginal, setFormUiSchemaOriginal] = useState(uiSchema);
   const [formUiSchema, setFormUiSchema] = useState(uiSchema);
   const [formData, setFormData] = useState({});
+  // Preserve the values loaded from profile-read so an account update only
+  // validates fields the user actually changes.
+  const initialProfileFormData = useRef<Record<string, any> | null>(null);
   const [dependentSchema, setDependentSchema] = useState([]);
   const [isInitialCompleted, setIsInitialCompleted] = useState(false);
   const [hideAndSkipFields, setHideAndSkipFields] = useState({});
@@ -113,6 +116,9 @@ const DynamicForm = ({
   const [requestData, setRequestData] = useState<any>({});
   const router = useRouter();
   const [showError, setShowError] = useState(false);
+  const [showProfileUpdateSuccess, setShowProfileUpdateSuccess] = useState(
+    false
+  );
   const [isOpenOTP, setIsOpenOTP] = useState(false);
   const [registerData, setRegisterData] = useState<any>({});
   const [hashCode, setHashCode] = useState('');
@@ -361,11 +367,26 @@ const DynamicForm = ({
     const enabledFieldNames = Object.keys(formSchema.properties).filter(
       (fieldName) => !isDisabled(fieldName)
     );
+    const hasChangedFromInitialValue = (fieldName) => {
+      if (!isUpdate || !initialProfileFormData.current) return true;
+      return (
+        JSON.stringify(formData?.[fieldName] ?? null) !==
+        JSON.stringify(initialProfileFormData.current?.[fieldName] ?? null)
+      );
+    };
+    // A profile update may change just one value. Empty fields must not make
+    // Save & Continue unavailable. Likewise, profile values that were already
+    // present should not prevent saving an unrelated valid edit. A changed
+    // field with an invalid value still prevents submission.
     const hasFieldErrors = enabledFieldNames.some(
-      (fieldName) => Boolean(fieldErrors[fieldName])
+      (fieldName) =>
+        Boolean(fieldErrors[fieldName]) &&
+        (!isUpdate || hasChangedFromInitialValue(fieldName))
     );
     const hasFormErrors = enabledFieldNames.some(
-      (fieldName) => Boolean(formErrors[fieldName])
+      (fieldName) =>
+        Boolean(formErrors[fieldName]) &&
+        (!isUpdate || hasChangedFromInitialValue(fieldName))
     );
     const hasMissingRequiredField = enabledFieldNames.some((fieldName) => {
       const fieldSchema = formSchema.properties[fieldName];
@@ -375,7 +396,11 @@ const DynamicForm = ({
       return isRequired && !hasValue(formData?.[fieldName]);
     });
 
-    return hasFieldErrors || hasFormErrors || hasMissingRequiredField;
+    return (
+      hasFieldErrors ||
+      hasFormErrors ||
+      (!isUpdate && hasMissingRequiredField)
+    );
   };
   const getRegistrationCode = (formData) => {
     const regConfig = schema.meta?.registrationCodeConfig;
@@ -597,6 +622,9 @@ const DynamicForm = ({
 
   useEffect(() => {
     if (prefilledFormData && Object.keys(prefilledFormData).length > 0) {
+      if (isUpdate && !initialProfileFormData.current) {
+        initialProfileFormData.current = { ...prefilledFormData };
+      }
       setFormData((prev: any) => ({
         ...prev,
         ...prefilledFormData,
@@ -1300,6 +1328,7 @@ const DynamicForm = ({
 
   const handleChange = useCallback(
     async ({ formData, errors }: { formData: any; errors: any }) => {
+      setIsTouched(true);
       const newErrors: Record<string, string[]> = {};
       Object.keys(formSchema?.properties || {}).forEach((fieldName) => {
         const fieldErrors = validateFieldDynamically(
@@ -1318,8 +1347,11 @@ const DynamicForm = ({
       const prevUdise =
         prevFormData.current?.udise || prevFormData.current?.Udise;
       const currentUdise = formData?.Udise;
+      const hasUdiseField = Boolean(
+        formSchema?.properties?.Udise || formSchema?.properties?.udise
+      );
       let newFormData = { ...formData };
-      if (currentUdise === undefined) {
+      if (hasUdiseField && currentUdise === undefined) {
         formData.Udise = '';
         formData.udise = '';
         formData.State = { _id: '', name: '', externalId: '' };
@@ -1544,11 +1576,16 @@ const DynamicForm = ({
   };
 
   const transformErrors = (errors) => {
-    if (!submitted) {
+    if (!submitted && !isTouched) {
       return [];
     }
 
     return (errors || []).filter((error) => {
+      // Do not show every missing required-field error while the user is
+      // editing. Pattern and other field errors remain visible immediately.
+      if (!submitted && error.name === 'required') {
+        return false;
+      }
       const propertyName = error.property
         ? error.property.replace(/^\./, '')
         : '';
@@ -1782,25 +1819,28 @@ const DynamicForm = ({
 
       const data = await response.json();
       if (response.ok && (data.responseCode === 'OK' || data.result)) {
-        setDialogConfig({
-          open: true,
-          type: 'profileUpdated',
-          title: t('profileUpdatedSuccessfully') || 'Profile Updated Successfully',
-          message: data.message || 'Your account details have been updated.',
-          buttonText: t('continue') || 'Continue',
-          route: null,
-          showCloseIcon: false,
-          accessToken: token,
-        });
+        setShowProfileUpdateSuccess(true);
+        const redirectUrl = localStorage.getItem('redirectUrl');
+        setTimeout(async () => {
+          if (redirectUrl) {
+            await performRedirect(token, router);
+          } else {
+            window.history.back();
+          }
+        }, 1500);
       } else {
         setShowError(true);
         setAlertSeverity('error');
-        setErrorMessage(data?.message || 'Failed to update profile. Please try again.');
+        setErrorMessage(
+          data?.message || t('profileUpdateFailed')
+        );
       }
     } catch (err: any) {
       setShowError(true);
       setAlertSeverity('error');
-      setErrorMessage(err?.message || 'An error occurred while updating profile.');
+      setErrorMessage(
+        err?.message || t('profileUpdateUnexpectedError')
+      );
     }
   };
 
@@ -2095,19 +2135,6 @@ const DynamicForm = ({
   const handleDialogAction = async () => {
     setDialogConfig((prev) => ({ ...prev, open: false }));
 
-    if (dialogConfig.type === 'profileUpdated') {
-      const accessToken =
-        dialogConfig.accessToken || localStorage.getItem('accToken') || '';
-      const redirectUrl = localStorage.getItem('redirectUrl');
-
-      if (redirectUrl && accessToken) {
-        await performRedirect(accessToken, router);
-      } else {
-        window.history.back();
-      }
-      return;
-    }
-
     if (dialogConfig.route) {
       const accessToken = dialogConfig.accessToken || localStorage.getItem('accToken');
       if (accessToken) {
@@ -2225,6 +2252,20 @@ const DynamicForm = ({
           </Alert>
         </Box>
       )}
+      <Snackbar
+        open={showProfileUpdateSuccess}
+        autoHideDuration={1500}
+        onClose={() => setShowProfileUpdateSuccess(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setShowProfileUpdateSuccess(false)}
+        >
+          {t('profileUpdatedSuccessfully')}
+        </Alert>
+      </Snackbar>
       {!isCallSubmitInHandle ? (
         <Box
           sx={{
@@ -2232,6 +2273,10 @@ const DynamicForm = ({
             flexDirection: 'column',
             alignItems: 'center',
             width: '100%',
+            ...(isUpdate && {
+              flex: { xs: 1, md: '0 0 auto' },
+              minHeight: { xs: '100%', md: 'auto' },
+            }),
           }}
         >
           <Box sx={{ width: '100%', maxWidth: '560px', mx: 'auto' }}>
@@ -2261,7 +2306,10 @@ const DynamicForm = ({
               width: '100%',
               maxWidth: '560px',
               mx: 'auto',
-              marginTop: '26px !important',
+              marginTop: isUpdate
+                ? { xs: 'auto !important', md: '26px !important' }
+                : '26px !important',
+              pb: { xs: 1, md: 0 },
             }}
           >
             <Button

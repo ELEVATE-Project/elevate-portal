@@ -23,13 +23,16 @@ export default function I18nProvider({ children }: I18nProviderProps) {
           urlParams.get('lang');
 
         if (!queryLang) {
-          const redirectUrl = urlParams.get('redirectUrl');
+          const redirectUrl =
+            urlParams.get('redirectUrl') || urlParams.get('redirecturl');
           if (redirectUrl) {
             try {
               let decoded = redirectUrl;
               try {
                 decoded = decodeURIComponent(redirectUrl);
-              } catch {}
+              } catch {
+                // Use the original value when it is not URI-encoded.
+              }
               if (decoded.includes('&') && !decoded.includes('?')) {
                 decoded = decoded.replace('&', '?');
               }
@@ -38,7 +41,7 @@ export default function I18nProvider({ children }: I18nProviderProps) {
                 parsed.searchParams.get('preferred_language') ||
                 parsed.searchParams.get('preferredLanguage') ||
                 parsed.searchParams.get('lang');
-            } catch (_e) {
+            } catch {
               // Ignore
             }
           }

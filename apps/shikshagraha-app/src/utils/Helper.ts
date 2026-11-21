@@ -902,7 +902,8 @@ export const extractAndStoreUrlParams = () => {
     const searchParams = url.searchParams;
 
     // 1. Raw redirectUrl from search params or localStorage
-    const rawRedirectUrl = searchParams.get('redirectUrl');
+    const rawRedirectUrl =
+      searchParams.get('redirectUrl') || searchParams.get('redirecturl');
     const storedRedirectUrl = localStorage.getItem('redirectUrl');
     let redirectCandidate = rawRedirectUrl || storedRedirectUrl;
     if (redirectCandidate) {
@@ -1002,6 +1003,7 @@ export const extractAndStoreUrlParams = () => {
       'refToken',
       'refreshToken',
       'redirectUrl',
+      'redirecturl',
     ].forEach((param) => {
       if (searchParams.has(param)) {
         searchParams.delete(param);

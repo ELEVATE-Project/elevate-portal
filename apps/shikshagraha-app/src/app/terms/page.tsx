@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo, useRef, Suspense } from 'react';
+import React, { useEffect, useState, useMemo, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Box,
@@ -13,10 +13,6 @@ import {
   createTheme,
   CssBaseline,
 } from '@mui/material';
-import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import PauseIcon from '@mui/icons-material/Pause';
-import VerifiedUserOutlinedIcon from '@mui/icons-material/VerifiedUserOutlined';
-import HeadphonesOutlinedIcon from '@mui/icons-material/HeadphonesOutlined';
 import { fetchTermsAndConditions } from '../../services/LoginService';
 import {
   performRedirect,
@@ -25,10 +21,7 @@ import {
   extractAndStoreUrlParams,
 } from '../../utils/Helper';
 import { useTranslation } from 'react-i18next';
-import {
-  LANGUAGE_LABELS,
-  getTermsI18nText,
-} from '../../constants/languages';
+import { getTermsI18nText } from '../../constants/languages';
 import { translatePipe, formatMarkdownContent } from '../../utils/translatePipe';
 
 /**
@@ -84,10 +77,9 @@ interface CtaItem {
 }
 
 interface TermsPolicyData {
+  title?: Record<string, string> | string;
   heading?: Record<string, string> | string;
   content?: Record<string, { text?: string } | string> | string;
-  needAudio?: boolean;
-  audioFile?: Record<string, string>;
   cta?: CtaItem[];
 }
 
@@ -128,9 +120,7 @@ function TermsAndConditionsContent() {
   const [error, setError] = useState<string | null>(null);
   const [policyData, setPolicyData] = useState<TermsPolicyData | null>(null);
   const [hasDeclined, setHasDeclined] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [isAgreeing, setIsAgreeing] = useState(false);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Dynamic branding theming colors from localStorage
   const [themeColors, setThemeColors] = useState({
@@ -241,44 +231,10 @@ function TermsAndConditionsContent() {
     }
   };
 
-  // Derive available languages from content keys (fallback to en, hi)
-  const availableLanguages = useMemo(() => {
-    const langs = new Set<string>(['en', 'hi']);
-    if (policyData?.content && typeof policyData.content === 'object') {
-      Object.keys(policyData.content).forEach((key) => langs.add(key.toLowerCase()));
-    }
-    if (policyData?.audioFile && typeof policyData.audioFile === 'object') {
-      Object.keys(policyData.audioFile).forEach((key) => langs.add(key.toLowerCase()));
-    }
-    return Array.from(langs).map((code) => ({
-      code,
-      label: LANGUAGE_LABELS[code] || code.toUpperCase(),
-    }));
-  }, [policyData]);
-
-  // Handle language switch
-  const handleLanguageChange = (newLang: string) => {
-    setCurrentLang(newLang);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('preferredLanguage', newLang);
-    }
-    if (i18n && typeof i18n.changeLanguage === 'function') {
-      i18n.changeLanguage(newLang);
-    }
-    // Stop audio on language change
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    }
-  };
 
   const handleAgree = async () => {
     if (isAgreeing) return;
     setIsAgreeing(true);
-    if (audioRef.current) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    }
     const accToken = localStorage.getItem('accToken') || '';
     const refToken = localStorage.getItem('refToken') || undefined;
 
@@ -307,27 +263,17 @@ function TermsAndConditionsContent() {
     // TODO: Implement final decline behavior when product requirement is specified
   };
 
-  // Audio Play / Pause toggle
-  const handleToggleAudio = () => {
-    if (!audioRef.current) return;
-    if (isPlaying) {
-      audioRef.current.pause();
-      setIsPlaying(false);
-    } else {
-      audioRef.current
-        .play()
-        .then(() => setIsPlaying(true))
-        .catch((err) => {
-          console.error('Audio playback error:', err);
-          setIsPlaying(false);
-        });
-    }
-  };
-
-  // Heading with translation pipe and i18n fallback
+  // The form-read API supplies the title within its fields object. Older
+  // policies may use heading, so retain it as a compatibility fallback.
   const heading = useMemo(() => {
-    const apiHeading = translatePipe(policyData?.heading, currentLang, '');
-    return apiHeading || getTermsI18nText('termsAndConditions', currentLang);
+    const apiTitle = translatePipe(
+      policyData?.title ?? policyData?.heading,
+      currentLang,
+      ''
+    );
+    return (apiTitle || getTermsI18nText('termsAndConditions', currentLang))
+      .replace(/\*\*(.*?)\*\*/g, '$1')
+      .trim();
   }, [policyData, currentLang]);
 
   // Sanitized & Markdown-formatted HTML content through translatePipe
@@ -336,13 +282,6 @@ function TermsAndConditionsContent() {
     const rawContent = translatePipe(policyData.content, currentLang, '');
     const markdownFormatted = formatMarkdownContent(rawContent);
     return sanitizeHtml(markdownFormatted);
-  }, [policyData, currentLang]);
-
-  // Audio source with translation pipe
-  const audioSrc = useMemo(() => {
-    if (policyData?.needAudio === false) return null;
-    if (!policyData?.audioFile) return null;
-    return translatePipe(policyData.audioFile, currentLang, '') || null;
   }, [policyData, currentLang]);
 
   // CTAs
@@ -379,6 +318,10 @@ function TermsAndConditionsContent() {
             margin: 0,
             padding: 0,
             backgroundColor: '#f3f4f6',
+            overflow: 'hidden',
+          },
+          html: {
+            overflow: 'hidden',
           },
         },
       },
@@ -391,8 +334,10 @@ function TermsAndConditionsContent() {
       {/* Background with ambient branded mesh gradient */}
       <Box
         sx={{
-          minHeight: '100vh',
-          width: '100vw',
+          minHeight: '100dvh',
+          height: { xs: '100dvh', sm: 'auto' },
+          width: '100%',
+          maxWidth: '100%',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -403,7 +348,7 @@ function TermsAndConditionsContent() {
           p: { xs: 0, sm: 3, md: 4 },
           boxSizing: 'border-box',
           position: 'relative',
-          overflow: { xs: 'hidden', sm: 'hidden' },
+          overflow: 'hidden',
           '&::before': {
             display: { xs: 'none', sm: 'block' },
             content: '""',
@@ -449,7 +394,7 @@ function TermsAndConditionsContent() {
               position: 'relative',
               zIndex: 1,
               width: { xs: '100%', sm: 'auto' },
-              height: { xs: '100vh', sm: 'auto' },
+              height: { xs: '100dvh', sm: 'auto' },
             }}
           >
             <CircularProgress sx={{ color: themeColors.primary }} size={42} />
@@ -519,35 +464,15 @@ function TermsAndConditionsContent() {
               },
               display: 'flex',
               flexDirection: 'column',
-              height: { xs: '100vh', sm: 'auto' },
+              height: { xs: '100dvh', sm: 'auto' },
               maxHeight: { xs: '100dvh', sm: '92vh', md: '88vh' },
               boxSizing: 'border-box',
               overflow: 'hidden',
+              minWidth: 0,
               border: { xs: 'none', sm: '1px solid rgba(226, 232, 240, 0.8)' },
             }}
           >
-            {/* Top Dual-Brand Gradient Accent Bar */}
-            <Box
-              sx={{
-                height: '5px',
-                width: '100%',
-                background: `linear-gradient(90deg, ${themeColors.primary} 0%, ${themeColors.secondary} 100%)`,
-                flexShrink: 0,
-              }}
-            />
-
-            {/* Hidden HTML5 Audio Element */}
-            {audioSrc && (
-              <audio
-                ref={audioRef}
-                src={audioSrc}
-                onEnded={() => setIsPlaying(false)}
-                onPause={() => setIsPlaying(false)}
-                onPlay={() => setIsPlaying(true)}
-              />
-            )}
-
-            {/* Header: Branded Icon + Title + Language Selector */}
+            {/* Header */}
             <Box
               sx={{
                 p: { xs: 2, sm: 3.5, md: 4 },
@@ -559,184 +484,34 @@ function TermsAndConditionsContent() {
                 gap: 1.5,
                 bgcolor: '#ffffff',
                 flexShrink: 0,
+                boxShadow: '0 3px 10px rgba(15, 23, 42, 0.06)',
+                position: 'relative',
+                zIndex: 2,
               }}
             >
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 1.25, sm: 1.75 } }}>
-                <Box
-                  sx={{
-                    width: { xs: 38, sm: 44 },
-                    height: { xs: 38, sm: 44 },
-                    borderRadius: '12px',
-                    bgcolor: `${themeColors.primary}12`,
-                    color: themeColors.primary,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexShrink: 0,
-                    boxShadow: `0 2px 8px ${themeColors.primary}15`,
-                  }}
-                >
-                  <VerifiedUserOutlinedIcon sx={{ fontSize: { xs: 20, sm: 24 } }} />
-                </Box>
-                <Box>
-                  <Typography
-                    variant="h6"
-                    component="h1"
-                    sx={{
-                      fontWeight: 700,
-                      fontSize: { xs: '16.5px', sm: '20px' },
-                      color: '#0f172a',
-                      letterSpacing: '-0.3px',
-                      lineHeight: 1.25,
-                    }}
-                  >
-                    {heading}
-                  </Typography>
-                  <Typography
-                    variant="caption"
-                    sx={{
-                      color: '#64748b',
-                      fontSize: { xs: '11.5px', sm: '12.5px' },
-                      fontWeight: 500,
-                      display: 'block',
-                      mt: 0.25,
-                    }}
-                  >
-                    Please review our terms & guidelines
-                  </Typography>
-                </Box>
-              </Box>
-            </Box>
-
-            {/* Audio Narration Card */}
-            {policyData?.needAudio !== false && audioSrc && (
-              <Box
+              <Typography
+                variant="h6"
+                component="h1"
                 sx={{
-                  mx: { xs: 2, sm: 3.5, md: 4 },
-                  mt: { xs: 1.5, sm: 2 },
-                  mb: { xs: 0.5, sm: 1 },
-                  p: { xs: 1.25, sm: 2 },
-                  borderRadius: { xs: '12px', sm: '16px' },
-                  bgcolor: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  gap: { xs: 1.25, sm: 2 },
-                  flexShrink: 0,
-                  transition: 'all 0.2s ease',
-                  '&:hover': {
-                    borderColor: '#cbd5e1',
-                    bgcolor: '#f1f5f9',
-                  },
+                  fontWeight: 700,
+                  fontSize: { xs: '16.5px', sm: '20px' },
+                  color: '#0f172a',
+                  fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif',
+                  letterSpacing: '-0.3px',
+                  lineHeight: 1.25,
                 }}
               >
-                <Box
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 1.5,
-                    minWidth: 0,
-                  }}
-                >
-                  <Box
-                    sx={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: '10px',
-                      bgcolor: isPlaying
-                        ? `${themeColors.secondary}20`
-                        : `${themeColors.primary}12`,
-                      color: isPlaying
-                        ? themeColors.secondary
-                        : themeColors.primary,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      flexShrink: 0,
-                      transition: 'all 0.3s ease',
-                    }}
-                  >
-                    <HeadphonesOutlinedIcon sx={{ fontSize: 20 }} />
-                  </Box>
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography
-                      sx={{
-                        fontSize: '13.5px',
-                        fontWeight: 600,
-                        color: '#1e293b',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                      }}
-                    >
-                      {getTermsI18nText('listenToTerms', currentLang)}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        fontSize: '11.5px',
-                        color: isPlaying ? themeColors.primary : '#64748b',
-                        fontWeight: 500,
-                      }}
-                    >
-                      {isPlaying
-                        ? 'Playing audio narration...'
-                        : 'Listen in your preferred language'}
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <Button
-                  variant="contained"
-                  onClick={handleToggleAudio}
-                  disabled={!audioSrc}
-                  startIcon={
-                    isPlaying ? (
-                      <PauseIcon sx={{ fontSize: '17px !important' }} />
-                    ) : (
-                      <PlayArrowIcon sx={{ fontSize: '17px !important' }} />
-                    )
-                  }
-                  sx={{
-                    borderRadius: '20px',
-                    bgcolor: isPlaying
-                      ? themeColors.secondary
-                      : themeColors.primary,
-                    color: '#ffffff',
-                    textTransform: 'none',
-                    fontWeight: 600,
-                    fontSize: '13px',
-                    px: 2.25,
-                    py: 0.6,
-                    flexShrink: 0,
-                    boxShadow: `0 2px 8px ${
-                      isPlaying ? themeColors.secondary : themeColors.primary
-                    }33`,
-                    '&:hover': {
-                      bgcolor: isPlaying
-                        ? themeColors.secondary
-                        : themeColors.primary,
-                      filter: 'brightness(1.08)',
-                    },
-                    '&.Mui-disabled': {
-                      bgcolor: '#e2e8f0',
-                      color: '#94a3b8',
-                    },
-                  }}
-                >
-                  {isPlaying
-                    ? getTermsI18nText('pause', currentLang)
-                    : getTermsI18nText('play', currentLang)}
-                </Button>
-              </Box>
-            )}
+                {heading}
+              </Typography>
+            </Box>
 
             {/* Scrollable Terms Content */}
             <Box
               sx={{
                 flex: 1,
                 overflowY: 'auto',
+                overflowX: 'hidden',
+                minWidth: 0,
                 mx: { xs: 0, sm: 3.5, md: 4 },
                 my: { xs: 0, sm: 1.5 },
                 p: { xs: 2.25, sm: 3.5, md: 4 },
@@ -746,6 +521,8 @@ function TermsAndConditionsContent() {
                 fontSize: { xs: '14px', sm: '14.5px', md: '15px' },
                 lineHeight: 1.8,
                 color: '#334155',
+                overflowWrap: 'anywhere',
+                wordBreak: 'break-word',
                 // Custom slim scrollbar
                 '&::-webkit-scrollbar': {
                   width: '6px',
@@ -782,6 +559,20 @@ function TermsAndConditionsContent() {
                 '& li': {
                   marginBottom: '6px',
                 },
+                '& img, & video, & iframe': {
+                  maxWidth: '100%',
+                  height: 'auto',
+                },
+                '& table': {
+                  width: '100% !important',
+                  maxWidth: '100%',
+                  tableLayout: 'fixed',
+                  wordBreak: 'break-word',
+                },
+                '& pre, & code': {
+                  whiteSpace: 'pre-wrap',
+                  overflowWrap: 'anywhere',
+                },
               }}
               dangerouslySetInnerHTML={{ __html: sanitizedContent }}
             />
@@ -802,8 +593,8 @@ function TermsAndConditionsContent() {
                 gap: 1.25,
                 bgcolor: '#ffffff',
                 boxShadow: {
-                  xs: '0 -4px 18px rgba(0, 0, 0, 0.06)',
-                  sm: 'none',
+                  xs: '0 -3px 10px rgba(15, 23, 42, 0.06)',
+                  sm: '0 -3px 10px rgba(15, 23, 42, 0.05)',
                 },
                 flexShrink: 0,
                 zIndex: 2,
@@ -893,18 +684,6 @@ function TermsAndConditionsContent() {
                   )}
                 </Button>
               </Box>
-
-              <Typography
-                variant="caption"
-                sx={{
-                  textAlign: { xs: 'center', sm: 'right' },
-                  color: '#94a3b8',
-                  fontSize: '11.5px',
-                  mt: 0.25,
-                }}
-              >
-                By proceeding, you agree to our Terms of Service & Privacy Policy.
-              </Typography>
             </Box>
           </Paper>
         )}

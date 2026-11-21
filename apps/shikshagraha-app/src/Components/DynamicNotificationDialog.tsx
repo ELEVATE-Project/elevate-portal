@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogActions,
@@ -17,7 +18,7 @@ interface DynamicNotificationDialogProps {
   onClose: () => void;
   onAction?: () => void;
   title: string;
-  type: 'success' | 'profileUpdated' | 'userExists' | 'error' | '';
+  type: 'success' | 'userExists' | 'error' | '';
   message?: string;
   userName?: string;
   buttonText: string;
@@ -35,6 +36,7 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
   buttonText,
   showCloseIcon = false,
 }) => {
+  const { t } = useTranslation();
   const handleAction = () => {
     if (onAction) {
       onAction();
@@ -86,7 +88,7 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
             <GppMaybe sx={{ fontSize: 45, color: '#582E92' }} />
           </Box>
         )}
-        {(type === 'success' || type === 'profileUpdated') && (
+        {type === 'success' && (
           <CheckCircle sx={{ fontSize: 75, color: '#4CAF50' }} />
         )}
       </Box>
@@ -99,9 +101,9 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
         <DialogContentText>
           {type === 'success' ? (
             <>
-              Welcome,
+              {t('welcome')},
               <span style={{ fontWeight: 'bold' }}> {userName || 'User'} </span>{' '}
-              Your account has been successfully registered.
+              {t('registrationSuccessMessage')}
             </>
           ) : (
             <Typography variant="body2" color="text.secondary">
