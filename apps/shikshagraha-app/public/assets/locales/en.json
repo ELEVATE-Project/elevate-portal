@@ -96,5 +96,9 @@
   "no": "No",
   "showMore": "Show More",
   "showLess": "Show Less",
-  "accountDeletedSuccess": "Your account has been successfully deleted!"
+  "accountDeletedSuccess": "Your account has been successfully deleted!",
+  "enterPasswordToConfirmDeletion": "Please enter your password to confirm account deletion.",
+  "passwordRequired": "Password is required.",
+  "passwordRequirements": "Password must contain at least 8 characters, one uppercase letter, one lowercase letter, one number, one special character, and no spaces.",
+  "passwordMismatch": "Password and confirm password must be the same."
 }

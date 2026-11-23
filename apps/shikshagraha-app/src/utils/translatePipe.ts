@@ -23,8 +23,13 @@ export function translatePipe(
 
   // If already a plain string, check if it matches a static translation key in LOCALES
   if (typeof source === 'string') {
+    const baseLang = targetLang.includes('-')
+      ? targetLang.split('-')[0]
+      : undefined;
     const keyMatch =
-      LOCALES[targetLang]?.[source] || LOCALES['en']?.[source];
+      LOCALES[targetLang]?.[source] ||
+      (baseLang ? LOCALES[baseLang]?.[source] : undefined) ||
+      LOCALES['en']?.[source];
     if (keyMatch) {
       return keyMatch;
     }

@@ -430,7 +430,7 @@ export default function Profile({ params }: { params: { id: string } }) {
 
     const handleSubmit = () => {
       if (!password) {
-        setError('Password is required');
+        setError(t('passwordRequired'));
         return;
       }
       onSubmit(password);
@@ -439,15 +439,15 @@ export default function Profile({ params }: { params: { id: string } }) {
 
     return (
       <Dialog open={open} onClose={onClose}>
-        <DialogTitle>Confirm Account Deletion</DialogTitle>
+        <DialogTitle>{t('confirmAccountDeletion')}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Please enter your password to confirm account deletion.
+            {t('enterPasswordToConfirmDeletion')}
           </DialogContentText>
           <TextField
             autoFocus
             margin="dense"
-            label="Password"
+            label={t('password')}
             type={showPassworddelete ? 'text' : 'password'}
             fullWidth
             variant="standard"
@@ -492,10 +492,10 @@ export default function Profile({ params }: { params: { id: string } }) {
         </DialogContent>
         <DialogActions>
           <Button onClick={onClose} sx={{ color: '#582E92' }}>
-            Cancel
+            {t('cancel')}
           </Button>
           <Button onClick={handleSubmit} color="error">
-            Delete Account
+            {t('deleteAccount')}
           </Button>
         </DialogActions>
       </Dialog>

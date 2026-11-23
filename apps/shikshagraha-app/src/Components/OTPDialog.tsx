@@ -39,7 +39,7 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
   expirationTime = 600, // 10 minutes in seconds
   submitButtonText,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [otp, setOtp] = useState<string[]>(Array(otpLength).fill(''));
@@ -111,12 +111,16 @@ const OTPDialog: React.FC<OTPDialogProps> = ({
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-
-    const minPart = mins > 0 ? `${mins} minute${mins > 1 ? 's' : ''}` : '';
-    const secPart = secs > 0 ? `${secs} second${secs > 1 ? 's' : ''}` : '';
-
-    // Combine parts with space if both are present
-    return [minPart, secPart].filter(Boolean).join(' ');
+    // Use a locale-formatted, language-neutral duration so translated expiry
+    // messages never contain hardcoded English minute or second labels.
+    const formatter = new Intl.NumberFormat(i18n.language, {
+      useGrouping: false,
+      minimumIntegerDigits: 2,
+    });
+    const minuteFormatter = new Intl.NumberFormat(i18n.language, {
+      useGrouping: false,
+    });
+    return `${minuteFormatter.format(mins)}:${formatter.format(secs)}`;
   };
 
   const handleChange = (index: number, value: string) => {

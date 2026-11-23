@@ -56,6 +56,7 @@ export const LOCALES: Record<string, Record<string, string>> = {
   en: enTranslations,
   hi: hiTranslations,
   mr: mrTranslations,
+  kn: knTranslations,
   ta: taTranslations,
   te: teTranslations,
   gu: guTranslations,

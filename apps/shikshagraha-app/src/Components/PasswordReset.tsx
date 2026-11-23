@@ -617,12 +617,12 @@ const PasswordReset = ({ name }: { name: string }) => {
     if (name === 'password') {
       setNewPassword(val);
       if (!passwordRegex.test(val)) {
-        return 'Password must contain at least 8 characters, one uppercase, one lowercase, one number, one special character, and no spaces';
+        return t('passwordRequirements');
       }
     } else if (name === 'confirmPassword') {
       setConfirmPassword(val);
       if (val !== newPassword) {
-        return 'Password and confirm password must be the same.';
+        return t('passwordMismatch');
       }
     } else {
       return null;
@@ -664,7 +664,7 @@ const PasswordReset = ({ name }: { name: string }) => {
       val !== updatedFormData.confirmPassword
     ) {
       updatedErrors.confirmPassword =
-        'Password and confirm password must be the same.';
+        t('passwordMismatch');
     }
 
     // ✅ Validate confirmPassword when confirmPassword changes
@@ -674,7 +674,7 @@ const PasswordReset = ({ name }: { name: string }) => {
       val !== updatedFormData.password
     ) {
       updatedErrors.confirmPassword =
-        'Password and confirm password must be the same.';
+        t('passwordMismatch');
     }
 
     // ✅ Clear error if they now match
