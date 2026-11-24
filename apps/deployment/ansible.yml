@@ -3,19 +3,24 @@
   vars:
     project_path: /opt/frontend/shikshagrah
     root_path: /opt/frontend
+    vault_env_path: shikshagrah-portal
+    repo_url: https://github.com/ELEVATE-Project/elevate-portal
+    vault_pm2_config_path: shikshagrahportalPm2Config
+    port: 8000
+    name: shikshagraha-app
   tasks:
     - name: Slurp host file
       slurp:
         src: "/opt/backend/deployment/.token"
       register: slurpfile
     - name: Run vault credentials
-      shell: "curl --location --request GET '{{ vaultAddress }}shikshagrah-portal' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data' > '{{root_path}}/data2.json'"
+      shell: "curl --silent --insecure --location --request GET '{{ vaultAddress }}{{ vault_env_path }}' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data' > '{{root_path}}/data2.json'"
       register: vaultCurl
     - name: Change directory
       shell: cd {{project_path}}
     - name: Fetch the latest code
       git:
-        repo: https://github.com/ELEVATE-Project/elevate-portal
+        repo: "{{ repo_url }}"
         dest: "{{project_path}}"
         version: "{{gitBranch}}"
         force: yes
@@ -42,7 +47,7 @@
     - name: Change directory
       shell: chdir {{project_path}}
     - name: Fetch pm2 config file
-      shell: "curl --location --request GET '{{ vaultAddress }}shikshagrahportalPm2Config' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data.data' > '{{ project_path }}/pm2.config.json'"
+      shell: "curl --silent --insecure --location --request GET '{{ vaultAddress }}{{ vault_pm2_config_path }}' --header 'X-Vault-Token: {{ slurpfile['content'] | b64decode }}' | jq '.data.data' > '{{ project_path }}/pm2.config.json'"
       register: pm2
     - name: Change directory
       shell: cd {{project_path}}
@@ -54,4 +59,4 @@
       shell: |
         cd {{ project_path }} && \
         ./scripts/generate-env-config.sh && \
-        pm2 start "npx nx dev shikshagraha-app --port=8000 --verbose" --name shikshagraha-app --update-env
+        pm2 start "npx nx dev shikshagraha-app --port={{port}} --verbose" --name {{name}} --update-env
