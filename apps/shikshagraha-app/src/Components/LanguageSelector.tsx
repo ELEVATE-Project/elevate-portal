@@ -19,6 +19,7 @@ import {
   DEFAULT_LANGUAGES,
   LanguageOption,
 } from '../constants/languages';
+import { SHARED_KEYS } from '../constants/sharedKeys';
 
 export interface LanguageSelectorProps {
   /** If true, positions the selector fixed in the top-right corner of the page */
@@ -47,9 +48,8 @@ export default function LanguageSelector({
     if (i18n?.language) return i18n.language.toLowerCase();
     if (typeof window !== 'undefined') {
       const stored =
-        localStorage.getItem('preferredLanguage') ||
-        localStorage.getItem('preferred_language') ||
-        localStorage.getItem('lang') ||
+        localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY) ||
+        localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE) ||
         'en';
       return stored.toLowerCase();
     }
@@ -84,9 +84,8 @@ export default function LanguageSelector({
     setSelectedLang(newLang);
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem('preferredLanguage', newLang);
-      localStorage.setItem('preferred_language', newLang);
-      localStorage.setItem('lang', newLang);
+      localStorage.setItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY, newLang);
+      localStorage.setItem(SHARED_KEYS.PREFERRED_LANGUAGE, newLang);
     }
 
     if (i18n && typeof i18n.changeLanguage === 'function') {

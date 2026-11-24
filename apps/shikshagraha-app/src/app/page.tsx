@@ -37,6 +37,7 @@ import CustomTextFieldWidget from '../Components/RJSFWidget/CustomTextFieldWidge
 import OTPDialog from '../Components/OTPDialog';
 import { ALLOWED_AUTH_MODES, IDENTIFIER_TYPE } from '../utils/app.constant';
 import { generateRJSFSchema } from '../utils/generateSchemaFromAPI';
+import { SHARED_KEYS } from '../constants/sharedKeys';
 import { useTranslation } from 'react-i18next';
 
 export default function Login() {
@@ -75,14 +76,14 @@ export default function Login() {
 
   useEffect(() => {
     extractAndStoreUrlParams();
-    const queryLang = localStorage.getItem('preferred_language');
+    const queryLang = localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE);
     if (queryLang && i18n && typeof i18n.changeLanguage === 'function') {
       i18n.changeLanguage(queryLang);
     }
   }, [queryRouter, i18n]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accToken');
+    const token = localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN);
     const status = localStorage.getItem('userStatus');
     if (token && status !== 'archived') {
       performRedirect(token, router);
@@ -159,7 +160,7 @@ export default function Login() {
             localStorage.setItem('theming', JSON.stringify({ primaryColor, secondaryColor }));
 
             localStorage.setItem('auto_register', String(autoRegister));
-            localStorage.setItem('has_terms_and_conditions', String(hasTermsAndConditions));
+            localStorage.setItem(SHARED_KEYS.TERMS_ENABLED, String(hasTermsAndConditions));
             setIsAutoRegister(autoRegister);
 
             if (allowedAuthMode && Array.isArray(allowedAuthMode) && allowedAuthMode.length > 0) {
@@ -244,7 +245,7 @@ export default function Login() {
   }, [selectedAuthMode, brandingFetched]);
 
   useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem('accToken'));
+    setIsAuthenticated(!!localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN));
   }, []);
   const getIdentifierType = (val: string): string => {
     if (!val) return IDENTIFIER_TYPE.USERNAME;
@@ -359,7 +360,7 @@ export default function Login() {
     setLoading(true);
     try {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('has_accepted_terms_and_conditions');
+        localStorage.removeItem(SHARED_KEYS.TERMS_ACCEPTED);
       }
       const isMobile = getIdentifierType(userName) === IDENTIFIER_TYPE.MOBILE;
       const payload = {
@@ -382,10 +383,10 @@ export default function Login() {
           setFormSubmitted(false);
           return;
         }
-        const isRedirectActive = !!localStorage.getItem('redirectUrl');
-        localStorage.setItem('accToken', accessToken);
+        const isRedirectActive = !!localStorage.getItem(SHARED_KEYS.REDIRECT_URL);
+        localStorage.setItem(SHARED_KEYS.ACCESS_TOKEN, accessToken);
         if (refreshToken) {
-          localStorage.setItem('refToken', refreshToken);
+          localStorage.setItem(SHARED_KEYS.REFRESH_TOKEN, refreshToken);
         }
         if (!isRedirectActive) {
           localStorage.setItem('firstName', response?.result?.user?.name);
@@ -436,7 +437,7 @@ export default function Login() {
     setOtpError('');
     try {
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('has_accepted_terms_and_conditions');
+        localStorage.removeItem(SHARED_KEYS.TERMS_ACCEPTED);
       }
       const identifier = formData.userName || formData.username || formData.identifier || formData.phone || formData.mobile || formData.email || '';
       const payload = {
@@ -457,10 +458,10 @@ export default function Login() {
           return;
         }
 
-        const isRedirectActive = !!localStorage.getItem('redirectUrl');
-        localStorage.setItem('accToken', accessToken);
+        const isRedirectActive = !!localStorage.getItem(SHARED_KEYS.REDIRECT_URL);
+        localStorage.setItem(SHARED_KEYS.ACCESS_TOKEN, accessToken);
         if (refreshToken) {
-          localStorage.setItem('refToken', refreshToken);
+          localStorage.setItem(SHARED_KEYS.REFRESH_TOKEN, refreshToken);
         }
         if (!isRedirectActive) {
           localStorage.setItem('firstName', response?.result?.user?.name);

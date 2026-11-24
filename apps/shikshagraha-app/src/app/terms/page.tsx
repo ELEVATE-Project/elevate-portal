@@ -22,6 +22,7 @@ import {
 } from '../../utils/Helper';
 import { useTranslation } from 'react-i18next';
 import { getTermsI18nText } from '../../constants/languages';
+import { SHARED_KEYS } from '../../constants/sharedKeys';
 import { translatePipe, formatMarkdownContent } from '../../utils/translatePipe';
 
 /**
@@ -144,21 +145,21 @@ function TermsAndConditionsContent() {
   // Active language state
   const initialLang = useMemo(() => {
     if (typeof window === 'undefined') return 'en';
-    const queryLang = searchParams.get('preferred_language') || searchParams.get('lang');
+    const queryLang =
+      searchParams.get(SHARED_KEYS.PREFERRED_LANGUAGE) ||
+      searchParams.get(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY);
     if (queryLang) {
       const normalized = queryLang.trim().toLowerCase();
-      localStorage.setItem('preferred_language', normalized);
-      localStorage.setItem('preferredLanguage', normalized);
-      localStorage.setItem('lang', normalized);
+      localStorage.setItem(SHARED_KEYS.PREFERRED_LANGUAGE, normalized);
+      localStorage.setItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY, normalized);
       if (i18n && typeof i18n.changeLanguage === 'function' && i18n.language !== normalized) {
         i18n.changeLanguage(normalized);
       }
       return normalized;
     }
     const storedLang =
-      localStorage.getItem('preferredLanguage') ||
-      localStorage.getItem('preferred_language') ||
-      localStorage.getItem('lang');
+      localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY) ||
+      localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE);
     if (storedLang) return storedLang.toLowerCase();
     return 'en';
   }, [searchParams, i18n]);
@@ -178,13 +179,13 @@ function TermsAndConditionsContent() {
 
     extractAndStoreUrlParams();
 
-    const accToken = localStorage.getItem('accToken');
+    const accToken = localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN);
     if (!accToken) {
       router.replace('/');
       return;
     }
 
-    const hasTnC = localStorage.getItem('has_terms_and_conditions') === 'true';
+    const hasTnC = localStorage.getItem(SHARED_KEYS.TERMS_ENABLED) === 'true';
     if (!hasTnC) {
       router.replace('/home');
       return;
@@ -196,8 +197,8 @@ function TermsAndConditionsContent() {
         setLoading(true);
         const alreadyAccepted = await checkUserAcceptedTerms(accToken);
         if (alreadyAccepted) {
-          localStorage.setItem('has_accepted_terms_and_conditions', 'true');
-          const refToken = localStorage.getItem('refToken') || undefined;
+          localStorage.setItem(SHARED_KEYS.TERMS_ACCEPTED, 'true');
+          const refToken = localStorage.getItem(SHARED_KEYS.REFRESH_TOKEN) || undefined;
           performRedirect(accToken, router, '/home', refToken);
           return;
         }
@@ -236,8 +237,8 @@ function TermsAndConditionsContent() {
   const handleAgree = async () => {
     if (isAgreeing) return;
     setIsAgreeing(true);
-    const accToken = localStorage.getItem('accToken') || '';
-    const refToken = localStorage.getItem('refToken') || undefined;
+    const accToken = localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN) || '';
+    const refToken = localStorage.getItem(SHARED_KEYS.REFRESH_TOKEN) || undefined;
 
     try {
       if (accToken) {
@@ -246,7 +247,7 @@ function TermsAndConditionsContent() {
     } catch (err) {
       console.error('Error updating terms acceptance:', err);
     } finally {
-      localStorage.setItem('has_accepted_terms_and_conditions', 'true');
+      localStorage.setItem(SHARED_KEYS.TERMS_ACCEPTED, 'true');
 
       // Check if CTA config from form read defines a url / route
       const ctaUrl = (agreeCta as any)?.url || (agreeCta as any)?.route;

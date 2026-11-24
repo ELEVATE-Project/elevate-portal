@@ -3,6 +3,7 @@
 import React, { useEffect } from 'react';
 import '../i18n';
 import i18n from '../i18n';
+import { SHARED_KEYS } from '../constants/sharedKeys';
 import { extractAndStoreUrlParams } from '../utils/Helper';
 
 interface I18nProviderProps {
@@ -20,13 +21,13 @@ export default function I18nProvider({ children }: I18nProviderProps) {
 
         const urlParams = new URLSearchParams(window.location.search);
         let queryLang =
-          urlParams.get('preferred_language') ||
-          urlParams.get('preferredLanguage') ||
-          urlParams.get('lang');
+          urlParams.get(SHARED_KEYS.PREFERRED_LANGUAGE) ||
+          urlParams.get(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY);
 
         if (!queryLang) {
           const redirectUrl =
-            urlParams.get('redirectUrl') || urlParams.get('redirecturl');
+            urlParams.get(SHARED_KEYS.REDIRECT_URL) ||
+            urlParams.get(SHARED_KEYS.REDIRECT_URL_LEGACY);
           if (redirectUrl) {
             try {
               let decoded = redirectUrl;
@@ -40,9 +41,8 @@ export default function I18nProvider({ children }: I18nProviderProps) {
               }
               const parsed = new URL(decoded);
               queryLang =
-                parsed.searchParams.get('preferred_language') ||
-                parsed.searchParams.get('preferredLanguage') ||
-                parsed.searchParams.get('lang');
+                parsed.searchParams.get(SHARED_KEYS.PREFERRED_LANGUAGE) ||
+                parsed.searchParams.get(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY);
             } catch {
               // Ignore
             }
@@ -51,18 +51,16 @@ export default function I18nProvider({ children }: I18nProviderProps) {
 
         if (queryLang) {
           const normalized = queryLang.trim().toLowerCase();
-          localStorage.setItem('preferred_language', normalized);
-          localStorage.setItem('preferredLanguage', normalized);
-          localStorage.setItem('lang', normalized);
+          localStorage.setItem(SHARED_KEYS.PREFERRED_LANGUAGE, normalized);
+          localStorage.setItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY, normalized);
           if (i18n.language !== normalized) {
             i18n.changeLanguage(normalized);
           }
         } else {
           // Fall back to English as default if no language specified
           const stored =
-            localStorage.getItem('preferredLanguage') ||
-            localStorage.getItem('preferred_language') ||
-            localStorage.getItem('lang') ||
+            localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY) ||
+            localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE) ||
             'en';
           const targetLang = stored.toLowerCase();
           if (i18n.language !== targetLang) {
@@ -76,9 +74,8 @@ export default function I18nProvider({ children }: I18nProviderProps) {
 
     const handleStorageChange = () => {
       const stored =
-        localStorage.getItem('preferredLanguage') ||
-        localStorage.getItem('preferred_language') ||
-        localStorage.getItem('lang') ||
+        localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY) ||
+        localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE) ||
         'en';
       if (stored && stored.toLowerCase() !== i18n.language) {
         i18n.changeLanguage(stored.toLowerCase());

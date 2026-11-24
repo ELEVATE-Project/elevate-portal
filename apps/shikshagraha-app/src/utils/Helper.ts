@@ -12,6 +12,7 @@ import AppConst from './AppConst/AppConst';
 import { getEnvValue } from '@shared-lib';
 import { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 import { API_ENDPOINTS } from './API/APIEndpoints';
+import { SHARED_KEYS } from '../constants/sharedKeys';
 interface Value {
   value: string;
   label: string;
@@ -679,8 +680,8 @@ export const handleUnauthorizedError = (
     isAuthRedirecting = true;
     
     // Clear all auth-related localStorage items
-    localStorage.removeItem('accToken');
-    localStorage.removeItem('refToken');
+    localStorage.removeItem(SHARED_KEYS.ACCESS_TOKEN);
+    localStorage.removeItem(SHARED_KEYS.REFRESH_TOKEN);
     localStorage.removeItem('userId');
     localStorage.removeItem('userStatus');
     localStorage.clear();
@@ -903,8 +904,9 @@ export const extractAndStoreUrlParams = () => {
 
     // 1. Raw redirectUrl from search params or localStorage
     const rawRedirectUrl =
-      searchParams.get('redirectUrl') || searchParams.get('redirecturl');
-    const storedRedirectUrl = localStorage.getItem('redirectUrl');
+      searchParams.get(SHARED_KEYS.REDIRECT_URL) ||
+      searchParams.get(SHARED_KEYS.REDIRECT_URL_LEGACY);
+    const storedRedirectUrl = localStorage.getItem(SHARED_KEYS.REDIRECT_URL);
     let redirectCandidate = rawRedirectUrl || storedRedirectUrl;
     if (redirectCandidate) {
       for (let i = 0; i < 3; i++) {
@@ -921,34 +923,34 @@ export const extractAndStoreUrlParams = () => {
     }
 
     // 2. Extract flow: check direct query params first, then check inside redirectCandidate, then window.location.href, then localStorage
-    let flow = searchParams.get('flow');
+    let flow = searchParams.get(SHARED_KEYS.FLOW);
     if (!flow && redirectCandidate) {
-      flow = extractParamFromUrlString(redirectCandidate, ['flow']);
+      flow = extractParamFromUrlString(redirectCandidate, [SHARED_KEYS.FLOW]);
     }
     if (!flow && typeof window !== 'undefined') {
-      flow = extractParamFromUrlString(window.location.href, ['flow']);
+      flow = extractParamFromUrlString(window.location.href, [SHARED_KEYS.FLOW]);
     }
     if (!flow && typeof window !== 'undefined') {
-      flow = localStorage.getItem('flow');
+      flow = localStorage.getItem(SHARED_KEYS.FLOW);
     }
     if (flow) {
-      localStorage.setItem('flow', flow);
+      localStorage.setItem(SHARED_KEYS.FLOW, flow);
     }
 
     // 3. Extract accToken: check direct query params first, then check inside redirectCandidate
     let accToken =
-      searchParams.get('accToken') ||
-      searchParams.get('accessToken') ||
-      searchParams.get('token');
+      searchParams.get(SHARED_KEYS.ACCESS_TOKEN) ||
+      searchParams.get(SHARED_KEYS.ACCESS_TOKEN_LEGACY) ||
+      searchParams.get(SHARED_KEYS.TOKEN);
     if (!accToken && redirectCandidate) {
       accToken = extractParamFromUrlString(redirectCandidate, [
-        'accToken',
-        'accessToken',
-        'token',
+        SHARED_KEYS.ACCESS_TOKEN,
+        SHARED_KEYS.ACCESS_TOKEN_LEGACY,
+        SHARED_KEYS.TOKEN,
       ]);
     }
     if (accToken) {
-      localStorage.setItem('accToken', accToken);
+      localStorage.setItem(SHARED_KEYS.ACCESS_TOKEN, accToken);
       const isSecure = window.location.protocol === 'https:';
       const secureFlag = isSecure ? '; secure' : '';
       document.cookie = `accToken=${accToken}; path=/; max-age=86400${secureFlag}; SameSite=Lax`;
@@ -956,40 +958,37 @@ export const extractAndStoreUrlParams = () => {
 
     // 4. Extract refToken: check direct query params first, then check inside redirectCandidate
     let refToken =
-      searchParams.get('refToken') ||
-      searchParams.get('refreshToken');
+      searchParams.get(SHARED_KEYS.REFRESH_TOKEN) ||
+      searchParams.get(SHARED_KEYS.REFRESH_TOKEN_LEGACY);
     if (!refToken && redirectCandidate) {
       refToken = extractParamFromUrlString(redirectCandidate, [
-        'refToken',
-        'refreshToken',
+        SHARED_KEYS.REFRESH_TOKEN,
+        SHARED_KEYS.REFRESH_TOKEN_LEGACY,
       ]);
     }
     if (refToken) {
-      localStorage.setItem('refToken', refToken);
+      localStorage.setItem(SHARED_KEYS.REFRESH_TOKEN, refToken);
     }
 
     // 5. Extract preferred_language
     let queryLang =
-      searchParams.get('preferred_language') ||
-      searchParams.get('preferredLanguage') ||
-      searchParams.get('lang');
+      searchParams.get(SHARED_KEYS.PREFERRED_LANGUAGE) ||
+      searchParams.get(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY);
     if (!queryLang && redirectCandidate) {
       queryLang = extractParamFromUrlString(redirectCandidate, [
-        'preferred_language',
-        'preferredLanguage',
-        'lang',
+        SHARED_KEYS.PREFERRED_LANGUAGE,
+        SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY,
       ]);
     }
     if (queryLang) {
       const normalized = queryLang.trim().toLowerCase();
-      localStorage.setItem('preferred_language', normalized);
-      localStorage.setItem('preferredLanguage', normalized);
-      localStorage.setItem('lang', normalized);
+      localStorage.setItem(SHARED_KEYS.PREFERRED_LANGUAGE, normalized);
+      localStorage.setItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY, normalized);
     }
 
     // 6. Only store redirectUrl in localStorage when sent through params
     if (rawRedirectUrl) {
-      localStorage.setItem('redirectUrl', rawRedirectUrl);
+      localStorage.setItem(SHARED_KEYS.REDIRECT_URL, rawRedirectUrl);
     }
     const finalRedirectUrl = rawRedirectUrl || storedRedirectUrl;
 
@@ -1091,7 +1090,6 @@ export const clearAllStorageAndCookies = () => {
       'X-auth-token',
       'preferred_language',
       'preferredLanguage',
-      'lang',
     ];
     commonCookieNames.forEach((name) => cookieNames.add(name));
 
@@ -1138,10 +1136,10 @@ export const performRedirect = async (
   // local auth state so the embedded application cannot leak session data.
   const hasTnC =
     typeof window !== 'undefined' &&
-    localStorage.getItem('has_terms_and_conditions') === 'true';
+    localStorage.getItem(SHARED_KEYS.TERMS_ENABLED) === 'true';
   let tcAccepted =
     typeof window !== 'undefined' &&
-    localStorage.getItem('has_accepted_terms_and_conditions') === 'true';
+    localStorage.getItem(SHARED_KEYS.TERMS_ACCEPTED) === 'true';
 
   // Check if existing user has already accepted terms in profile
   if (hasTnC && !tcAccepted && accessToken) {
@@ -1149,16 +1147,16 @@ export const performRedirect = async (
     if (alreadyAccepted) {
       tcAccepted = true;
       if (typeof window !== 'undefined') {
-        localStorage.setItem('has_accepted_terms_and_conditions', 'true');
+        localStorage.setItem(SHARED_KEYS.TERMS_ACCEPTED, 'true');
       }
     }
   }
 
   if (hasTnC && !tcAccepted) {
     if (typeof window !== 'undefined') {
-      localStorage.setItem('accToken', accessToken);
+      localStorage.setItem(SHARED_KEYS.ACCESS_TOKEN, accessToken);
       if (refreshToken) {
-        localStorage.setItem('refToken', refreshToken);
+        localStorage.setItem(SHARED_KEYS.REFRESH_TOKEN, refreshToken);
       }
       const isSecure = window.location.protocol === 'https:';
       const secureFlag = isSecure ? '; secure' : '';
@@ -1170,25 +1168,24 @@ export const performRedirect = async (
 
   const redirectUrl =
     typeof window !== 'undefined'
-      ? localStorage.getItem('redirectUrl')
+      ? localStorage.getItem(SHARED_KEYS.REDIRECT_URL)
       : null;
 
   const flowVal =
     typeof window !== 'undefined'
-      ? localStorage.getItem('flow')
+      ? localStorage.getItem(SHARED_KEYS.FLOW)
       : null;
 
   const langVal =
     typeof window !== 'undefined'
-      ? localStorage.getItem('preferred_language') ||
-        localStorage.getItem('preferredLanguage') ||
-        localStorage.getItem('lang')
+      ? localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE) ||
+        localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY)
       : null;
 
   const refTokenVal =
     refreshToken ||
     (typeof window !== 'undefined'
-      ? localStorage.getItem('refToken')
+      ? localStorage.getItem(SHARED_KEYS.REFRESH_TOKEN)
       : null);
 
   if (redirectUrl) {
@@ -1255,7 +1252,7 @@ export const performRedirect = async (
     }
   } else {
     if (typeof window !== 'undefined') {
-      localStorage.removeItem('redirectUrl');
+      localStorage.removeItem(SHARED_KEYS.REDIRECT_URL);
     }
     router.replace(defaultRoute);
   }

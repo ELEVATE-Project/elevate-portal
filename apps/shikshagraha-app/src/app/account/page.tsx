@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { extractAndStoreUrlParams } from '../../utils/Helper';
 import { API_ENDPOINTS } from '../../utils/API/APIEndpoints';
 import { FORM_CONFIG } from '../../constants/form';
+import { SHARED_KEYS } from '../../constants/sharedKeys';
 import { translatePipe } from '../../utils/translatePipe';
 
 const normaliseFieldKey = (value: unknown) =>
@@ -72,7 +73,7 @@ export default function Register() {
         searchParams.get('accToken') ||
         searchParams.get('accessToken') ||
         searchParams.get('token') ||
-        localStorage.getItem('accToken');
+        localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN);
       return !!token;
     } catch {
       return false;
@@ -85,11 +86,11 @@ export default function Register() {
     const params = extractAndStoreUrlParams();
     const token =
       params.accToken ||
-      localStorage.getItem('accToken');
+      localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN);
     if (token) {
       setIsUpdate(true);
     }
-    const queryLang = localStorage.getItem('preferred_language');
+    const queryLang = localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE);
     if (queryLang && i18n && typeof i18n.changeLanguage === 'function') {
       i18n.changeLanguage(queryLang);
     }
@@ -154,7 +155,10 @@ export default function Register() {
 
             const configurations = brandingData.result.configuration || brandingData.result.branding?.configuration || {};
             if (configurations.has_terms_and_conditions !== undefined) {
-              localStorage.setItem('has_terms_and_conditions', String(configurations.has_terms_and_conditions === true));
+              localStorage.setItem(
+                SHARED_KEYS.TERMS_ENABLED,
+                String(configurations.has_terms_and_conditions === true)
+              );
             }
 
             const theming = brandingData.result.theming || brandingData.result.branding?.theming || {};
@@ -215,7 +219,7 @@ export default function Register() {
 
         // External flows provide their own form subtype. Keep the existing
         // registration form as the fallback for a normal account visit.
-        const flow = localStorage.getItem('flow');
+        const flow = localStorage.getItem(SHARED_KEYS.FLOW);
         const response = flow
           ? await schemaRead(FORM_CONFIG.FLOW_TYPE, flow)
           : await schemaRead();
@@ -292,14 +296,14 @@ export default function Register() {
     };
 
     fetchSchema();
-    setIsAuthenticated(!!localStorage.getItem('accToken'));
+    setIsAuthenticated(!!localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN));
   }, [tenantConfigured, isUpdate, i18n.language]);
 
   // In update mode, read the saved profile after the schema is available so
   // DynamicForm can preserve immutable fields and submit only valid changes.
   useEffect(() => {
     if (!isUpdate || formReadFields.length === 0) return;
-    const token = localStorage.getItem('accToken');
+    const token = localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN);
     if (!token) return;
 
     const loadProfile = async () => {
