@@ -142,9 +142,13 @@ function TermsAndConditionsContent() {
     }
   }, []);
 
-  // Active language state
-  const initialLang = useMemo(() => {
-    if (typeof window === 'undefined') return 'en';
+  // Start in English on both server and client, then apply browser language
+  // preferences after hydration to avoid mismatched loading text.
+  const [currentLang, setCurrentLang] = useState<string>('en');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const queryLang =
       searchParams.get(SHARED_KEYS.PREFERRED_LANGUAGE) ||
       searchParams.get(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY);
@@ -155,22 +159,20 @@ function TermsAndConditionsContent() {
       if (i18n && typeof i18n.changeLanguage === 'function' && i18n.language !== normalized) {
         i18n.changeLanguage(normalized);
       }
-      return normalized;
+      setCurrentLang(normalized);
+      return;
     }
     const storedLang =
       localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE_LEGACY) ||
       localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE);
-    if (storedLang) return storedLang.toLowerCase();
-    return 'en';
-  }, [searchParams, i18n]);
-
-  const [currentLang, setCurrentLang] = useState<string>(initialLang);
-
-  useEffect(() => {
-    if (initialLang && initialLang !== currentLang) {
-      setCurrentLang(initialLang);
+    if (storedLang) {
+      const normalized = storedLang.toLowerCase();
+      if (i18n && typeof i18n.changeLanguage === 'function' && i18n.language !== normalized) {
+        i18n.changeLanguage(normalized);
+      }
+      setCurrentLang(normalized);
     }
-  }, [initialLang]);
+  }, [searchParams, i18n]);
 
   // Block direct access unless the authenticated tenant requires terms and the
   // user has not already accepted them; this prevents duplicate acceptance.
@@ -477,8 +479,8 @@ function TermsAndConditionsContent() {
             {/* Header */}
             <Box
               sx={{
-                p: { xs: 2, sm: 3.5, md: 4 },
-                pb: { xs: 1.5, sm: 2.25 },
+                p: { xs: 2.5, sm: 3.5, md: 4 },
+                pb: { xs: 2.25, sm: 2.25 },
                 borderBottom: '1px solid #f1f5f9',
                 display: 'flex',
                 alignItems: 'center',
@@ -496,7 +498,7 @@ function TermsAndConditionsContent() {
                 component="h1"
                 sx={{
                   fontWeight: 700,
-                  fontSize: { xs: '16.5px', sm: '20px' },
+                  fontSize: { xs: '20px', sm: '20px' },
                   color: '#0f172a',
                   fontFamily: '"Plus Jakarta Sans", "Inter", sans-serif',
                   letterSpacing: '-0.3px',
@@ -514,11 +516,11 @@ function TermsAndConditionsContent() {
                 overflowY: 'auto',
                 overflowX: 'hidden',
                 minWidth: 0,
-                mx: { xs: 0, sm: 3.5, md: 4 },
-                my: { xs: 0, sm: 1.5 },
+                mx: { xs: 1.5, sm: 3.5, md: 4 },
+                my: { xs: 1.5, sm: 1.5 },
                 p: { xs: 2.25, sm: 3.5, md: 4 },
                 borderRadius: { xs: 0, sm: '16px' },
-                bgcolor: { xs: '#ffffff', sm: '#f8fafc' },
+                bgcolor: '#f8fafc',
                 border: { xs: 'none', sm: '1px solid #f1f5f9' },
                 fontSize: { xs: '14px', sm: '14.5px', md: '15px' },
                 lineHeight: 1.8,
@@ -582,10 +584,10 @@ function TermsAndConditionsContent() {
             {/* Bottom Actions Footer */}
             <Box
               sx={{
-                p: { xs: 2, sm: 3.5, md: 4 },
-                pt: { xs: 1.5, sm: 2 },
+                p: { xs: 2.5, sm: 3.5, md: 4 },
+                pt: { xs: 2.25, sm: 2 },
                 pb: {
-                  xs: 'calc(14px + env(safe-area-inset-bottom, 0px))',
+                  xs: 'calc(20px + env(safe-area-inset-bottom, 0px))',
                   sm: 3.5,
                   md: 4,
                 },
