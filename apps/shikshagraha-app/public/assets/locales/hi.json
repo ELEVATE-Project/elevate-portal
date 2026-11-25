@@ -1,4 +1,9 @@
 {
+  "patternLettersOnly": "संख्या और विशेष वर्ण स्वीकार नहीं हैं",
+  "patternNoSpacesOrSpecial": "रिक्त स्थान और विशेष वर्ण स्वीकार नहीं हैं",
+  "patternValidMobile": "मान्य मोबाइल नंबर दर्ज करें",
+  "patternNumbersOnly": "केवल संख्याएँ स्वीकार हैं",
+  "patternInvalidFormat": "{{field}} का प्रारूप अमान्य है।",
   "termsAndConditions": "नियम और शर्तें",
   "listenToTerms": "नियम और शर्तें सुनें",
   "play": "चलाएं",

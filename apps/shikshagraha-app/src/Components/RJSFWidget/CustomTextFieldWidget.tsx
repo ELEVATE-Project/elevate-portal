@@ -35,13 +35,26 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const formData = formContext?.formData || {};
-  // Labels from dynamic forms are not guaranteed to be strings.
+  // Prefer stable schema identifiers; labels are a fallback for older callers.
+  const normaliseKey = (key: unknown) =>
+    typeof key === 'string' ? key.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+  const identifiers = [fieldSchema.fieldName, fieldSchema.fieldId, label].map(normaliseKey);
+  const matches = (...keys: string[]) => identifiers.some((key) => keys.includes(key));
+  const isConfirmPasswordField = matches('confirmpassword');
+  const isPasswordField = !isConfirmPasswordField &&
+    (matches('password') || fieldSchema.fieldInputType === 'password');
+  const isEmailField = matches('email');
+  const isMobileField = matches('mobile', 'phone', 'contactnumber');
   const lowerLabel = typeof label === 'string' ? label.toLowerCase() : '';
-  const isPasswordField = lowerLabel === 'password';
-  const isConfirmPasswordField = lowerLabel.includes('confirm password');
-  const isEmailField = lowerLabel === 'email';
-  const isMobileField =
-    lowerLabel === 'mobile' || lowerLabel === 'contact number';
+  const validationKey = isConfirmPasswordField ? 'confirm password'
+    : isPasswordField ? 'password'
+    : isEmailField ? 'email'
+    : isMobileField ? 'contact number'
+    : matches('username') ? 'username'
+    : matches('firstname') ? 'first name'
+    : matches('lastname') ? 'last name'
+    : matches('registrationcode') ? 'registration code'
+    : lowerLabel;
 
   // Default regex patterns (fallback when no pattern is provided in schema)
   const defaultPatterns = {
@@ -166,8 +179,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
   };
 
   const getMobileMaxLength = (): number => {
-    const pattern = fieldPatternString
-    const match = pattern.match(/\{(\d+)\}/);
+    const match = fieldPatternString?.match(/\{(\d+)\}/);
     if (match && match[1]) {
       return Number(match[1]);
     }
@@ -297,7 +309,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
 
   const validateField = (field: string, val: string): string | null => {
     const input = val ?? '';
-    const fieldKey = field.toLowerCase();
+    const fieldKey = validationKey || (typeof field === 'string' ? field.toLowerCase() : '');
 
     // Step 1: Required checks
     const requiredError = validateRequired(fieldKey, input);
@@ -401,7 +413,7 @@ const CustomTextFieldWidget = (props: WidgetProps) => {
     }
 
     // Handle username field - limit to 40 characters
-    if (lowerLabel === 'username') {
+    if (validationKey === 'username') {
       const limitedValue = val.slice(0, 40);
       const error = validateField(label ?? '', limitedValue);
       setLocalError(error);

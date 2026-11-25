@@ -168,14 +168,14 @@ const DynamicForm = ({
   // Regex to Error Mapping
   const patternErrorMessages = {
     '^(?=.*[a-zA-Z])[a-zA-Z ]+$':
-      'Numbers and special characters are not allowed',
+      t('patternLettersOnly'),
     '^[a-zA-Z][a-zA-Z ]*[a-zA-Z]$':
-      'Numbers and special characters are not allowed',
-    '^[a-zA-Z0-9.@]+$': 'Space and special characters are not allowed',
-    '^[0-9]{10}$': 'Enter a valid Mobile Number',
-    '^\\d{10}$': 'Characters and special characters are not allowed',
+      t('patternLettersOnly'),
+    '^[a-zA-Z0-9.@]+$': t('patternNoSpacesOrSpecial'),
+    '^[0-9]{10}$': t('patternValidMobile'),
+    '^\\d{10}$': t('patternNumbersOnly'),
     '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\\-={}:";\'<>?,./\\\\])(?!.*\\s).{8,}$':
-      'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, a special character, and no spaces.',
+      t('passwordRequirements'),
   };
 
   // Validation functions
@@ -385,7 +385,7 @@ const DynamicForm = ({
     );
     const hasFormErrors = enabledFieldNames.some(
       (fieldName) =>
-        Boolean(formErrors[fieldName]) &&
+        validateFieldDynamically(fieldName, formData?.[fieldName]).length > 0 &&
         (!isUpdate || hasChangedFromInitialValue(fieldName))
     );
     const hasMissingRequiredField = enabledFieldNames.some((fieldName) => {
@@ -1556,8 +1556,9 @@ const DynamicForm = ({
           const patternRegex = new RegExp(field.pattern);
           if (!patternRegex.test(testVal)) {
             const errorMessage =
+              field.policyMsg ||
               patternErrorMessages?.[field.pattern] ||
-              `Invalid format for ${field.title || key}.`;
+              t('patternInvalidFormat', { field: field.title || key });
             if (!errors[key].__errors) {
               errors[key].__errors = [];
             }
@@ -1756,44 +1757,8 @@ const DynamicForm = ({
           updatePayload.phone_code = '+91';
         }
       }
-      // Location widgets hold display objects, but the update API accepts their
-      // reference submission values. Handle them before generic custom fields.
-      const locationKeys = ['state', 'district', 'block', 'cluster', 'school'];
-      locationKeys.forEach((loc) => {
-        const capitalLoc = loc.charAt(0).toUpperCase() + loc.slice(1);
-        const val =
-          formData[loc] !== undefined ? formData[loc] : formData[capitalLoc];
-        if (val !== undefined && val !== null && val !== '') {
-          updatePayload[loc] = extractReferenceSubmissionValue(val);
-        }
-      });
-      // Omit fields already transformed above, immutable identity fields, and
-      // credentials. The remaining entries are tenant-defined custom fields.
+      // Copy nonempty form values using their form schema names.
       Object.keys(formData).forEach((key) => {
-        const lowerKey = key.toLowerCase();
-        if (
-          [
-            'firstname',
-            'lastname',
-            'password',
-            'confirm_password',
-            'confirm password',
-            'email',
-            'mobile',
-            'phone',
-            'username',
-            'role',
-            'sub-role',
-            'state',
-            'district',
-            'block',
-            'cluster',
-            'school',
-          ].includes(lowerKey)
-        ) {
-          return;
-        }
-
         const val = formData[key];
         if (val !== undefined && val !== null && val !== '') {
           updatePayload[key] = val;

@@ -96,33 +96,6 @@ export default function Login() {
   }, [router]);
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const origin = window.location.origin;
-      const parts = hostname.split('.');
-      localStorage.setItem('origin', origin);
-      const skipList = [
-        'app',
-        'www',
-        'dev',
-        'staging',
-        'tekdinext',
-        'org',
-        'com',
-        'net',
-      ];
-      // Step 1: Find the most likely base domain part
-      const domainPart =
-        parts.find((part) => !skipList.includes(part.toLowerCase())) ||
-        'default';
-      // Step 2: Remove suffixes like -qa, -dev, etc. if present
-      const knownSuffixes = ['-qa', '-dev', '-staging'];
-      let coreDomain = knownSuffixes.reduce((name, suffix) => {
-        return name.endsWith(suffix) ? name.replace(suffix, '') : name;
-      }, domainPart);
-
-      if (coreDomain === 'localhost' || coreDomain === '127.0.0.1' || coreDomain === 'default' || coreDomain === 'shikshagrah') {
-        coreDomain = 'shikshagraha';
-      }
 
       // Pre-populate states with cached configuration before branding API loads
       const initialAutoRegister = getAutoRegister();
@@ -132,7 +105,7 @@ export default function Login() {
       if (initialAllowedAuthModes.length > 0) {
         setSelectedAuthMode((prev) => prev || initialAllowedAuthModes[0]);
       }
-      fetchBranding(coreDomain)
+      fetchBranding()
         .then((brandingData) => {
         if (brandingData) {
           const tenantCode = brandingData?.result?.code;

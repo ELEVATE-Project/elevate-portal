@@ -1,4 +1,9 @@
 {
+  "patternLettersOnly": "ಸಂಖ್ಯೆಗಳು ಮತ್ತು ವಿಶೇಷ ಅಕ್ಷರಗಳನ್ನು ಅನುಮತಿಸಲಾಗುವುದಿಲ್ಲ",
+  "patternNoSpacesOrSpecial": "ಖಾಲಿ ಜಾಗ ಮತ್ತು ವಿಶೇಷ ಅಕ್ಷರಗಳನ್ನು ಅನುಮತಿಸಲಾಗುವುದಿಲ್ಲ",
+  "patternValidMobile": "ಮಾನ್ಯವಾದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆಯನ್ನು ನಮೂದಿಸಿ",
+  "patternNumbersOnly": "ಸಂಖ್ಯೆಗಳನ್ನು ಮಾತ್ರ ಅನುಮತಿಸಲಾಗಿದೆ",
+  "patternInvalidFormat": "{{field}} ಸ್ವರೂಪವು ಅಮಾನ್ಯವಾಗಿದೆ.",
   "termsAndConditions": "ನಿಯಮಗಳು ಮತ್ತು ಷರತ್ತುಗಳು",
   "listenToTerms": "ನಿಯಮಗಳು ಮತ್ತು ಷರತ್ತುಗಳನ್ನು ಆಲಿಸಿ",
   "play": "ಪ್ಲೇ ಮಾಡಿ",

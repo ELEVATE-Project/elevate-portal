@@ -27,6 +27,7 @@ import { API_ENDPOINTS } from '../../utils/API/APIEndpoints';
 import { FORM_CONFIG } from '../../constants/form';
 import { SHARED_KEYS } from '../../constants/sharedKeys';
 import { translatePipe } from '../../utils/translatePipe';
+import { toPascalCase } from '../../utils/stringUtils';
 
 const normaliseFieldKey = (value: unknown) =>
   String(value ?? '')
@@ -70,9 +71,9 @@ export default function Register() {
     try {
       const searchParams = new URL(window.location.href).searchParams;
       const token =
-        searchParams.get('accToken') ||
-        searchParams.get('accessToken') ||
-        searchParams.get('token') ||
+        searchParams.get(SHARED_KEYS.ACCESS_TOKEN) ||
+        searchParams.get(SHARED_KEYS.ACCESS_TOKEN_LEGACY) ||
+        searchParams.get(SHARED_KEYS.TOKEN) ||
         localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN);
       return !!token;
     } catch {
@@ -111,39 +112,8 @@ export default function Register() {
   useEffect(() => {
     const initializeTenant = async () => {
       if (typeof window !== 'undefined') {
-        const hostname = window.location.hostname;
-        const origin = window.location.origin;
-        const parts = hostname.split('.');
-        localStorage.setItem('origin', origin);
-
-        const skipList = [
-          'app',
-          'www',
-          'dev',
-          'staging',
-          'tekdinext',
-          'org',
-          'com',
-          'net',
-        ];
-
-        // Step 1: Find the most likely base domain part
-        const domainPart =
-          parts.find((part) => !skipList.includes(part.toLowerCase())) ||
-          'default';
-
-        // Step 2: Remove suffixes like -qa, -dev, etc. if present
-        const knownSuffixes = ['-qa', '-dev', '-staging'];
-        let coreDomain = knownSuffixes.reduce((name, suffix) => {
-          return name.endsWith(suffix) ? name.replace(suffix, '') : name;
-        }, domainPart);
-
-        if (coreDomain === 'shikshagrah' || coreDomain === 'localhost' || coreDomain === '127.0.0.1' || coreDomain === 'default') {
-          coreDomain = 'shikshagraha';
-        }
-
         try {
-          const brandingData = await fetchBranding(coreDomain);
+          const brandingData = await fetchBranding();
 
           if (brandingData && brandingData.result) {
             const tenantCode = brandingData.result.code;
@@ -194,14 +164,6 @@ export default function Register() {
     initializeTenant();
   }, []);
 
-  const toPascalCase = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/(^\w|[^a-zA-Z0-9]+(\w))/g, (_, first, second) =>
-        (first || second).toUpperCase()
-      );
-  };
-
   // Second useEffect: Fetch schema and other data only after tenant is configured
   useEffect(() => {
     const fetchSchema = async () => {
@@ -251,21 +213,7 @@ export default function Register() {
         }
 
         if (isUpdate) {
-          delete schema.properties?.password;
-          delete schema.properties?.confirm_password;
-          delete schema.properties?.Confirm_password;
-          if (schema.required) {
-            schema.required = schema.required.filter(
-              (f: string) =>
-                f !== 'password' &&
-                f !== 'confirm_password' &&
-                f !== 'Confirm_password'
-            );
-          }
           if (uiSchema) {
-            delete uiSchema.password;
-            delete uiSchema.confirm_password;
-            delete uiSchema.Confirm_password;
             if (uiSchema.Username) {
               uiSchema.Username['ui:readonly'] = true;
               uiSchema.Username['ui:disabled'] = true;

@@ -1,4 +1,9 @@
 {
+  "patternLettersOnly": "எண்கள் மற்றும் சிறப்பு எழுத்துகள் அனுமதிக்கப்படாது",
+  "patternNoSpacesOrSpecial": "இடைவெளிகள் மற்றும் சிறப்பு எழுத்துகள் அனுமதிக்கப்படாது",
+  "patternValidMobile": "சரியான கைபேசி எண்ணை உள்ளிடவும்",
+  "patternNumbersOnly": "எண்கள் மட்டுமே அனுமதிக்கப்படும்",
+  "patternInvalidFormat": "{{field}} வடிவம் தவறானது.",
   "termsAndConditions": "விதிமுறைகள் மற்றும் நிபந்தனைகள்",
   "listenToTerms": "விதிமுறைகள் மற்றும் நிபந்தனைகளைக் கேளுங்கள்",
   "play": "இயக்கு",

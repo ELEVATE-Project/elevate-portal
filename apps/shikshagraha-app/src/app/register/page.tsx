@@ -23,6 +23,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
 import { translatePipe } from '../../utils/translatePipe';
 import { extractAndStoreUrlParams } from '../../utils/Helper';
+import { toPascalCase } from '../../utils/stringUtils';
 
 export default function Register() {
   const { i18n } = useTranslation();
@@ -111,14 +112,6 @@ export default function Register() {
 
     initializeTenant();
   }, []);
-
-  const toPascalCase = (str: string): string => {
-    return str
-      .toLowerCase()
-      .replace(/(^\w|[^a-zA-Z0-9]+(\w))/g, (_, first, second) =>
-        (first || second).toUpperCase()
-      );
-  };
 
   // Second useEffect: Fetch schema and other data only after tenant is configured
   useEffect(() => {

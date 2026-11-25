@@ -57,6 +57,9 @@ export const generateRJSFSchema = (
       const fieldSchema: any = {
         title: translate(label, name),
         type: isMultiSelect ? 'array' : ['string', 'object'],
+        fieldName: name,
+        fieldId,
+        fieldInputType: type,
       };
       // Handle Role field
       if (name === 'Role') {

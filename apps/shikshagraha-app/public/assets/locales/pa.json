@@ -1,4 +1,9 @@
 {
+  "patternLettersOnly": "ਅੰਕ ਅਤੇ ਖਾਸ ਅੱਖਰ ਮਨਜ਼ੂਰ ਨਹੀਂ ਹਨ",
+  "patternNoSpacesOrSpecial": "ਖਾਲੀ ਥਾਂ ਅਤੇ ਖਾਸ ਅੱਖਰ ਮਨਜ਼ੂਰ ਨਹੀਂ ਹਨ",
+  "patternValidMobile": "ਵੈਧ ਮੋਬਾਈਲ ਨੰਬਰ ਦਰਜ ਕਰੋ",
+  "patternNumbersOnly": "ਸਿਰਫ਼ ਅੰਕ ਮਨਜ਼ੂਰ ਹਨ",
+  "patternInvalidFormat": "{{field}} ਦਾ ਫਾਰਮੈਟ ਅਵੈਧ ਹੈ।",
   "termsAndConditions": "ਨਿਯਮ ਅਤੇ ਸ਼ਰਤਾਂ",
   "listenToTerms": "ਨਿਯਮ ਅਤੇ ਸ਼ਰਤਾਂ ਸੁਣੋ",
   "play": "ਚਲਾਓ",

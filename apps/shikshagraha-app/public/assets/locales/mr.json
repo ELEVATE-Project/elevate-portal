@@ -1,4 +1,9 @@
 {
+  "patternLettersOnly": "अंक आणि विशेष चिन्हे स्वीकारली जात नाहीत",
+  "patternNoSpacesOrSpecial": "रिक्त जागा आणि विशेष चिन्हे स्वीकारली जात नाहीत",
+  "patternValidMobile": "वैध मोबाइल नंबर प्रविष्ट करा",
+  "patternNumbersOnly": "फक्त अंक स्वीकारले जातात",
+  "patternInvalidFormat": "{{field}} चे स्वरूप अवैध आहे.",
   "termsAndConditions": "अटी आणि शर्ती",
   "listenToTerms": "अटी आणि शर्ती ऐका",
   "play": "प्ले करा",

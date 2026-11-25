@@ -1,4 +1,9 @@
 {
+  "patternLettersOnly": "ସଂଖ୍ୟା ଏବଂ ବିଶେଷ ଅକ୍ଷର ଅନୁମତିପ୍ରାପ୍ତ ନୁହେଁ",
+  "patternNoSpacesOrSpecial": "ଖାଲି ସ୍ଥାନ ଏବଂ ବିଶେଷ ଅକ୍ଷର ଅନୁମତିପ୍ରାପ୍ତ ନୁହେଁ",
+  "patternValidMobile": "ଏକ ବୈଧ ମୋବାଇଲ୍ ନମ୍ବର ଲେଖନ୍ତୁ",
+  "patternNumbersOnly": "କେବଳ ସଂଖ୍ୟା ଅନୁମତିପ୍ରାପ୍ତ",
+  "patternInvalidFormat": "{{field}} ର ଫର୍ମାଟ୍ ଅବୈଧ।",
   "termsAndConditions": "ନିୟମ ଏବଂ ସର୍ତ୍ତାବଳୀ",
   "listenToTerms": "ନିୟମ ଏବଂ ସର୍ତ୍ତାବଳୀ ଶୁଣନ୍ତୁ",
   "play": "ଚଲାନ୍ତୁ",

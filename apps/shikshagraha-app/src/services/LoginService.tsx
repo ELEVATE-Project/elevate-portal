@@ -242,7 +242,7 @@ export const loginSchemaRead = async (typeVal: string): Promise<any> => {
       apiUrl,
       {
         type: typeVal,
-        sub_type: 'login',
+        sub_type: FORM_CONFIG.LOGIN_SUB_TYPE,
       },
       {
         headers: {
@@ -273,8 +273,8 @@ export const fetchTermsAndConditions = async (token?: string): Promise<any> => {
     const response = await axios.post(
       apiUrl,
       {
-        type: 'policy',
-        sub_type: 'termsAndConditions',
+        type: FORM_CONFIG.TERMS_TYPE,
+        sub_type: FORM_CONFIG.TERMS_SUB_TYPE,
       },
       { headers }
     );
@@ -439,7 +439,7 @@ export const resetPassword = async (payload: {
 };
 
 // services/loginService.ts
-export const fetchBranding = async (origin: string) => {
+export const fetchBranding = async (origin?: string) => {
   const apiUrl = `${API_ENDPOINTS.tenantRead}`;
   try {
     const response = await axios.get(apiUrl, {

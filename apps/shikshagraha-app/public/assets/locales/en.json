@@ -1,4 +1,9 @@
 {
+  "patternLettersOnly": "Numbers and special characters are not allowed",
+  "patternNoSpacesOrSpecial": "Spaces and special characters are not allowed",
+  "patternValidMobile": "Enter a valid mobile number",
+  "patternNumbersOnly": "Only numbers are allowed",
+  "patternInvalidFormat": "Invalid format for {{field}}.",
   "termsAndConditions": "Terms and Conditions",
   "listenToTerms": "Listen to Terms and condition",
   "play": "Play",
