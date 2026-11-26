@@ -30,14 +30,18 @@ import {
   sendOtp,
 } from '../services/LoginService';
 import AppConst from '../utils/AppConst/AppConst';
-import { setAccessTokenCookie, performRedirect, getAutoRegister, getAllowedAuthMode } from '../utils/Helper';
+import { setAccessTokenCookie, performRedirect, getAutoRegister, getAllowedAuthMode, extractAndStoreUrlParams } from '../utils/Helper';
 import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import CustomTextFieldWidget from '../Components/RJSFWidget/CustomTextFieldWidget';
 import OTPDialog from '../Components/OTPDialog';
 import { ALLOWED_AUTH_MODES, IDENTIFIER_TYPE } from '../utils/app.constant';
 import { generateRJSFSchema } from '../utils/generateSchemaFromAPI';
+import { SHARED_KEYS } from '../constants/sharedKeys';
+import { useTranslation } from 'react-i18next';
+
 export default function Login() {
+  const { t, i18n } = useTranslation();
   const [formData, setFormData] = useState<any>({});
   const [error, setError] = useState<any>({});
   const [showError, setShowError] = useState(false);
@@ -71,14 +75,15 @@ export default function Login() {
   const [otpError, setOtpError] = useState('');
 
   useEffect(() => {
-    const redirectUrl = queryRouter.get('redirectUrl');
-    if (redirectUrl) {
-      localStorage.setItem('redirectUrl', decodeURIComponent(redirectUrl));
+    extractAndStoreUrlParams();
+    const queryLang = localStorage.getItem(SHARED_KEYS.PREFERRED_LANGUAGE);
+    if (queryLang && i18n && typeof i18n.changeLanguage === 'function') {
+      i18n.changeLanguage(queryLang);
     }
-  }, [queryRouter]);
+  }, [queryRouter, i18n]);
 
   useEffect(() => {
-    const token = localStorage.getItem('accToken');
+    const token = localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN);
     const status = localStorage.getItem('userStatus');
     if (token && status !== 'archived') {
       performRedirect(token, router);
@@ -91,29 +96,6 @@ export default function Login() {
   }, [router]);
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const hostname = window.location.hostname;
-      const origin = window.location.origin;
-      const parts = hostname.split('.');
-      localStorage.setItem('origin', origin);
-      const skipList = [
-        'app',
-        'www',
-        'dev',
-        'staging',
-        'tekdinext',
-        'org',
-        'com',
-        'net',
-      ];
-      // Step 1: Find the most likely base domain part
-      const domainPart =
-        parts.find((part) => !skipList.includes(part.toLowerCase())) ||
-        'default';
-      // Step 2: Remove suffixes like -qa, -dev, etc. if present
-      const knownSuffixes = ['-qa', '-dev', '-staging'];
-      let coreDomain = knownSuffixes.reduce((name, suffix) => {
-        return name.endsWith(suffix) ? name.replace(suffix, '') : name;
-      }, domainPart);
 
       // Pre-populate states with cached configuration before branding API loads
       const initialAutoRegister = getAutoRegister();
@@ -123,7 +105,7 @@ export default function Login() {
       if (initialAllowedAuthModes.length > 0) {
         setSelectedAuthMode((prev) => prev || initialAllowedAuthModes[0]);
       }
-      fetchBranding(coreDomain)
+      fetchBranding()
         .then((brandingData) => {
         if (brandingData) {
           const tenantCode = brandingData?.result?.code;
@@ -140,8 +122,18 @@ export default function Login() {
             const configurations = brandingData?.result?.configuration || brandingData?.result?.branding?.configuration || {};
             const autoRegister = configurations.auto_register !== undefined ? configurations.auto_register : false;
             const allowedAuthMode = configurations.allowed_auth_mode;
- 
+            const hasTermsAndConditions = configurations.has_terms_and_conditions === true;
+
+            const theming = brandingData?.result?.theming || brandingData?.result?.branding?.theming || {};
+            const primaryColor = theming?.primaryColor || '#572E91';
+            const secondaryColor = theming?.secondaryColor || '#FF9911';
+
+            localStorage.setItem('primaryColor', primaryColor);
+            localStorage.setItem('secondaryColor', secondaryColor);
+            localStorage.setItem('theming', JSON.stringify({ primaryColor, secondaryColor }));
+
             localStorage.setItem('auto_register', String(autoRegister));
+            localStorage.setItem(SHARED_KEYS.TERMS_ENABLED, String(hasTermsAndConditions));
             setIsAutoRegister(autoRegister);
 
             if (allowedAuthMode && Array.isArray(allowedAuthMode) && allowedAuthMode.length > 0) {
@@ -226,7 +218,7 @@ export default function Login() {
   }, [selectedAuthMode, brandingFetched]);
 
   useEffect(() => {
-    setIsAuthenticated(!!localStorage.getItem('accToken'));
+    setIsAuthenticated(!!localStorage.getItem(SHARED_KEYS.ACCESS_TOKEN));
   }, []);
   const getIdentifierType = (val: string): string => {
     if (!val) return IDENTIFIER_TYPE.USERNAME;
@@ -340,6 +332,9 @@ export default function Login() {
     }
     setLoading(true);
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(SHARED_KEYS.TERMS_ACCEPTED);
+      }
       const isMobile = getIdentifierType(userName) === IDENTIFIER_TYPE.MOBILE;
       const payload = {
         [IDENTIFIER_TYPE.USERNAME]: userName,
@@ -361,16 +356,18 @@ export default function Login() {
           setFormSubmitted(false);
           return;
         }
-        const isRedirectActive = !!localStorage.getItem('redirectUrl');
+        const isRedirectActive = !!localStorage.getItem(SHARED_KEYS.REDIRECT_URL);
+        localStorage.setItem(SHARED_KEYS.ACCESS_TOKEN, accessToken);
+        if (refreshToken) {
+          localStorage.setItem(SHARED_KEYS.REFRESH_TOKEN, refreshToken);
+        }
         if (!isRedirectActive) {
-        localStorage.setItem('accToken', accessToken);
-        localStorage.setItem('refToken', refreshToken);
-        localStorage.setItem('firstName', response?.result?.user?.name);
+          localStorage.setItem('firstName', response?.result?.user?.name);
           localStorage.setItem('userId', response?.result?.user?.id);
           localStorage.setItem('name', response?.result?.user?.username);
         }
-        let storedUserId = localStorage.getItem('userId');
-        let userId = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
+        const storedUserId = localStorage.getItem('userId');
+        const userId = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
         if (userId !== response?.result?.user?.id) {
           clearIndexedDB();
         }
@@ -412,6 +409,9 @@ export default function Login() {
     setOtpLoading(true);
     setOtpError('');
     try {
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem(SHARED_KEYS.TERMS_ACCEPTED);
+      }
       const identifier = formData.userName || formData.username || formData.identifier || formData.phone || formData.mobile || formData.email || '';
       const payload = {
         identifier: identifier,
@@ -431,17 +431,19 @@ export default function Login() {
           return;
         }
 
-        const isRedirectActive = !!localStorage.getItem('redirectUrl');
+        const isRedirectActive = !!localStorage.getItem(SHARED_KEYS.REDIRECT_URL);
+        localStorage.setItem(SHARED_KEYS.ACCESS_TOKEN, accessToken);
+        if (refreshToken) {
+          localStorage.setItem(SHARED_KEYS.REFRESH_TOKEN, refreshToken);
+        }
         if (!isRedirectActive) {
-          localStorage.setItem('accToken', accessToken);
-          localStorage.setItem('refToken', refreshToken);
           localStorage.setItem('firstName', response?.result?.user?.name);
           localStorage.setItem('userId', response?.result?.user?.id);
           localStorage.setItem('name', response?.result?.user?.username);
         }
 
-        let storedUserId = localStorage.getItem('userId');
-        let userId = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
+        const storedUserId = localStorage.getItem('userId');
+        const userId = storedUserId ? Number(storedUserId) : response?.result?.user?.id;
         if (userId !== response?.result?.user?.id) {
           clearIndexedDB();
         }
@@ -543,12 +545,7 @@ export default function Login() {
   };
 
   const handleRegisterClick = () => {
-    const redirectUrl = queryRouter.get('redirectUrl');
-    if (redirectUrl) {
-      router.replace(`/register?redirectUrl=${encodeURIComponent(redirectUrl)}`);
-    } else {
-      router.replace('/register');
-    }
+    router.replace('/register');
   };
   const handlePasswordClick = () => {
     router.push('/forgetpassword');
@@ -625,6 +622,7 @@ export default function Login() {
         background: 'linear-gradient(135deg, #f5f5f5, #f5f5f5)',
         minHeight: '100vh',
         padding: 2,
+        position: 'relative',
       }}
     >
       {loading && (
@@ -736,7 +734,7 @@ export default function Login() {
                 <Tab
                   key={mode}
                   value={mode}
-                  label={mode === ALLOWED_AUTH_MODES.OTP ? 'OTP' : 'Password'}
+                  label={mode === ALLOWED_AUTH_MODES.OTP ? t('otp') : t('password')}
                 />
               ))}
             </Tabs>
@@ -786,7 +784,7 @@ export default function Login() {
                     width: '50%',
                   }}
                 >
-                  {selectedAuthMode === ALLOWED_AUTH_MODES.OTP ? 'Get OTP' : 'Login'}
+                  {selectedAuthMode === ALLOWED_AUTH_MODES.OTP ? t('getOtp') : t('login')}
                 </Button>
               </Box>
             </Form>
@@ -805,14 +803,14 @@ export default function Login() {
                   textDecoration: 'underline',
                 }}
               >
-                Forgot Password?
+                {t('forgotPassword')}
               </ButtonBase>
             </Typography>
           )}
 
           {!isAutoRegister && (
             <Typography variant="body2" textAlign="center" mt={2} color="#6B6B6B">
-              Don't have an account?{' '}
+              {t('dontHaveAccount')}{' '}
               <ButtonBase
                 onClick={handleRegisterClick}
                 sx={{
@@ -823,7 +821,7 @@ export default function Login() {
                   fontSize: '15px',
                 }}
               >
-                Register
+                {t('register')}
               </ButtonBase>
             </Typography>
           )}
@@ -847,7 +845,7 @@ export default function Login() {
                   onClose={() => remoteUnAuthToaster(false)}
                   sx={{ mt: 2 }}
                 >
-                  Your session has expired, Please login again.
+                  {t('sessionExpired')}
                 </Alert>
               </Snackbar>
             )}
@@ -864,7 +862,7 @@ export default function Login() {
         onResendOtp={handleResendOtp}
         loading={otpLoading}
         error={otpError}
-        submitButtonText="Login"
+        submitButtonText={t('login')}
       />
     </Box>
   );

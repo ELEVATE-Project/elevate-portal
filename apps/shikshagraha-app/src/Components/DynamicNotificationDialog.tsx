@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogActions,
@@ -35,6 +36,7 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
   buttonText,
   showCloseIcon = false,
 }) => {
+  const { t } = useTranslation();
   const handleAction = () => {
     if (onAction) {
       onAction();
@@ -99,9 +101,9 @@ const DynamicNotificationDialog: React.FC<DynamicNotificationDialogProps> = ({
         <DialogContentText>
           {type === 'success' ? (
             <>
-              Welcome,
+              {t('welcome')},
               <span style={{ fontWeight: 'bold' }}> {userName || 'User'} </span>{' '}
-              Your account has been successfully registered.
+              {t('registrationSuccessMessage')}
             </>
           ) : (
             <Typography variant="body2" color="text.secondary">

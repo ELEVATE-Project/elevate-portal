@@ -45,6 +45,8 @@ interface CommonAppBarProps {
   bgcolor?: string;
   onMenuClose?: () => void;
   onOptionClick?: () => void;
+  languageSelector?: React.ReactNode;
+  rightAction?: React.ReactNode;
 }
 
 export const TopAppBar: React.FC<CommonAppBarProps> = ({
@@ -63,11 +65,13 @@ export const TopAppBar: React.FC<CommonAppBarProps> = ({
   actionIcons = [],
   profileIcon = [],
   bgcolor = '#FF9911',
+  languageSelector,
+  rightAction,
 }) => {
   const accountIcon = actionIcons.find((icon) => icon.ariaLabel === 'Account');
   console.log('showBackIcon', showBackIcon);
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, overflow: 'visible' }}>
       <Box sx={{ minHeight: '64px' }} />
       <AppBar
         component="nav"
@@ -77,9 +81,10 @@ export const TopAppBar: React.FC<CommonAppBarProps> = ({
           backgroundColor: '#FFF7E6', // Light background derived from #FF9911
           borderRadius: '0 0 25px 25px',
           color: '#572E91', // Rounded corners only on the bottom left and right
+          overflow: 'visible',
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ overflow: 'visible', display: 'flex', alignItems: 'center' }}>
           {/* {showMenuIcon && ( */}
           <>
             {/* <IconButton
@@ -106,9 +111,10 @@ export const TopAppBar: React.FC<CommonAppBarProps> = ({
               component="div"
               sx={{
                 flexGrow: 1,
-                textAlign: 'center',
+                textAlign: showBackIcon ? 'left' : 'center',
                 fontSize: '22px',
                 fontWeight: 700,
+                ml: showBackIcon ? 1 : 0,
               }}
             >
               {title}
@@ -116,15 +122,27 @@ export const TopAppBar: React.FC<CommonAppBarProps> = ({
           </>
           {/* )} */}
 
-          {profileIcon && profileIcon.length > 0 && (
-            <IconButton
-              color={actionButtonColor}
-              aria-label={profileIcon[0]?.ariaLabel}
-              onClick={profileIcon[0]?.onLogoutClick}
-            >
-              {profileIcon[0].icon}
-            </IconButton>
-          )}
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+              overflow: 'visible',
+              flexShrink: 0,
+            }}
+          >
+            {languageSelector}
+            {rightAction}
+            {profileIcon && profileIcon.length > 0 && (
+              <IconButton
+                color={actionButtonColor}
+                aria-label={profileIcon[0]?.ariaLabel}
+                onClick={profileIcon[0]?.onLogoutClick}
+              >
+                {profileIcon[0].icon}
+              </IconButton>
+            )}
+          </Box>
         </Toolbar>
       </AppBar>
       {profileIcon[0]?.anchorEl && (

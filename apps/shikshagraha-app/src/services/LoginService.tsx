@@ -4,6 +4,7 @@ import { getBaseUrl } from '../utils/API/APIEndpoints';
 import { getEnvValue } from '@shared-lib';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import { handleUnauthorizedError } from '../utils/Helper';
+import { FORM_CONFIG } from '../constants/form';
 
 interface LoginParams {
   username?: string;
@@ -200,15 +201,18 @@ export const getSubroles = async (parentEntityId: string) => {
   }
 };
 
-export const schemaRead = async (): Promise<any> => {
+export const schemaRead = async (
+  type: string = FORM_CONFIG.DEFAULT_TYPE,
+  sub_type: string = FORM_CONFIG.DEFAULT_SUB_TYPE
+): Promise<any> => {
   const apiUrl: string = `${API_ENDPOINTS.formRead}`;
   const tenantId = localStorage.getItem('tenantCode') || '';
   try {
     const response = await axios.post(
       apiUrl,
       {
-        type: 'user',
-        sub_type: 'registration',
+        type,
+        sub_type,
       },
       {
         headers: {
@@ -229,6 +233,8 @@ export const schemaRead = async (): Promise<any> => {
 };
 
 export const loginSchemaRead = async (typeVal: string): Promise<any> => {
+  // Fetch the login-specific schema so tenants can configure authentication
+  // fields independently from the registration form.
   const apiUrl: string = `${API_ENDPOINTS.formRead}`;
   const tenantId = localStorage.getItem('tenantCode') || '';
   try {
@@ -236,7 +242,7 @@ export const loginSchemaRead = async (typeVal: string): Promise<any> => {
       apiUrl,
       {
         type: typeVal,
-        sub_type: 'login',
+        sub_type: FORM_CONFIG.LOGIN_SUB_TYPE,
       },
       {
         headers: {
@@ -253,6 +259,33 @@ export const loginSchemaRead = async (typeVal: string): Promise<any> => {
     handleUnauthorizedError(error);
     console.error('error in loginSchemaRead', error);
     return error;
+  }
+};
+
+export const fetchTermsAndConditions = async (token?: string): Promise<any> => {
+  const apiUrl: string = `${API_ENDPOINTS.formRead}`;
+
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+
+  try {
+    const response = await axios.post(
+      apiUrl,
+      {
+        type: FORM_CONFIG.TERMS_TYPE,
+        sub_type: FORM_CONFIG.TERMS_SUB_TYPE,
+      },
+      { headers }
+    );
+
+    handleUnauthorizedError(undefined, response);
+
+    return response?.data;
+  } catch (error: any) {
+    handleUnauthorizedError(error);
+    console.error('error in fetchTermsAndConditions', error);
+    throw error;
   }
 };
 
@@ -406,7 +439,7 @@ export const resetPassword = async (payload: {
 };
 
 // services/loginService.ts
-export const fetchBranding = async (origin: string) => {
+export const fetchBranding = async (origin?: string) => {
   const apiUrl = `${API_ENDPOINTS.tenantRead}`;
   try {
     const response = await axios.get(apiUrl, {

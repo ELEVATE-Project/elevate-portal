@@ -4,7 +4,7 @@ import Form from '@rjsf/mui';
 import validator from '@rjsf/validator-ajv8';
 import axios from 'axios';
 import Grid from '@mui/material/Grid';
-import { Box, Button } from '@mui/material';
+import { Box, Button, Snackbar } from '@mui/material';
 import {
   TextField,
   Container,
@@ -50,6 +50,13 @@ import { getOrgId } from '@shared-lib';
 import { API_ENDPOINTS } from '../utils/API/APIEndpoints';
 import { Close } from '@mui/icons-material';
 import IconButton from '@mui/material/IconButton';
+import { useTranslation } from 'react-i18next';
+import {
+  extractReferenceValues,
+  extractReferenceSubmissionValue,
+  extractReferenceId,
+  isReferenceObject,
+} from '../utils/referenceFieldUtils';
 
 const SubmitButton: React.FC<SubmitButtonProps> = (props) => {
   const { uiSchema } = props;
@@ -71,13 +78,33 @@ const DynamicForm = ({
   hideSubmit,
   onChange,
   fieldIdMapping,
+  isUpdate = false,
+  submitButtonText,
+  primaryColor,
+  secondaryColor,
 }: any) => {
+  const { t } = useTranslation();
+  const activePrimary =
+    primaryColor ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('primaryColor')
+      : null) ||
+    '#572E91';
+  const activeSecondary =
+    secondaryColor ||
+    (typeof window !== 'undefined'
+      ? localStorage.getItem('secondaryColor')
+      : null) ||
+    '#FF9911';
   const [submitted, setSubmitted] = useState(false);
   const formRef = useRef(null);
   const [formSchema, setFormSchema] = useState(schema);
   const [formUiSchemaOriginal, setFormUiSchemaOriginal] = useState(uiSchema);
   const [formUiSchema, setFormUiSchema] = useState(uiSchema);
   const [formData, setFormData] = useState({});
+  // Preserve the values loaded from profile-read so an account update only
+  // validates fields the user actually changes.
+  const initialProfileFormData = useRef<Record<string, any> | null>(null);
   const [dependentSchema, setDependentSchema] = useState([]);
   const [isInitialCompleted, setIsInitialCompleted] = useState(false);
   const [hideAndSkipFields, setHideAndSkipFields] = useState({});
@@ -89,6 +116,9 @@ const DynamicForm = ({
   const [requestData, setRequestData] = useState<any>({});
   const router = useRouter();
   const [showError, setShowError] = useState(false);
+  const [showProfileUpdateSuccess, setShowProfileUpdateSuccess] = useState(
+    false
+  );
   const [isOpenOTP, setIsOpenOTP] = useState(false);
   const [registerData, setRegisterData] = useState<any>({});
   const [hashCode, setHashCode] = useState('');
@@ -138,14 +168,14 @@ const DynamicForm = ({
   // Regex to Error Mapping
   const patternErrorMessages = {
     '^(?=.*[a-zA-Z])[a-zA-Z ]+$':
-      'Numbers and special characters are not allowed',
+      t('patternLettersOnly'),
     '^[a-zA-Z][a-zA-Z ]*[a-zA-Z]$':
-      'Numbers and special characters are not allowed',
-    '^[a-zA-Z0-9.@]+$': 'Space and special characters are not allowed',
-    '^[0-9]{10}$': 'Enter a valid Mobile Number',
-    '^\\d{10}$': 'Characters and special characters are not allowed',
+      t('patternLettersOnly'),
+    '^[a-zA-Z0-9.@]+$': t('patternNoSpacesOrSpecial'),
+    '^[0-9]{10}$': t('patternValidMobile'),
+    '^\\d{10}$': t('patternNumbersOnly'),
     '^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[~!@#$%^&*()_+`\\-={}:";\'<>?,./\\\\])(?!.*\\s).{8,}$':
-      'Password must be at least 8 characters long and include an uppercase letter, a lowercase letter, a number, a special character, and no spaces.',
+      t('passwordRequirements'),
   };
 
   // Validation functions
@@ -315,47 +345,61 @@ const DynamicForm = ({
     return errors;
   };
   const hasValidationErrors = () => {
-    const hasFieldErrors = Object.values(fieldErrors).some(Boolean);
-    const hasFormErrors = Object.keys(formErrors).length > 0;
-    const hasValidUsernameFormat = formData.Username
-      ? isValidEmail(formData.Username) ||
-        isValidMobile(formData.Username) ||
-        isValidUsername(formData.Username)
-      : false;
-    const hasValidContact =
-      (formData.email && isValidEmail(formData.email)) ||
-      (formData.mobile && isValidMobile(formData.mobile));
-    const hasAllRequiredFields = () => {
-      if (!formSchema?.properties || !formData) return false;
-      return Object.keys(formSchema.properties).every((fieldName) => {
-        const fieldSchema = formSchema.properties[fieldName];
-        const isRequired = fieldSchema?.isRequired === true;
-        if (!isRequired) return true;
-        const fieldValue = formData[fieldName];
-        if (Array.isArray(fieldValue)) {
-          return fieldValue.length > 0;
-        }
-        if (typeof fieldValue === 'object' && fieldValue !== null) {
-          const hasValue = Object.values(fieldValue).some(
-            (val) => val !== undefined && val !== null && val !== ''
-          );
-          return hasValue;
-        }
-        if (fieldValue === undefined || fieldValue === null) {
-          return false;
-        }
-        const stringValue = String(fieldValue).trim();
-        return stringValue.length > 0;
-      });
+    if (!formSchema?.properties) return true;
+
+    const isDisabled = (fieldName) => {
+      const fieldUiSchema = formUiSchema?.[fieldName];
+      return (
+        fieldUiSchema?.['ui:disabled'] === true ||
+        fieldUiSchema?.['ui:widget'] === 'hidden'
+      );
     };
+    const hasValue = (value) => {
+      if (Array.isArray(value)) return value.length > 0;
+      if (typeof value === 'object' && value !== null) {
+        return Object.values(value).some(
+          (item) => item !== undefined && item !== null && item !== ''
+        );
+      }
+      return value !== undefined && value !== null && String(value).trim() !== '';
+    };
+
+    const enabledFieldNames = Object.keys(formSchema.properties).filter(
+      (fieldName) => !isDisabled(fieldName)
+    );
+    const hasChangedFromInitialValue = (fieldName) => {
+      if (!isUpdate || !initialProfileFormData.current) return true;
+      return (
+        JSON.stringify(formData?.[fieldName] ?? null) !==
+        JSON.stringify(initialProfileFormData.current?.[fieldName] ?? null)
+      );
+    };
+    // A profile update may change just one value. Empty fields must not make
+    // Save & Continue unavailable. Likewise, profile values that were already
+    // present should not prevent saving an unrelated valid edit. A changed
+    // field with an invalid value still prevents submission.
+    const hasFieldErrors = enabledFieldNames.some(
+      (fieldName) =>
+        Boolean(fieldErrors[fieldName]) &&
+        (!isUpdate || hasChangedFromInitialValue(fieldName))
+    );
+    const hasFormErrors = enabledFieldNames.some(
+      (fieldName) =>
+        validateFieldDynamically(fieldName, formData?.[fieldName]).length > 0 &&
+        (!isUpdate || hasChangedFromInitialValue(fieldName))
+    );
+    const hasMissingRequiredField = enabledFieldNames.some((fieldName) => {
+      const fieldSchema = formSchema.properties[fieldName];
+      const isRequired =
+        fieldSchema?.isRequired === true ||
+        formSchema.required?.includes(fieldName) === true;
+      return isRequired && !hasValue(formData?.[fieldName]);
+    });
+
     return (
       hasFieldErrors ||
       hasFormErrors ||
-      !hasValidContact ||
-      !hasValidUsernameFormat ||
-      !formData.Username ||
-      !hasAllRequiredFields() ||
-      !!firstNameUsernameError
+      (!isUpdate && hasMissingRequiredField)
     );
   };
   const getRegistrationCode = (formData) => {
@@ -575,6 +619,68 @@ const DynamicForm = ({
       renderPrefilledForm();
     }
   }, [isInitialCompleted]);
+
+  useEffect(() => {
+    if (prefilledFormData && Object.keys(prefilledFormData).length > 0) {
+      if (isUpdate && !initialProfileFormData.current) {
+        initialProfileFormData.current = { ...prefilledFormData };
+      }
+      setFormData((prev: any) => ({
+        ...prev,
+        ...prefilledFormData,
+      }));
+
+      if (isUpdate) {
+        const userEmail = (
+          prefilledFormData.email ||
+          prefilledFormData.Email ||
+          ''
+        ).trim();
+        const userPhone = (
+          prefilledFormData.mobile ||
+          prefilledFormData.Mobile ||
+          prefilledFormData.phone ||
+          prefilledFormData.Phone ||
+          ''
+        ).trim();
+
+        setFormUiSchema((prev: any) => {
+          if (!prev) return prev;
+          const updated = { ...prev };
+          Object.keys(updated).forEach((key) => {
+            const lower = key.toLowerCase();
+            if (lower === 'username') {
+              updated[key] = {
+                ...updated[key],
+                'ui:readonly': true,
+                'ui:disabled': true,
+              };
+            }
+            if (userEmail && lower.includes('email')) {
+              updated[key] = {
+                ...updated[key],
+                'ui:readonly': true,
+                'ui:disabled': true,
+              };
+            }
+            if (
+              userPhone &&
+              (lower.includes('mobile') ||
+                lower.includes('phone') ||
+                lower.includes('contact'))
+            ) {
+              updated[key] = {
+                ...updated[key],
+                'ui:readonly': true,
+                'ui:disabled': true,
+              };
+            }
+          });
+          return updated;
+        });
+      }
+    }
+  }, [prefilledFormData, isUpdate]);
 
   useEffect(() => {
     if (isCallSubmitInHandle) {
@@ -1172,6 +1278,7 @@ const DynamicForm = ({
 
   const checkUsernameAvailability = useCallback(
     _.debounce(async (username) => {
+      if (isUpdate) return;
       if (!username) {
         setUsernameError('');
         setIsUsernameValid(false);
@@ -1221,6 +1328,7 @@ const DynamicForm = ({
 
   const handleChange = useCallback(
     async ({ formData, errors }: { formData: any; errors: any }) => {
+      setIsTouched(true);
       const newErrors: Record<string, string[]> = {};
       Object.keys(formSchema?.properties || {}).forEach((fieldName) => {
         const fieldErrors = validateFieldDynamically(
@@ -1239,8 +1347,11 @@ const DynamicForm = ({
       const prevUdise =
         prevFormData.current?.udise || prevFormData.current?.Udise;
       const currentUdise = formData?.Udise;
+      const hasUdiseField = Boolean(
+        formSchema?.properties?.Udise || formSchema?.properties?.udise
+      );
       let newFormData = { ...formData };
-      if (currentUdise === undefined) {
+      if (hasUdiseField && currentUdise === undefined) {
         formData.Udise = '';
         formData.udise = '';
         formData.State = { _id: '', name: '', externalId: '' };
@@ -1277,6 +1388,7 @@ const DynamicForm = ({
       const currentFirstName = (formData.firstName || '').trim().toLowerCase();
       const currentUsername = (formData.Username || '').trim().toLowerCase();
       if (
+        !isUpdate &&
         currentFirstName &&
         currentUsername &&
         currentFirstName === currentUsername
@@ -1328,7 +1440,7 @@ const DynamicForm = ({
         }
       }
       setIsUsernameValid(false);
-      if (formData.Username) {
+      if (!isUpdate && formData.Username) {
         checkUsernameAvailability(formData.Username);
       }
       if (newFormData.email && newFormData.mobile) {
@@ -1412,7 +1524,9 @@ const DynamicForm = ({
     }
 
     if (!isCallSubmitInHandle) {
-      FormSubmitFunction(cleanedData, transformedFormData);
+      const finalCleanedData = extractReferenceValues(cleanedData);
+      const finalTransformedFormData = extractReferenceValues(transformedFormData);
+      FormSubmitFunction(finalCleanedData, finalTransformedFormData);
     }
     setSubmitted(true);
     setTimeout(() => {
@@ -1435,20 +1549,26 @@ const DynamicForm = ({
         }
         delete errors[key];
       } else if (field.pattern) {
-        const patternRegex = new RegExp(field.pattern);
-        if (!patternRegex.test(value)) {
-          const errorMessage =
-            patternErrorMessages?.[field.pattern] ||
-            `Invalid format for ${field.title || key}.`;
-          if (!errors[key].__errors) {
-            errors[key].__errors = [];
+        const testVal = isReferenceObject(value)
+          ? extractReferenceId(value)
+          : value;
+        if (typeof testVal === 'string') {
+          const patternRegex = new RegExp(field.pattern);
+          if (!patternRegex.test(testVal)) {
+            const errorMessage =
+              field.policyMsg ||
+              patternErrorMessages?.[field.pattern] ||
+              t('patternInvalidFormat', { field: field.title || key });
+            if (!errors[key].__errors) {
+              errors[key].__errors = [];
+            }
+            errors[key].__errors = [errorMessage];
+          } else {
+            if (errors[key]?.__errors) {
+              errors[key].__errors = [];
+            }
+            delete errors[key];
           }
-          errors[key].__errors = [errorMessage];
-        } else {
-          if (errors[key]?.__errors) {
-            errors[key].__errors = [];
-          }
-          delete errors[key];
         }
       }
     });
@@ -1457,13 +1577,31 @@ const DynamicForm = ({
   };
 
   const transformErrors = (errors) => {
-    let updatedError = errors;
-
-    if (!submitted) {
+    if (!submitted && !isTouched) {
       return [];
     }
 
-    return updatedError;
+    return (errors || []).filter((error) => {
+      // Do not show every missing required-field error while the user is
+      // editing. Pattern and other field errors remain visible immediately.
+      if (!submitted && error.name === 'required') {
+        return false;
+      }
+      const propertyName = error.property
+        ? error.property.replace(/^\./, '')
+        : '';
+      const val = formData?.[propertyName];
+      if (
+        val !== undefined &&
+        (isReferenceObject(val) ||
+          (Array.isArray(val) && val.some(isReferenceObject)))
+      ) {
+        if (error.name === 'type' || error.name === 'enum') {
+          return false;
+        }
+      }
+      return true;
+    });
   };
 
   useEffect(() => {
@@ -1472,40 +1610,6 @@ const DynamicForm = ({
       setFormData((prev) => ({ ...prev, 'Sub-Role': [] }));
     }
   }, [formData.Role]);
-
-  useEffect(() => {
-    setFormSchema((prevSchema) => {
-      const updatedProperties = { ...prevSchema.properties };
-
-      if (updatedProperties.email) {
-        updatedProperties.email.readOnly = false;
-        updatedProperties.email.required = false;
-      }
-
-      if (updatedProperties.mobile) {
-        updatedProperties.mobile.readOnly = false;
-        updatedProperties.mobile.required = false;
-      }
-
-      return { ...prevSchema, properties: updatedProperties };
-    });
-
-    setFormUiSchema((prevUiSchema) => {
-      const updatedUiSchema = { ...prevUiSchema };
-
-      if (updatedUiSchema.email) {
-        updatedUiSchema.email['ui:disabled'] = false;
-        updatedUiSchema.email['ui:readonly'] = false;
-      }
-
-      if (updatedUiSchema.mobile) {
-        updatedUiSchema.mobile['ui:disabled'] = false;
-        updatedUiSchema.mobile['ui:readonly'] = false;
-      }
-
-      return updatedUiSchema;
-    });
-  }, []);
 
   const handleFetchData = React.useCallback((response: any) => {
     setFormData((prev) => ({
@@ -1594,7 +1698,119 @@ const DynamicForm = ({
     return isValid;
   };
 
-  const handleSendOtp = async () => {
+  const handleUpdateProfile = async () => {
+    const token = localStorage.getItem('accToken') || '';
+    if (!token) {
+      setShowError(true);
+      setAlertSeverity('error');
+      setErrorMessage('Authentication token missing. Please log in again.');
+      return;
+    }
+
+    try {
+      const getSubRoleExternalIds = () => {
+        if (!formData['Sub-Role'] || formData['Sub-Role'].length === 0) return [];
+        const subRoleOptions =
+          uiSchema?.['Sub-Role']?.['ui:options']?.enumOptions ?? [];
+        return formData['Sub-Role'].map((selectedItem: any) => {
+          const selectedId = isReferenceObject(selectedItem)
+            ? extractReferenceId(selectedItem)
+            : selectedItem;
+          const foundOption = subRoleOptions.find(
+            (option: any) => option.value === selectedId
+          );
+          return foundOption?._originalData?._id ?? selectedId;
+        });
+      };
+
+      const fullName = `${formData.firstName || ''}${
+        formData.lastName ? ` ${formData.lastName}` : ''
+      }`.trim() || formData.name;
+
+      const updatePayload: any = {};
+      if (fullName) updatePayload.name = fullName;
+      const hasExistingEmail = Boolean(
+        (prefilledFormData?.email || prefilledFormData?.Email || '').trim()
+      );
+      const hasExistingPhone = Boolean(
+        (
+          prefilledFormData?.mobile ||
+          prefilledFormData?.Mobile ||
+          prefilledFormData?.phone ||
+          prefilledFormData?.Phone ||
+          ''
+        ).trim()
+      );
+
+      // If user has email, do NOT send it for update API
+      if (!hasExistingEmail && formData.email) {
+        updatePayload.email = formData.email;
+      }
+
+      // If user has phone number, do NOT send it for update API
+      if (!hasExistingPhone) {
+        if (formData.mobile) {
+          updatePayload.phone = formData.mobile;
+          updatePayload.phone_code = '+91';
+        } else if (formData.phone) {
+          updatePayload.phone = formData.phone;
+          updatePayload.phone_code = '+91';
+        }
+      }
+      // Copy nonempty form values using their form schema names.
+      Object.keys(formData).forEach((key) => {
+        const val = formData[key];
+        if (val !== undefined && val !== null && val !== '') {
+          updatePayload[key] = val;
+        }
+      });
+
+      const role = localStorage.getItem('role') || formData.Role;
+      if (role) updatePayload.professional_role = role;
+      const subRoles = getSubRoleExternalIds();
+      if (subRoles && subRoles.length > 0) {
+        updatePayload.professional_subroles = subRoles;
+      }
+
+      const cleanedUpdatePayload = extractReferenceValues(updatePayload);
+
+      const response = await fetch(API_ENDPOINTS.userProfileUpdate, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-auth-token': token,
+        },
+        body: JSON.stringify(cleanedUpdatePayload),
+      });
+
+      const data = await response.json();
+      if (response.ok && (data.responseCode === 'OK' || data.result)) {
+        setShowProfileUpdateSuccess(true);
+        const redirectUrl = localStorage.getItem('redirectUrl');
+        setTimeout(async () => {
+          if (redirectUrl) {
+            await performRedirect(token, router);
+          } else {
+            window.history.back();
+          }
+        }, 1500);
+      } else {
+        setShowError(true);
+        setAlertSeverity('error');
+        setErrorMessage(
+          data?.message || t('profileUpdateFailed')
+        );
+      }
+    } catch (err: any) {
+      setShowError(true);
+      setAlertSeverity('error');
+      setErrorMessage(
+        err?.message || t('profileUpdateUnexpectedError')
+      );
+    }
+  };
+
+  const handleSendOtp = async (isResend = false) => {
     if (!checkOtpAttempts()) {
       return;
     }
@@ -1662,7 +1878,7 @@ const DynamicForm = ({
             },
           },
         });
-        setIsOpenOTP(true);
+        if (!isResend) setIsOpenOTP(true);
       } else {
         if (registrationResponse?.message === 'INVALID_ORG_registration_code') {
           setShowError(true);
@@ -1737,7 +1953,10 @@ const DynamicForm = ({
       const subRoleOptions =
         uiSchema['Sub-Role']?.['ui:options']?.enumOptions ?? [];
 
-      return formData['Sub-Role'].map((selectedId) => {
+      return formData['Sub-Role'].map((selectedItem) => {
+        const selectedId = isReferenceObject(selectedItem)
+          ? extractReferenceId(selectedItem)
+          : selectedItem;
         const foundOption = subRoleOptions.find(
           (option) => option.value === selectedId
         );
@@ -1748,7 +1967,14 @@ const DynamicForm = ({
     const isMobile = /^[6-9]\d{9}$/.test(formData.mobile);
     const registrationCode = getRegistrationCode(formData);
 
+    // Include nonempty dynamic fields; explicitly mapped API fields take precedence.
+    const populatedFormData = Object.fromEntries(
+      Object.entries(formData).filter(
+        ([, value]) => value !== undefined && value !== null && value !== ''
+      )
+    );
     const payload = {
+      ...populatedFormData,
       name:
         formData.firstName + (formData.lastName ? ` ${formData.lastName}` : ''),
       username: formData.Username,
@@ -1756,21 +1982,34 @@ const DynamicForm = ({
       email: formData.email,
       ...(isMobile && { phone: formData.mobile }),
       ...(isMobile && { phone_code: '+91' }),
-      state: formData.State?._id ?? '',
-      district: formData.District?._id ?? '',
-      block: formData.Block?._id ?? '',
-      cluster: formData.Cluster?._id ?? '',
-      school: formData.School?._id ?? '',
+      state:
+        extractReferenceSubmissionValue(formData.State ?? formData.state) ?? '',
+      district:
+        extractReferenceSubmissionValue(
+          formData.District ?? formData.district
+        ) ?? '',
+      block:
+        extractReferenceSubmissionValue(formData.Block ?? formData.block) ?? '',
+      cluster:
+        extractReferenceSubmissionValue(
+          formData.Cluster ?? formData.cluster
+        ) ?? '',
+      school:
+        extractReferenceSubmissionValue(formData.School ?? formData.school) ??
+        '',
       registration_code: registrationCode ?? '',
       professional_role: localStorage.getItem('role'),
       professional_subroles: getSubRoleExternalIds(),
       otp: Number(otp),
     };
 
-    setRegisterData(payload);
+    const cleanedPayload = extractReferenceValues(payload);
 
-    const registrationResponse = await registerUserService(payload);
+    setRegisterData(cleanedPayload);
+
+    const registrationResponse = await registerUserService(cleanedPayload);
     if (registrationResponse?.responseCode === 'OK') {
+      setIsOpenOTP(false);
       setRequestData({
         usercreate: {
           request: {
@@ -1955,63 +2194,97 @@ const DynamicForm = ({
           </Alert>
         </Box>
       )}
+      <Snackbar
+        open={showProfileUpdateSuccess}
+        autoHideDuration={1500}
+        onClose={() => setShowProfileUpdateSuccess(false)}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert
+          severity="success"
+          variant="filled"
+          onClose={() => setShowProfileUpdateSuccess(false)}
+        >
+          {t('profileUpdatedSuccessfully')}
+        </Alert>
+      </Snackbar>
       {!isCallSubmitInHandle ? (
-        <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Form
-            ref={formRef}
-            schema={formSchema}
-            uiSchema={formUiSchema}
-            formData={formData}
-            formContext={{ formData }}
-            onChange={handleChange}
-            onSubmit={({ formData }) => {
-              handleSubmit({ formData });
-            }}
-            validator={validator}
-            showErrorList={false}
-            liveValidate
-            transformErrors={transformErrors}
-            widgets={widgets}
-            id="dynamic-form-id"
-          />
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+            ...(isUpdate && {
+              flex: { xs: 1, md: '0 0 auto' },
+              minHeight: { xs: '100%', md: 'auto' },
+            }),
+          }}
+        >
+          <Box sx={{ width: '100%', maxWidth: '560px', mx: 'auto' }}>
+            <Form
+              ref={formRef}
+              schema={formSchema}
+              uiSchema={formUiSchema}
+              formData={formData}
+              formContext={{ formData }}
+              onChange={handleChange}
+              onSubmit={({ formData }) => {
+                handleSubmit({ formData });
+              }}
+              validator={validator}
+              showErrorList={false}
+              liveValidate
+              transformErrors={transformErrors}
+              widgets={widgets}
+              id="dynamic-form-id"
+            />
+          </Box>
           <Box
             sx={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
               width: '100%',
-              marginTop: '5px !important',
-              mt: 2,
+              maxWidth: '560px',
+              mx: 'auto',
+              marginTop: isUpdate
+                ? { xs: 'auto !important', md: '26px !important' }
+                : '26px !important',
+              pb: { xs: 1, md: 0 },
             }}
           >
             <Button
-              onClick={handleSendOtp}
+              onClick={isUpdate ? handleUpdateProfile : () => handleSendOtp()}
               disabled={
                 isRateLimited ||
                 errorButton ||
-                hasValidationErrors() ||
-                !formData?.password ||
-                formData.password !== formData.confirm_password
+                hasValidationErrors()
               }
               sx={{
                 whiteSpace: 'nowrap',
-                bgcolor: '#582E92',
+                bgcolor: activePrimary,
                 color: '#FFFFFF',
-                borderRadius: '30px',
+                borderRadius: '10px',
                 textTransform: 'none',
                 fontWeight: 'bold',
-                fontSize: '14px',
+                fontSize: '15px',
+                py: 1.3,
                 '&:hover': {
-                  bgcolor: '#543E98',
+                  bgcolor: activePrimary,
+                  filter: 'brightness(0.92)',
                 },
                 '&.Mui-disabled': {
-                  bgcolor: '#BDBDBD',
+                  bgcolor: `${activePrimary}66`,
                   color: '#FFFFFF',
                 },
-                width: '50%',
+                width: '100%',
               }}
             >
-              Send OTP
+              {submitButtonText ||
+                (isUpdate
+                  ? t('update') || 'Update'
+                  : t('saveAndContinue') || 'Save & Continue')}
             </Button>
             {isRateLimited && rateLimitExpiry && (
               <Typography
@@ -2066,7 +2339,7 @@ const DynamicForm = ({
         data={registerData}
         onClose={() => setIsOpenOTP(false)}
         onSubmit={handleRegister}
-        onResendOtp={handleSendOtp}
+        onResendOtp={() => handleSendOtp(true)}
       />
       <DynamicNotificationDialog
         open={dialogConfig.open}

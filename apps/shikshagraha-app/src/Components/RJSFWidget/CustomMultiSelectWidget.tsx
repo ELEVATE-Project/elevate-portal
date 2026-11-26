@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { WidgetProps } from '@rjsf/utils';
 import MenuItem from '@mui/material/MenuItem';
 import Select from '@mui/material/Select';
@@ -9,6 +9,7 @@ import InputLabel from '@mui/material/InputLabel';
 import FormControl from '@mui/material/FormControl';
 import { useTranslation } from 'react-i18next';
 import { FormHelperText } from '@mui/material';
+import { normalizeMultiReference } from '../../utils/referenceFieldUtils';
 
 const CustomMultiSelectWidget = ({
   id,
@@ -19,27 +20,57 @@ const CustomMultiSelectWidget = ({
   onChange,
   schema,
   uiSchema,
-}: // rawErrors = [],
-WidgetProps) => {
+}: WidgetProps) => {
   const enumOptions =
     uiSchema?.['ui:options']?.enumOptions ?? (options.enumOptions || []);
-  const maxSelections = schema.maxSelection ?? enumOptions.length;
   const { t } = useTranslation();
   const lowerLabel = label?.toLowerCase();
   const isRoleField = lowerLabel === 'sub-role';
   const helperText = ' Please select a sub role.';
-  const selectedValues = Array.isArray(value) ? value : [];
+
+  // Normalize array of reference objects or primitive string IDs
+  const { ids: selectedValues, labelsMap: prefilledLabelsMap } = useMemo(
+    () => normalizeMultiReference(value),
+    [value]
+  );
+
+  // Combine enumOptions with any prefilled options not yet present in enumOptions
+  // (handles asynchronously loaded dropdown options)
+  const effectiveEnumOptions = useMemo(() => {
+    const existingIds = new Set(
+      enumOptions.map((opt: any) => String(opt.value))
+    );
+    const synthesized: any[] = [];
+    selectedValues.forEach((id) => {
+      if (!existingIds.has(String(id)) && id) {
+        synthesized.push({
+          value: id,
+          label: prefilledLabelsMap[id] || id,
+          _originalData: null,
+        });
+      }
+    });
+    return synthesized.length > 0
+      ? [...synthesized, ...enumOptions]
+      : enumOptions;
+  }, [enumOptions, selectedValues, prefilledLabelsMap]);
+
+  const maxSelections = schema.maxSelection ?? effectiveEnumOptions.length;
 
   const [isAllSelected, setIsAllSelected] = useState(
-    selectedValues.length === enumOptions.length
+    selectedValues.length > 0 &&
+      selectedValues.length === effectiveEnumOptions.length
   );
 
   const isDisabled = uiSchema?.['ui:disabled'] === true;
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
-    setIsAllSelected(selectedValues.length === enumOptions.length);
-  }, [selectedValues, enumOptions]);
+    setIsAllSelected(
+      selectedValues.length > 0 &&
+        selectedValues.length === effectiveEnumOptions.length
+    );
+  }, [selectedValues, effectiveEnumOptions]);
 
   const handleChange = (event: any) => {
     const selected = event.target.value;
@@ -48,13 +79,38 @@ WidgetProps) => {
       if (isAllSelected) {
         onChange([]);
       } else {
-        const allValues = enumOptions.map((option) => option.value);
-        onChange(allValues.slice(0, maxSelections));
+        const allOptions = effectiveEnumOptions.slice(0, maxSelections);
+        const mapped = allOptions.map((opt) =>
+          opt._originalData
+            ? opt._originalData
+            : opt.label !== opt.value
+            ? {
+                value: opt.value,
+                label: opt.label,
+                ...(opt.externalId ? { externalId: opt.externalId } : {}),
+              }
+            : opt.value
+        );
+        onChange(mapped);
       }
     } else {
       if (Array.isArray(selected)) {
         if (selected.length <= maxSelections) {
-          onChange(selected.length > 0 ? selected : []);
+          const mapped = selected.map((val) => {
+            const opt = effectiveEnumOptions.find(
+              (o) => String(o.value) === String(val)
+            );
+            if (opt?._originalData) return opt._originalData;
+            if (opt && opt.label !== opt.value) {
+              return {
+                value: opt.value,
+                label: opt.label,
+                ...(opt.externalId ? { externalId: opt.externalId } : {}),
+              };
+            }
+            return val;
+          });
+          onChange(mapped.length > 0 ? mapped : []);
           if (maxSelections === 1 && selected.length === 1) {
             setOpen(false);
           }
@@ -63,14 +119,12 @@ WidgetProps) => {
     }
   };
 
-  const shouldShrinkLabel = open || (Array.isArray(value) && value.length > 0);
+  const shouldShrinkLabel = open || selectedValues.length > 0;
   const labelId = `${id}-label`;
 
   return (
     <FormControl
       fullWidth
-      // error={rawErrors.length > 0}
-      // required={required}
       disabled={isDisabled}
       error={false}
       sx={{
@@ -124,12 +178,29 @@ WidgetProps) => {
         onOpen={() => setOpen(true)}
         onClose={() => setOpen(false)}
         onChange={handleChange}
-        renderValue={(selected) =>
-          enumOptions
-            .filter((option) => selected.includes(option.value))
-            .map((option) => option.label)
-            .join(', ')
-        }
+        renderValue={(selected: any) => {
+          const arr = Array.isArray(selected) ? selected : [selected];
+          return arr
+            .map((val) => {
+              const strVal = String(val);
+              const found = effectiveEnumOptions.find(
+                (option) => String(option.value) === strVal
+              );
+              if (found) {
+                return t(`FORM.${found.label}`, {
+                  defaultValue: found.label,
+                });
+              }
+              if (prefilledLabelsMap[strVal]) {
+                return t(`FORM.${prefilledLabelsMap[strVal]}`, {
+                  defaultValue: prefilledLabelsMap[strVal],
+                });
+              }
+              return strVal;
+            })
+            .filter(Boolean)
+            .join(', ');
+        }}
         MenuProps={{
           PaperProps: {
             sx: {
@@ -140,18 +211,15 @@ WidgetProps) => {
         sx={{
           '& .MuiSelect-select': {
             padding: '10px 12px',
-            fontSize: '12px !important', // Ensure 16px font size to prevent iOS zoom
-            // iOS Safari zoom prevention
+            fontSize: '12px !important',
             transform: 'translateZ(0)',
             WebkitTransform: 'translateZ(0)',
             WebkitAppearance: 'none',
             borderRadius: '0',
-            // Prevent zoom on focus
             '@media screen and (-webkit-min-device-pixel-ratio: 0)': {
               fontSize: '12px !important',
             },
           },
-          // Additional iOS fixes
           '& .MuiInputBase-root': {
             WebkitTapHighlightColor: 'transparent',
             WebkitTouchCallout: 'none',
@@ -159,20 +227,21 @@ WidgetProps) => {
         }}
         error={false}
       >
-        {enumOptions.length > 1 && maxSelections >= enumOptions.length && (
-          <MenuItem
-            key="selectAll"
-            value="selectAll"
-            disabled={enumOptions.length === 1}
-          >
-            <Checkbox checked={isAllSelected} />
-            <ListItemText
-              primary={isAllSelected ? 'Deselect All' : 'Select All'}
-            />
-          </MenuItem>
-        )}
+        {effectiveEnumOptions.length > 1 &&
+          maxSelections >= effectiveEnumOptions.length && (
+            <MenuItem
+              key="selectAll"
+              value="selectAll"
+              disabled={effectiveEnumOptions.length === 1}
+            >
+              <Checkbox checked={isAllSelected} />
+              <ListItemText
+                primary={isAllSelected ? 'Deselect All' : 'Select All'}
+              />
+            </MenuItem>
+          )}
 
-        {enumOptions
+        {effectiveEnumOptions
           .filter((option) => option.value !== 'Select')
           .map((option) => (
             <MenuItem
@@ -180,10 +249,10 @@ WidgetProps) => {
               value={option.value}
               disabled={
                 selectedValues.length >= maxSelections &&
-                !selectedValues.includes(option.value)
+                !selectedValues.includes(String(option.value))
               }
             >
-              <Checkbox checked={selectedValues.includes(option.value)} />
+              <Checkbox checked={selectedValues.includes(String(option.value))} />
               <ListItemText
                 primary={t(`FORM.${option.label}`, {
                   defaultValue: option.label,
@@ -192,7 +261,7 @@ WidgetProps) => {
             </MenuItem>
           ))}
       </Select>
-      {helperText && !value && (
+      {helperText && selectedValues.length === 0 && (
         <FormHelperText
           sx={{
             color: 'red',

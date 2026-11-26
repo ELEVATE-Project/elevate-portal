@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 //@ts-nocheck
 'use client';
-import { Layout, DynamicCard } from '@shared-lib';
+import { Layout, DynamicCard, isRouteDisabled } from '@shared-lib';
+import { SHARED_KEYS } from '../../constants/sharedKeys';
 import { useRouter } from 'next/navigation';
 import { readHomeListForm } from '../../services/LoginService';
 import { useEffect, useState } from 'react';
@@ -19,12 +20,20 @@ import {
 } from '@mui/material';
 import AppConst from '../../utils/AppConst/AppConst';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
-import { getUserDataFromLocal, navigateToMitraURL } from '../../utils/Helper';
+import {
+  getUserDataFromLocal,
+  navigateToMitraURL,
+  checkUserAcceptedTerms,
+  extractAndStoreUrlParams,
+} from '../../utils/Helper';
 import {
   ContentLoader,
   FullPageLoaderWithLayout,
 } from '../../Components/FullPageLoader';
+import { useTranslation } from 'react-i18next';
+
 export default function Home() {
+  const { t } = useTranslation();
   // Constants
   const basePath = AppConst?.BASEPATH;
   const router = useRouter();
@@ -34,9 +43,11 @@ export default function Home() {
   const [pageLoading, setPageLoading] = useState(true);
   const [error, setError] = useState(null);
   const [cardData, setCardData] = useState([]);
+  const [mounted, setMounted] = useState(false);
 
   // Effects
   useEffect(() => {
+    setMounted(true);
     initializeHomePage();
   }, [router]);
 
@@ -47,6 +58,23 @@ export default function Home() {
       if (!accToken) {
         router.replace(AppConst.NAVIGATION.REDIRECTING);
       }
+      return;
+    }
+
+    const hasTnC = typeof window !== 'undefined' && localStorage.getItem(SHARED_KEYS.TERMS_ENABLED) === 'true';
+    let tcAccepted = typeof window !== 'undefined' && localStorage.getItem(SHARED_KEYS.TERMS_ACCEPTED) === 'true';
+    if (hasTnC && !tcAccepted) {
+      const accToken = localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN) || localStorage.getItem('accToken');
+      if (accToken) {
+        const alreadyAccepted = await checkUserAcceptedTerms(accToken);
+        if (alreadyAccepted) {
+          localStorage.setItem(SHARED_KEYS.TERMS_ACCEPTED, 'true');
+          tcAccepted = true;
+        }
+      }
+    }
+    if (hasTnC && !tcAccepted) {
+      router.replace('/terms');
       return;
     }
 
@@ -61,7 +89,13 @@ export default function Home() {
   };
 
   const isUserAuthenticated = () => {
-    return !!localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN);
+    if (typeof window !== 'undefined') {
+      extractAndStoreUrlParams();
+    }
+    return (
+      !!localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN) ||
+      !!localStorage.getItem('accToken')
+    );
   };
 
   const handleUnauthenticatedUser = () => {
@@ -264,7 +298,7 @@ export default function Home() {
         fontWeight="bold"
         fontSize={{ xs: '22px', sm: '24px', md: '26px' }}
       >
-        Welcome, {getUserFirstName()}
+        {t('welcomeUser', { name: getUserFirstName() })}
       </Typography>
     </Box>
   );
@@ -297,7 +331,7 @@ export default function Home() {
           textAlign="center"
           color={AppConst.UI.COLORS.TEXT_SECONDARY}
         >
-          No enabled cards available
+          {t('noEnabledCards')}
         </Typography>
       );
     }
@@ -323,27 +357,32 @@ export default function Home() {
     </>
   );
 
-  const renderProfileIcon = () => (
-    <Box
-      sx={{
-        position: 'fixed',
-        top: 10,
-        right: 20,
-        zIndex: 2000,
-        backgroundColor: 'transparent',
-        borderRadius: '50%',
-      }}
-    >
-      <AccountCircleIcon
+  const renderTopActions = () => {
+    return (
+      <Box
         sx={{
-          fontSize: 36,
-          color: AppConst.UI.COLORS.PRIMARY,
-          cursor: 'pointer',
+          position: 'fixed',
+          top: 10,
+          right: 20,
+          zIndex: 2000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1.5,
         }}
-        onClick={handleAccountClick}
-      />
-    </Box>
-  );
+      >
+        {mounted && !isRouteDisabled('PROFILE') && (
+          <AccountCircleIcon
+            sx={{
+              fontSize: 36,
+              color: AppConst.UI.COLORS.PRIMARY,
+              cursor: 'pointer',
+            }}
+            onClick={handleAccountClick}
+          />
+        )}
+      </Box>
+    );
+  };
 
   // ==================== MAIN RENDER ====================
 
@@ -355,7 +394,7 @@ export default function Home() {
     <>
       <Layout
         showTopAppBar={{
-          title: 'Home',
+          title: t('home'),
           showMenuIcon: true,
           showBackIcon: false,
         }}
@@ -363,7 +402,7 @@ export default function Home() {
         showLogo={true}
         showBack={true}
       >
-        {renderProfileIcon()}
+        {renderTopActions()}
         <Box
           sx={{
             minHeight: '100vh',

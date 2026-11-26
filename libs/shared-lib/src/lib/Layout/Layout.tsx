@@ -96,6 +96,8 @@ interface LayoutProps {
         event: React.MouseEvent<HTMLButtonElement, MouseEvent>
       ) => void;
     }[];
+    languageSelector?: React.ReactNode;
+    rightAction?: React.ReactNode;
   };
   topAppBarIcons?: {
     icon: React.ReactNode;
