@@ -3,6 +3,7 @@
 //@ts-nocheck
 'use client';
 import { Layout, DynamicCard, isRouteDisabled } from '@shared-lib';
+import { SHARED_KEYS } from '../../constants/sharedKeys';
 import { useRouter } from 'next/navigation';
 import { readHomeListForm } from '../../services/LoginService';
 import { useEffect, useState } from 'react';
@@ -60,14 +61,14 @@ export default function Home() {
       return;
     }
 
-    const hasTnC = typeof window !== 'undefined' && localStorage.getItem('has_terms_and_conditions') === 'true';
-    let tcAccepted = typeof window !== 'undefined' && localStorage.getItem('has_accepted_terms_and_conditions') === 'true';
+    const hasTnC = typeof window !== 'undefined' && localStorage.getItem(SHARED_KEYS.TERMS_ENABLED) === 'true';
+    let tcAccepted = typeof window !== 'undefined' && localStorage.getItem(SHARED_KEYS.TERMS_ACCEPTED) === 'true';
     if (hasTnC && !tcAccepted) {
       const accToken = localStorage.getItem(AppConst.STORAGE_KEYS.ACCESS_TOKEN) || localStorage.getItem('accToken');
       if (accToken) {
         const alreadyAccepted = await checkUserAcceptedTerms(accToken);
         if (alreadyAccepted) {
-          localStorage.setItem('has_accepted_terms_and_conditions', 'true');
+          localStorage.setItem(SHARED_KEYS.TERMS_ACCEPTED, 'true');
           tcAccepted = true;
         }
       }
