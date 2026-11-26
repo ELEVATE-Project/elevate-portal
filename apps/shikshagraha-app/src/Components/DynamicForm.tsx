@@ -1810,7 +1810,7 @@ const DynamicForm = ({
     }
   };
 
-  const handleSendOtp = async () => {
+  const handleSendOtp = async (isResend = false) => {
     if (!checkOtpAttempts()) {
       return;
     }
@@ -1878,7 +1878,7 @@ const DynamicForm = ({
             },
           },
         });
-        setIsOpenOTP(true);
+        if (!isResend) setIsOpenOTP(true);
       } else {
         if (registrationResponse?.message === 'INVALID_ORG_registration_code') {
           setShowError(true);
@@ -1967,7 +1967,14 @@ const DynamicForm = ({
     const isMobile = /^[6-9]\d{9}$/.test(formData.mobile);
     const registrationCode = getRegistrationCode(formData);
 
+    // Include nonempty dynamic fields; explicitly mapped API fields take precedence.
+    const populatedFormData = Object.fromEntries(
+      Object.entries(formData).filter(
+        ([, value]) => value !== undefined && value !== null && value !== ''
+      )
+    );
     const payload = {
+      ...populatedFormData,
       name:
         formData.firstName + (formData.lastName ? ` ${formData.lastName}` : ''),
       username: formData.Username,
@@ -1996,44 +2003,13 @@ const DynamicForm = ({
       otp: Number(otp),
     };
 
-    // Generic extraction of all other fields from formData
-    Object.keys(formData).forEach((key) => {
-      const lowerKey = key.toLowerCase();
-      if (
-        [
-          'firstname',
-          'lastname',
-          'password',
-          'confirm_password',
-          'confirm password',
-          'email',
-          'mobile',
-          'phone',
-          'username',
-          'role',
-          'sub-role',
-          'state',
-          'district',
-          'block',
-          'cluster',
-          'school',
-        ].includes(lowerKey)
-      ) {
-        return;
-      }
-
-      const val = formData[key];
-      if (val !== undefined && val !== null && val !== '') {
-        (payload as any)[key] = val;
-      }
-    });
-
     const cleanedPayload = extractReferenceValues(payload);
 
     setRegisterData(cleanedPayload);
 
     const registrationResponse = await registerUserService(cleanedPayload);
     if (registrationResponse?.responseCode === 'OK') {
+      setIsOpenOTP(false);
       setRequestData({
         usercreate: {
           request: {
@@ -2279,7 +2255,7 @@ const DynamicForm = ({
             }}
           >
             <Button
-              onClick={isUpdate ? handleUpdateProfile : handleSendOtp}
+              onClick={isUpdate ? handleUpdateProfile : () => handleSendOtp()}
               disabled={
                 isRateLimited ||
                 errorButton ||
@@ -2363,7 +2339,7 @@ const DynamicForm = ({
         data={registerData}
         onClose={() => setIsOpenOTP(false)}
         onSubmit={handleRegister}
-        onResendOtp={handleSendOtp}
+        onResendOtp={() => handleSendOtp(true)}
       />
       <DynamicNotificationDialog
         open={dialogConfig.open}
